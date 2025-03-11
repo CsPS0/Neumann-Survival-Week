@@ -27,6 +27,7 @@ secret.txt
 *.txt
 
 *.pdf
+*.docx
 
 *.webp
 *.jpg
