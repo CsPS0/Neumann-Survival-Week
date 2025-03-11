@@ -1,0 +1,34 @@
+node_modules/
+
+dist/
+out/
+
+*.log
+*.tmp
+*.bak
+*.swp
+
+.DS_Store      # macOS
+Thumbs.db      # Windows
+Desktop.ini    # Windows
+
+.vscode/
+*.code-workspace
+
+.env
+.env.local
+
+config/local.json
+personal_script.sh
+secret.txt
+
+*.bak
+
+*.txt
+
+*.pdf
+
+*.webp
+*.jpg
+
+*.vs
