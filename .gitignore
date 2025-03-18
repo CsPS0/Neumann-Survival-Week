@@ -29,7 +29,7 @@ secret.txt
 *.pdf
 *.docx
 
-*.webp
+ICON.webp
 *.jpg
 
 *.vs
