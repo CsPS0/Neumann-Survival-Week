@@ -20,40 +20,16 @@
   - ✅ Jó válaszok száma
   - ❌ Rossz válaszok száma
 
-## 🧑‍🤝‍🧑 NPC-k
-Az alábbi karakterekkel találkozhatsz a játékban:
-
-- **🧑 Solti Csongor Péter** – *CsPS* (???)
-- **🧑‍💻 Polyák Dávid** – *???* (???)
-- **🧑‍🎓 Fehér Marcell** – *???* (???)
-- **🚂 Morcos Vonatos (Peta)** – Szerdán megkérdezi, hogy *"Mikor alapították a MÁV-ot?"*
-- **📚 Tanárok, diákok és egyéb karakterek** – interakciók és küldetések minden nap.
-
-### 📌 Példa interakció egy NPC-vel:
-**🗓️ Hétfő:**
-📌 Belépsz az 5-ös terembe, és egy tanár vagy diák megkérdezi a neved és hogy honnan jöttél. A válaszod befolyásolhatja a későbbi eseményeket.
-
-**🗓️ Szerda:**
-🚂 A *Morcos Vonatos (Peta)* megkérdezi tőled:
-*"Mikor alapították a MÁV-ot?"*
-✔️ Ha jól válaszolsz, bónuszpontokat kapsz.
-❌ Ha rosszul, lehet, hogy megharagszik rád...
-
-## 👹 Boss Fight-ok
-Minden nap végén egy főellenfél (*boss*) vár rád, aki nehéz kérdéseket tesz fel.
-
-### ⚔️ Példa boss fight-ra:
-**🗓️ Péntek – Mező György**
-📢 Feltesz egy rendkívül nehéz kérdést, például egy bonyolult matematikai feladványt vagy egy informatikai kérdést.
-✔️ Ha helyesen válaszolsz, továbbjutás és bónusz jár.
-❌ Ha rosszul, akkor lehet, hogy újra kell próbálkoznod... vagy jön a *retry screen* 🔄
-
 ## 🏗️ Csapattagok
 A fejlesztésért felelős csapat:
 
 - **👨‍💻 Fehér Marcell**
 - **👨‍💻 Polyák Dávid**
 - **👨‍💻 Solti Csongor Péter**
+
+## 🔗 Dokumentumok
+* [Licensz](LICENSE)
+* [Dokumentáció](DOCS\Dokumentacio.docx)
 
 ---
 
