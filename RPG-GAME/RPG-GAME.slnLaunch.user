@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "RPG-GAME\\RPG-GAME.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "RenderLib\\RenderLib.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
