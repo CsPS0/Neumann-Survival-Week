@@ -3,39 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPG Játék</title>
+    <title>RPG Játék - IKT: Survival Week</title>
     <link rel="stylesheet" href="CSS/style.css">
 </head>
 <body>
     <header>
-        <h1>Üdvözlünk az RPG Játékban!</h1>
-        <nav>
-            <ul>
-                <li><a href="#about">Rólunk</a></li>
-                <li><a href="#download">Letöltés</a></li>
-                <li><a href="#contact">Kapcsolat</a></li>
-            </ul>
-        </nav>
+        <div class="container">
+            <h1>Neu RPG Játék</h1>
+            <nav>
+                <ul>
+                    <li><a href="#story">Történet</a></li>
+                    <li><a href="#features">Játékmenet</a></li>
+                    <li><a href="#characters">Karakterek</a></li>
+                    <li><a href="#days">Napok</a></li>
+                    <li><a href="#download">Letöltés</a></li>
+                    <li><a href="#contact">Kapcsolat</a></li>
+                </ul>
+            </nav>
+        </div>
     </header>
+    <div class="container">
+        <div class="ascii-art">
+  .   .                             .                .     .    ..                                  
+               .       @@    ..       .   : .  . . .. .  ...  :  .  .  .....  ... ..   ..    . .    
+    .     .     @@@@@@@@@@@@@@@ .         .  .   .. .    . ... . .. ... . :...: .. # . .   .  .   . 
+  .       .   @@@@*@=@@@@@@@@@@@@        .  ..  .. ....:. . ...+-..  - ... . * ...+= % -@ .    %    
+  . .        @@@@@@@@@@@@@@@@@@=%@@  . .    .  +. .. ..     . . .  . ..... .   :    . .     .. .    
+            @@@@-@*@@@+@@@@@@@@@@*@@@   ...  -  * .  .. + +:  @  . *       . ... .. . -  .   ... .  
+      .    #@@@@@@ @-. %.@@@@@@@@@@ @@  . . .-  :..*    = @ * @@    @@ @@    ..   % . ......  .   . 
+           @@=..=... -%@ @ .*:-@@:@@@@@  .:   ..-      @@@@@@@@@@@@@@@@@@@@@@@    .  .  .   . .  .. 
+ .   .   .@@@....::.   ..@.==+ *@=@@@@@@ .   =:.-    @ @@@@@@@@@@@@@@@@@@@@@@@@@@@=%  . .   @ .   . 
+     .    @@        ..-:    =  @@@: @@@@ .  .     :  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@ -   .. :    :: . 
+    .   +@@  @@@@    . ....  .:@ #  @@@@@  :   *- . @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@-      .  . ..- 
+  .    +## @.    @@@* .    .-.   -  @@@. : : :.: .  @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@# ..... ..+   
+  . . @#@.+.@@@@@ *:@@#+=-:     ...:@@   :-  %  =.   @@@@@@@@+:@@=@@@@@@@@@@%@@@@@@@@   .@      . . 
+  .   @*-.* ..::-=@@@@  .@@@@@@%. .@@  +.-* ...@  .:. @@@@#:.. .@@@. .     .#@@@@@@@@  @  ....  -   
+  =+ .#.=-.@       #@   @#@#    @@ @  -. .  : .-:.*  @@@:.=:=-:.. ......      #%:@@@@@ + .: . ..  . 
+   = %#@:=::.@@   @%    @ #@@@@@# @@  ---.. @ :  :-. @@*:--:.  . .::      :%@=   @@@@@  .+   ..  @  
+ : .. @@.:--.  .#%    . @   -.::  @*@:*- :.% -*==-:: @@#.:---.    . @@@@@@@@@@@ .@@@@@ @ +..- +   . 
+ * -=  @:++:..:-=@@%    #=-     @+:% .-- : :: =.==.+. @@ @@@@@@@@#* .-      ...+* @@@%  .:- @ = #.- 
+ # .   @++--@*+ -#%@@#@@=..=-:: -%-::=+:. #:=+=.*--= .@@ %     @@@-  .@@@@@@% ..  @@@## +.*   .  .. 
+  +@@@ @+-..@@@@==+ @: . .+   .*@:*=*-:.:=.+:: =-=.%+ @@ @@@@@@@@@= .        ..:: @@  + . + %@%  .= 
+ @@   =@@==: ..=*=#@%#+%+.-:=-+@..#:%++..+ :::-++=*.# -@.=.   .:-@=.:-:      .  . @ ##..=+-   .. @  
+@   .-@.@%*@..=-@@+:-%#-@@..**@+*-@ -=...=-=%:-=:+ .#+ @-..  . @ .      #@# . ... *.  .*#    ::. .  
+  :: @#.*@@#:.    .::.    .=@@. @ @---.:=-- -:=#-=@@::.@+=-..:%@@@@@=%#*-+@@@-.+-    -..# *: -...:  
+ -#  @-:-%@@%-        .-@@@@*   @.@%..-::=*=.+..+.:.-+*=*@=+@@%+*   =.     -#@.=. @@ . .% # @.*%    
+ +# @@ :---@@@@@+. . %@@@@@     @- @@ =:+#..:#+@.@@#*@@.@@#-.%@@@@@@@@%%#-#@-. :.. @ @@  +-  :*.* # 
+  :@@@.-++=+ *@@@@@@@@@..%       :. @=+.:==@.:=.=- . #=#:.@*: ..=:.     ...::::=-= @  * ..#   . .-  
+ @@##@ :===-::.....-.. .@      -@  @@@=:==+.*:+@+=#@#-@=%.@@#-===###@%*=-..:...=*. @-* *.:= %+@.- . 
+@@@=+@ ::-**+  . -:   -@.-.  .@  :.  @@ .#:+@+:=*.@.%=.**@ %@*%+-=. ..  - -- .#+. ..@. .+@-: : -..: 
+@@+-@@:+-+-:*@@@*.:..%@-. . @       @@@- +.:: *.+-*@#=%%-%@.*@@@=%=::*.: .=.@#:. :. @ *=:  =#:# #:. 
+@@=@@.+@+*@#=-=--. :@@    =  .  @@@@@@@@@@  #.@@@ %#-%+@+.# -:@@@#%#=%#%+*++-:......:**.@%==-:=:.   
+.@@%% :@=-***##%%@@@ .       @@@@@@@@@@@@@@@@   =#**@+@:+#:@:.#+@@@@@@@@@@*+:.:. ..-+*-:. .     +@% 
+  .%#=#@#%%%%%:  .       @@@@@@@@@@@@@@@@@@@@@@*@ #% %@*@@.=%@@#.=@@@%*-:.. ...-%@@*   .-@@@@@-.    
+.@@. -        .    @@@@@ @@@@@@@@@@@@@@@@@@@@@@@.:=@#@%:.@##%@@@*-+@#-.-:.  -@**#.. @@@@#    @@@@@% 
+   .         .. @@@..@  #@@@@@@@@@@@@@@@@@@@@@@@@@*- :*-%-+@:.%%%. -=     ..      @.   .  @@   . %  
+        </div>
+        
+        <section id="story">
+            <h2>Történet</h2>
+            <div class="story-box">
+                <p>A Neu egy új diákja vagy, aki találkozik egy csomó diákkal és tanárral a pályán. Egy hetet kell túlélni, hétfő a legnehezebb, a feladatok viccesek és szarkasztikusak lehetnek.</p>
+            </div>
+        </section>
+        <section id="features">
+            <h2>Játékmenet és Jellemzők</h2>
+            <div class="game-features">
+                <div class="feature-card">
+                    <h3>2.5D-s nézet</h3>
+                    <p>A játék az OG DOT NET RPG Játékára alapul, klassszikus szerepjáték élménnyel.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Irányítás</h3>
+                    <p>W, A, S, D mozgás, inventory (TAB) és statisztikák (ENTER) megjelenítése.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Karakterek</h3>
+                    <p>A személyek ASCII-ben jelennek meg, és akik engedélyezik, a hangjukat is hallhatod.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Döntések</h3>
+                    <p>Döntésektől függő random események, és a történet különböző kimenetelei.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Színes játékvilág</h3>
+                    <p>Színes játék, hogy ne legyen annyira komoly az élmény.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Animációk</h3>
+                    <p>Futás, beszéd, időjárási effektek és egyéb animációk teszik élethűbbé a játékot.</p>
+                </div>
+            </div>
+        </section>
+        <section id="characters">
+            <h2>Karakterek</h2>
+            <p>A játékban találkozhatsz a következő személyekkel:</p>
+            <div class="characters">
+                <div class="character-card">
+                    <h3>CsPS</h3>
+                    <p>Solti Csongor Péter</p>
+                </div>
+                <div class="character-card">
+                    <h3>Lobster</h3>
+                    <p>Polyák Dávid</p>
+                </div>
+                <div class="character-card">
+                    <h3>survimar</h3>
+                    <p>Fehér Marcell</p>
+                </div>
+                <div class="character-card">
+                    <h3>Branyó</h3>
+                    <p>Fábián Barna</p>
+                </div>
+                <div class="character-card">
+                    <h3>Mező</h3>
+                    <p>Mező György</p>
+                </div>
+                <div class="character-card">
+                    <h3>Peta</h3>
+                    <p>Sátori Péter</p>
+                </div>
+                <div class="character-card">
+                    <h3>Kis Vakond</h3>
+                    <p>Novák Barbara</p>
+                </div>
+                <div class="character-card">
+                    <h3>HerrRizzler</h3>
+                    <p>Borsos Marcell Bendegúz</p>
+                </div>
+                <div class="character-card">
+                    <h3>Alpha Male</h3>
+                    <p>Leibinger Bence</p>
+                </div>
+            </div>
+        </section>
+        <section id="days" class="days-section">
+            <h2>Napok a játékban</h2>
+            <div class="day-card">
+                <h3>Hétfő</h3>
+                <p>Esik az eső, te az iskola előtt a bejáratnál jössz be.</p>
+                <ul>
+                    <li>1. feladat: menj a 5-ös terembe - interakciók: Peta, CsPS</li>
+                    <li>2. feladat: vegyél részt az órákon</li>
+                </ul>
+                <p><strong>Random eventek:</strong></p>
+                <ul>
+                    <li>Kis Vakond megkérdezi, hogy honnan jöttél</li>
+                    <li>Pearoo (titkos karakter - Maixner Dominik) álldogál az Aulában</li>
+                </ul>
+                <p>Nem tudunk mindenhova menni, mert majd csak később lesz feloldva.</p>
+            </div>
+            <div class="day-card">
+                <h3>Kedd</h3>
+                <p>NO SPOILERS!!!</p>
+            </div>
+            <div class="day-card">
+                <h3>Szerda</h3>
+                <p>NO SPOILERS!!!</p>
+            </div>
+            <div class="day-card">
+                <h3>Csütörtök</h3>
+                <p>NO SPOILERS!!!</p>
+            </div>
+            <div class="day-card">
+                <h3>Péntek</h3>
+                <p>NO SPOILERS!!!</p>
+            </div>
+        </section>
 
-    <section id="about">
-        <h2>Rólunk</h2>
-        <p>Egy izgalmas RPG játék, amelyben felfedezheted a fantázia világát és epikus kalandokban vehetsz részt.</p>
-    </section>
+        <section id="download">
+            <h2>Letöltés</h2>
+            <p>Töltsd le a játékot az alábbi gombra kattintva:</p>
+            <a href="game-download-link" class="button">Letöltés (.exe)</a>
+            <p>A játék elérhető portable (.exe) és telepíthető (.msi) változatban is.</p>
+        </section>
 
-    <section id="download">
-        <h2>Letöltés</h2>
-        <p>Töltsd le a játékot az alábbi gombra kattintva:</p>
-        <a href="game-download-link" class="button">Letöltés</a>
-    </section>
-
-    <section id="contact">
-        <h2>Kapcsolat</h2>
-        <p>Ha bármilyen kérdésed van, írj nekünk: <a href="mailto:info@rpgjatek.hu">info@rpgjatek.hu</a></p>
-    </section>
-
+        <section id="contact">
+            <h2>Kapcsolat</h2>
+            <p>Ha bármilyen kérdésed van, írj nekünk: <a href="mailto:info@rpgjatek.hu">info@rpgjatek.hu</a></p>
+            <p>Kövess minket és nézd meg a projekt fejlődését:</p>
+            <ul>
+                <li><a href="https://www.figma.com/board/lkadQfu8Z9tP84Dt3PnmEJ/IKT-RPG-Game?node-id=0-1&t=wisS5384czRZeygE-1" target="_blank">Figma</a></li>
+                <li><a href="https://trello.com/invite/b/67d05c280df88bd6352af5cc/ATTIb4fa5e82c9112b1b1ac80121c8d67cd5B0EDB92F/ikt-rpg-game" target="_blank">Trello</a></li>
+            </ul>
+        </section>
+    </div>
     <footer>
-        <p>&copy; 2025 RPG Játék. Minden jog fenntartva.</p>
+        <p>&copy; 2025 Neu RPG Játék. Minden jog fenntartva.</p>
     </footer>
 </body>
 </html>
