@@ -34,6 +34,8 @@ it renders the changes to the screen.
 attributes:
 - Frame `frame` : the hidden buffer
 - List<(int x, int y)> `changes` : keeps track of the changes made to the frame
+- (byte r, byte g, byte b) `_fg`, `_bg` : keeps track of the colors of the console
+while rendering --> if the colors are already set, don't call `SetRgbColor()`.
 
 methods:
 - `Render(int width, int height)` : creates a hidden frame with the given dimensions
