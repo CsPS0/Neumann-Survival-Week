@@ -7,6 +7,15 @@ dependencies:
 
 A class that gets information about the current window
 
+attributes:
+- `IntPtr FindWindow(string lpClassName, string lpWindowName)` : finds a window by the title 
+of the class of it
+- `public struct RECT` : a struct that contains the position and size of a window
+- `bool GetWindowRect(IntPtr hWnd, out RECT lpRect)` : writes the position and size of the 
+window to the `lpRect` variable and returns true if successful
+- `RECT? GetWindowRect(string windowName)` : combines `FindWindow` and `GetWindowRect` to get the
+rect of a window by its name
+
 ## Mouse in Mouse.cs
 
 A class that stores properties of the mouse
@@ -22,7 +31,7 @@ methods:
 
 ## Input in Input.cs
 
-A class that captures input from the user via user32.dll.
+A class that captures input from the user.
 
 attributes:
 

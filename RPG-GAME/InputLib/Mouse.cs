@@ -18,13 +18,8 @@ namespace InputLib
         {
             get
             {
-                POINT pos;
-                if (GetCursorPos(out pos))
-                {
-                    return pos;
-                }
-                else
-                    return null;
+                if (GetCursorPos(out POINT pos)) return pos;
+                else return null;
             }
         }
 
