@@ -1,3 +1,6 @@
+RPG-GAME/*/bin
+RPG-GAME/*/obj
+
 node_modules/
 
 dist/
