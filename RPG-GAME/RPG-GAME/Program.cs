@@ -1,9 +1,38 @@
 ﻿using RPG_GAME;
+using RenderLib;
 
 class Program
 {
     static void Main(string[] args)
     {
+
+        Render.Init(10, 10);
+
+        Render.Fill(new(' ', null, (144, 144, 144)));
+
+        Render.UpdateScreen();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        Render.ResetStyles();
+        Console.Write("\nEnd...");
+        Console.ReadLine();
+        return;
+
+
         Console.WriteLine("Üdvözöllek a NJSZKI IKT RPG játékban!");
 
         Character player = new Character("Játékos");
