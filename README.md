@@ -20,6 +20,9 @@
   - ✅ Jó válaszok száma
   - ❌ Rossz válaszok száma
 
+## Kód dokumentáció
+- ![Megjelenítés](/RPG-GAME/RenderLib/README.md)
+
 ## 🏗️ Csapattagok
 A fejlesztésért felelős csapat:
 
