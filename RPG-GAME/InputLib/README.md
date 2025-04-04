@@ -33,6 +33,12 @@ methods:
 - `bool SetCursorPos(int X, int Y)` : move the mouse to the specified coordinates and returns 
 true if the operation was successful
 - `void MoveTo(int x, int y)` : more user friendly method to move the mouse
+- `IntPtr LoadCursorFromFile(string lpFileName)` : loads a .cur file
+- `IntPtr SetSystemCursor(IntPtr hcur, uint id)` : sets the system mouse cursor to a loaded file
+- `void SetCustomCursor(string CurFilePath)` : loads and sets the mouse cursor
+- `bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni)` :
+sets the system parameters, in this case the mouse cursor
+- `void RestoreDefaultCursors()` : resets the mouse cursor to the default
 
 ## Input in Input.cs
 
