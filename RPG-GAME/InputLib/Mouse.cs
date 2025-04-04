@@ -28,5 +28,10 @@ namespace InputLib
             X1 = 0x05,
             X2 = 0x06
         }
+
+        [DllImport("user32.dll")]
+        private static extern bool SetCursorPos(int X, int Y);
+
+        public static void MoveTo(int x, int y) => SetCursorPos(x, y);
     }
 }

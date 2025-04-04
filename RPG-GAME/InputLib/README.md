@@ -30,6 +30,9 @@ methods:
 - `bool GetCursorPos(out POINT lpPoint)` : writes the current position of the mouse to the 
 `lpPoint` variable and returns true if successful
 - `POINT? GetGlobalPos()` : returns the coordinates of the mouse
+- `bool SetCursorPos(int X, int Y)` : move the mouse to the specified coordinates and returns 
+true if the operation was successful
+- `void MoveTo(int x, int y)` : more user friendly method to move the mouse
 
 ## Input in Input.cs
 
