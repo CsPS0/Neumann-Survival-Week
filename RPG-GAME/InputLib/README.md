@@ -8,7 +8,7 @@ dependencies:
 A class that gets information about the current window
 
 attributes:
-- `public struct RECT` : a struct that contains the position and size of a window
+- `struct RECT` : a struct that contains the position and size of a window
 
 methods:
 - `IntPtr FindWindow(string lpClassName, string lpWindowName)` : finds a window by the title 
@@ -20,7 +20,7 @@ rect of a window by its name
 
 ## Mouse in Mouse.cs
 
-A class that stores properties of the mouse
+A class that gives you information and functionalites for the mouse
 
 attributes:
 - `enum Button` : an enum that contains the buttons of the mouse like ConsoleKey
