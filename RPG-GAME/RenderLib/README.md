@@ -47,8 +47,6 @@ console while rendering and if the colors are already set, skip the step.
 
 methods:
 - `void Init()` : initializes the buffers and the console
-- `bool InConsoleBounds(int x, int y)` : checks if the position (x, y) is 
-inside the console
 - `bool PutPixel(int x, int y, Pixel pixel, bool IgnoreLayer)` : `Frame.PutPixel()` for 
 the `next` frame
 - `bool PutFrame(int x, int y, Frame frame)` : `Frame.PutFrame()` for
