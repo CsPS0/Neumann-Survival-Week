@@ -40,7 +40,7 @@ namespace InputLib
         [DllImport("user32.dll")]
         private static extern IntPtr SetSystemCursor(IntPtr hcur, uint id);
         
-        public void SetCustomCursor(string cursorFilePath)
+        public static void SetCustomCursor(string cursorFilePath)
         {
             IntPtr hCursor = LoadCursorFromFile(cursorFilePath);
             if (hCursor != IntPtr.Zero)
@@ -50,11 +50,37 @@ namespace InputLib
         }
 
         [DllImport("user32.dll", SetLastError = true)]
-        static extern bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni);
+        private static extern bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni);
 
         public static void RestoreDefaultCursors()
         {
             SystemParametersInfo(0x0057, 0, IntPtr.Zero, 0x02);
+        }
+
+        private static POINT? _LastPos = null;
+
+        public static POINT? DistanceTraveled()
+        {
+            if (_LastPos == null)
+            {
+                _LastPos = GetGlobalPos();
+                return new POINT() { X = 0, Y = 0 };
+            }
+
+            POINT? currentPos = GetGlobalPos();
+            if (currentPos != null)
+            {
+                POINT dist = new POINT()
+                {
+                    X = currentPos.Value.X - _LastPos.Value.X,
+                    Y = currentPos.Value.Y - _LastPos.Value.Y
+                };
+
+                _LastPos = currentPos;
+                return dist;
+            }
+
+            return null;
         }
     }
 }

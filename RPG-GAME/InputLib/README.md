@@ -25,6 +25,7 @@ A class that stores properties of the mouse
 attributes:
 - `enum Button` : an enum that contains the buttons of the mouse like ConsoleKey
 - `struct POINT` : a struct that contains the x and y coordinates of the mouse
+- `POINT _LastPos` : hold the position of the mouse since last call to `DistanceTraveled`
 
 methods:
 - `bool GetCursorPos(out POINT lpPoint)` : writes the current position of the mouse to the 
@@ -39,6 +40,8 @@ true if the operation was successful
 - `bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni)` :
 sets the system parameters, in this case the mouse cursor
 - `void RestoreDefaultCursors()` : resets the mouse cursor to the default
+- `POINT DistanceTraveled()` : returns the distance traveled by the mouse since the last call 
+to this method
 
 ## Input in Input.cs
 
