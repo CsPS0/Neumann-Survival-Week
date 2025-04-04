@@ -1,4 +1,6 @@
-﻿namespace RenderLib
+﻿using System.Threading.Tasks.Dataflow;
+
+namespace RenderLib
 {
     public class Frame
     {
@@ -13,5 +15,47 @@
 
         public bool InFrameBounds(int x, int y) => 
             x >= 0 && x < width && y >= 0 && y < height;
+
+        public bool PutPixel(int x, int y, Pixel pixel, bool IgnoreLayer)
+        {
+            if (InFrameBounds(x, y) &&
+                (IgnoreLayer || pixels![y, x] == null ||
+                pixel?.layer >= pixels[y, x]?.layer))
+            {
+                pixels![y, x] = pixel;
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool PutFrame(int x, int y, Frame frame)
+        {
+            if (InFrameBounds(x, y) ||
+                InFrameBounds(x + frame.width, y + frame.height))
+            {
+                for (int _x = 0; _x < frame.width; _x++)
+                {
+                    for (int _y = 0; _y < frame.height; _y++)
+                    {
+                        PutPixel(x + _x, y + _y, frame.pixels![_y, _x], true);
+                    }
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        public void Fill(Pixel pixel)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    pixels![y, x] = pixel;
+                }
+            }
+        }
     }
 }

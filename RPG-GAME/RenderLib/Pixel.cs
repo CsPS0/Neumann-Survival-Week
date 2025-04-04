@@ -15,6 +15,6 @@
             this.layer = layer;
         }
 
-        public override string ToString() => $"{character};{fg};{bg};{layer}";
+        public override string ToString() => $"{character};{fg};{bg}";
     }
 }

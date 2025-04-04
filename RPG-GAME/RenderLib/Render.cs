@@ -4,8 +4,8 @@ namespace RenderLib
 {
     public class Render
     {
-        public static Frame current;
-        public static Frame next;
+        private static Frame current;
+        private static Frame next;
         private static (byte r, byte g, byte b)? _fg, _bg;
         public static int width => current.width;
         public static int height => current.height;
@@ -21,47 +21,14 @@ namespace RenderLib
             x >= 0 && x < Console.BufferWidth && y >= 0 && y < Console.BufferHeight;
 
         public static bool PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false)
-        {
-            if (next.InFrameBounds(x, y) &&
-                    (IgnoreLayer || next.pixels[y, x] == null ||
-                    pixel?.layer >= next.pixels[y, x]?.layer))
-            {
-                next.pixels[y, x] = pixel;
-                return true;
-            }
-
-            return false;
-        }
+            => next.PutPixel(x, y, pixel, IgnoreLayer);
     
         public static bool PutFrame(int x, int y, Frame frame)
-        {
-            if (next.InFrameBounds(x, y) || 
-                next.InFrameBounds(x + frame.width, y + frame.height))
-            {
-                for (int _x = 0; _x < frame.width; _x++)
-                {
-                    for (int _y = 0; _y < frame.height; _y++)
-                    {
-                        PutPixel(x + _x, y + _y, frame.pixels[_y, _x]);
-                    }
-                }
-
-                return true;
-            }
-            return false;
-        }
+            => next.PutFrame(x, y, frame);
 
         public static void Fill(Pixel pixel)
-        {
-            for (int x = 0; x < next.width; x++)
-            {
-                for (int y = 0; y < next.height; y++)
-                {
-                    PutPixel(x, y, pixel, true);
-                }
-            }
-        }
-    
+            => next.Fill(pixel);
+
         public static void Clear() => next = new Frame(current.width, current.height);
 
         public static void UpdateScreen()
@@ -70,9 +37,10 @@ namespace RenderLib
             {
                 for (int y = 0; y < next.height; y++)
                 {
-                    if (InConsoleBounds(x, y) && next.pixels[y, x] != null)
+                    if (InConsoleBounds(x, y) &&
+                        (next.pixels![y, x]?.ToString() ?? "") != (current.pixels![y, x]?.ToString() ?? ""))
                     {
-                        Pixel pixel = next.pixels[y, x];
+                        Pixel pixel = next.pixels[y, x] ?? new(' ');
                         Console.SetCursorPosition(x, y);
                         SetRgbColor(pixel.fg);
                         SetRgbColor(pixel.bg, false);
@@ -80,6 +48,8 @@ namespace RenderLib
                     }
                 }
             }
+            current = next;
+            next = new Frame(current.width, current.height);
         }
     
         public static void Resize(int width, int height)

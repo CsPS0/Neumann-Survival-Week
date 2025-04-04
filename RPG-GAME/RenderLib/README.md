@@ -21,6 +21,11 @@ methods:
 - `Frame(int width, int height)` : sets the dimensions of the frame
 - `bool InFrameBounds(int x, int y)` : checks if the position (x, y) is 
 inside the frame
+- `bool PutPixel(int x, int y, Pixel pixel, bool IgnoreLayer)` : puts a pixel and 
+returns true if the operation was successful
+- `bool PutFrame(int x, int y, Frame frame)` : inserts a frame and 
+returns true if the operation was successful
+- `void Fill(Pixel pixel)` : fills the frame with the given pixel
 
 ## Render in Render.cs
 
@@ -40,13 +45,13 @@ methods:
 - `void Init()` : initializes the buffers and the console
 - `bool InConsoleBounds(int x, int y)` : checks if the position (x, y) is 
 inside the console
-- `bool PutPixel(int x, int y, Pixel pixel, bool IgnoreLayer)` : set a pixel 
-at position (x, y) in the `next` buffer and returns true if the opertation was successful
-- `bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer)` : inserts a frame at 
-position (x, y) in the `next` buffer and returns true if the opertation was successful 
-- `void Fill(Pixel pixel)` : fills the `next` frame with the given pixel
+- `bool PutPixel(int x, int y, Pixel pixel, bool IgnoreLayer)` : `Frame.PutPixel()` for 
+the `next` frame
+- `bool PutFrame(int x, int y, Frame frame)` : `Frame.PutFrame()` for
+the `next` frame
+- `void Fill(Pixel pixel)` : `Frame.Fill()` for the `next` frame
 - `void UpdateScreen()` : renders the pixels from `next` to the console that differ
-from `current`
+from `current` and clears `next` and sets `current` to `next`
 - `void Clear()` : clears the `next` frame
 - `void Resize(int width, int height)` : creates new frames with the 
 given dimensions and inserts the previous `next` frame into the new one
