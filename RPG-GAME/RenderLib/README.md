@@ -9,6 +9,10 @@ attributes:
 - char `character` : character to be displayed
 - int `layer` : the layer of the pixel (for overlapping drawings)
 
+methods:
+- `bool Equals(Pixel? a, Pixel? b)` : checks if two pixels are have the same properties
+except for the layer
+
 ## Frame in Frame.cs
 
 A class for representing a frame (matrix of pixels).
@@ -37,9 +41,9 @@ The render function only draws the pixels that have changed since the last frame
 attributes:
 - Frame `current` : the current frame
 - Frame `next` : the next frame to be rendered
+- (byte r, byte g, byte b)? `_fg`, `_bg` : keeps track of the colors of the 
+console while rendering and if the colors are already set, skip the step.
 - int `width`, `height` : dimensions of the buffers
-- (byte r, byte g, byte b) `_fg`, `_bg` : keeps track of the colors of the 
-console while rendering if the colors are already set, don't call `SetRgbColor()`.
 
 methods:
 - `void Init()` : initializes the buffers and the console
@@ -55,9 +59,3 @@ from `current` and clears `next` and sets `current` to `next`
 - `void Clear()` : clears the `next` frame
 - `void Resize(int width, int height)` : creates new frames with the 
 given dimensions and inserts the previous `next` frame into the new one
-- `void SetRgbColor(byte r, byte g, byte b, bool fg = true)` : sets the 
-color of the console with ansi escape codes, if fg is false it sets the 
-background color
-- `void SetRgbColor((byte r, byte g, byte b) color, bool fg = true)` :
-function overload --> the same function but you can pass different arguments
-- `void ResetStyles()` : resets the styles of the console

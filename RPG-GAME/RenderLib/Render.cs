@@ -17,9 +17,6 @@ namespace RenderLib
             Console.Clear();
         }
 
-        public static bool InConsoleBounds(int x, int y) => 
-            x >= 0 && x < Console.BufferWidth && y >= 0 && y < Console.BufferHeight;
-
         public static bool PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false)
             => next.PutPixel(x, y, pixel, IgnoreLayer);
     
@@ -33,18 +30,31 @@ namespace RenderLib
 
         public static void UpdateScreen()
         {
+            int WindowWidth = Console.WindowWidth;
+            int WindowHeight = Console.WindowHeight;
+
             for (int x = 0; x < next.width; x++)
             {
                 for (int y = 0; y < next.height; y++)
                 {
-                    if (InConsoleBounds(x, y) &&
-                        (next.pixels![y, x]?.ToString() ?? "") != (current.pixels![y, x]?.ToString() ?? ""))
+                    if (x >= 0 && x < WindowWidth && y >= 0 && y < WindowHeight &&
+                        !Pixel.Equals(next.pixels[y, x], current.pixels[y, x]))
                     {
                         Pixel pixel = next.pixels[y, x] ?? new(' ');
+                        string output = "";
+
+                        if (pixel.fg != _fg || pixel.bg != _bg)
+                        {
+                            if (pixel.character != ' ')
+                            {
+                                output += $"\x1b[38;2;{pixel.fg.r};{pixel.fg.g};{pixel.fg.b}m";
+                                _fg = pixel.fg;
+                            }
+                            _bg = pixel.bg;
+                        }
+
                         Console.SetCursorPosition(x, y);
-                        SetRgbColor(pixel.fg);
-                        SetRgbColor(pixel.bg, false);
-                        Console.Write(pixel.character);
+                        Console.Write(output += pixel.character);
                     }
                 }
             }
@@ -62,34 +72,5 @@ namespace RenderLib
                 PutFrame(0, 0, temp);
             }
         }
-    
-        public static void SetRgbColor(byte r, byte g, byte b, bool fg = true)
-        {
-            if (fg && _fg != (r, g, b))
-            {
-                Console.Write($"\x1b[38;2;{r};{g};{b}m");
-                _fg = (r, g, b);
-            } else if (!fg && _bg != (r, g, b))
-            {
-                Console.Write($"\x1b[48;2;{r};{g};{b}m");
-                _bg = (r, g, b);
-            }
-        }
-
-        public static void SetRgbColor((byte r, byte g, byte b) color, bool fg = true)
-        {
-            if (fg && _fg != color)
-            {
-                Console.Write($"\x1b[38;2;{color.r};{color.g};{color.b}m");
-                _fg = color;
-            }
-            else if (!fg && _bg != color)
-            {
-                Console.Write($"\x1b[48;2;{color.r};{color.g};{color.b}m");
-                _bg = color;
-            }
-        }
-
-        public static void ResetStyles() => Console.Write("\x1b[0m");
     }
 }
