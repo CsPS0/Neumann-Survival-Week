@@ -14,13 +14,10 @@ namespace InputLib
         [DllImport("user32.dll")]
         private static extern bool GetCursorPos(out POINT lpPoint);
 
-        public static POINT? Pos
+        public static POINT? GetGlobalPos()
         {
-            get
-            {
-                if (GetCursorPos(out POINT pos)) return pos;
-                else return null;
-            }
+            if (GetCursorPos(out POINT point)) return point;
+            return null;
         }
 
         public enum Button
