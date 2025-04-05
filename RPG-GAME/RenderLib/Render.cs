@@ -50,6 +50,7 @@ namespace RenderLib
                                 output += $"\x1b[38;2;{pixel.fg.r};{pixel.fg.g};{pixel.fg.b}m";
                                 _fg = pixel.fg;
                             }
+                            output += $"\x1b[48;2;{pixel.bg.r};{pixel.bg.g};{pixel.bg.b}m";
                             _bg = pixel.bg;
                         }
 
