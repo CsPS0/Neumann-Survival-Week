@@ -28,17 +28,9 @@ namespace RenderLib
             (byte r, byte g, byte b)? fg = null,
             (byte r, byte g, byte b)? bg = null, int layer = 0)
         {
-            Frame result = new Frame(text.Length, text.Count(l => l == '\n') + 1);
-            for (int x = 0, y = 0; x < text.Length;)
-            {
-                if (text[x] == '\n')
-                {
-                    y++;
-                    continue;
-                }
-                result.PutPixel(x, y, new(text[x], fg, bg, layer));
-                x++;
-            }
+            Frame result = new Frame(text.Length, 1);
+            for (int i = 0; i < text.Length; i++)
+                result.PutPixel(i, 0, new(text[i], fg, bg, layer));
             return result;
         }
 
