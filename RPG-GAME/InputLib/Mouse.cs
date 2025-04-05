@@ -23,11 +23,18 @@ namespace InputLib
         [DllImport("user32.dll")]
         private static extern bool GetCursorPos(out POINT lpPoint);
 
-        public static POINT? GetGlobalPos()
+        public static POINT? GetPos()
         {
             if (GetCursorPos(out POINT point)) return point;
             return null;
         }
+
+        [DllImport("user32.dll")]
+        static extern int GetSystemMetrics(int nIndex);
+
+        public static POINT GetMaxPos() =>
+            new POINT() { X = GetSystemMetrics(0), Y = GetSystemMetrics(1) };
+
 
         [DllImport("user32.dll")]
         private static extern bool SetCursorPos(int X, int Y);
@@ -53,34 +60,6 @@ namespace InputLib
         private static extern bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni);
 
         public static void RestoreDefaultCursors()
-        {
-            SystemParametersInfo(0x0057, 0, IntPtr.Zero, 0x02);
-        }
-
-        private static POINT? _LastPos = null;
-
-        public static POINT? DistanceTraveled()
-        {
-            if (_LastPos == null)
-            {
-                _LastPos = GetGlobalPos();
-                return new POINT() { X = 0, Y = 0 };
-            }
-
-            POINT? currentPos = GetGlobalPos();
-            if (currentPos != null)
-            {
-                POINT dist = new POINT()
-                {
-                    X = currentPos.Value.X - _LastPos.Value.X,
-                    Y = currentPos.Value.Y - _LastPos.Value.Y
-                };
-
-                _LastPos = currentPos;
-                return dist;
-            }
-
-            return null;
-        }
+            => SystemParametersInfo(0x0057, 0, IntPtr.Zero, 0x02);
     }
 }

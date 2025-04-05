@@ -15,6 +15,11 @@
             this.layer = layer;
         }
 
-        public override string ToString() => $"{character};{fg};{bg}";
+        public static bool Equals(Pixel? a, Pixel? b)
+        {
+            if (a == null && b == null) return true;
+            if (a == null || b == null) return false;
+            return a.character == b.character && a.fg.Equals(b.fg) && a.bg.Equals(b.bg);
+        }
     }
 }
