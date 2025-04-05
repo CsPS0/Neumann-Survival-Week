@@ -5,8 +5,8 @@ namespace RenderLib
     public class Frame
     {
         public Pixel?[,] pixels;
-        public int width => pixels!.GetLength(1);
-        public int height => pixels!.GetLength(0);
+        public int width => pixels.GetLength(1);
+        public int height => pixels.GetLength(0);
 
         public Frame(int width, int height)
         {
@@ -22,14 +22,14 @@ namespace RenderLib
                 (IgnoreLayer || pixels[y, x] == null ||
                 pixel?.layer >= pixels[y, x]?.layer))
             {
-                pixels![y, x] = pixel!;
+                pixels[y, x] = pixel;
                 return true;
             }
 
             return false;
         }
 
-        public bool PutFrame(int x, int y, Frame frame)
+        public bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)
         {
             if (InFrameBounds(x, y) ||
                 InFrameBounds(x + frame.width, y + frame.height))
@@ -38,7 +38,7 @@ namespace RenderLib
                 {
                     for (int _y = 0; _y < frame.height; _y++)
                     {
-                        PutPixel(x + _x, y + _y, frame.pixels![_y, _x], true);
+                        PutPixel(x + _x, y + _y, frame.pixels[_y, _x], IgnoreLayer);
                     }
                 }
                 return true;

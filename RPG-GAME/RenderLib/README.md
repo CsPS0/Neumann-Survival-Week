@@ -27,7 +27,7 @@ methods:
 inside the frame
 - `bool PutPixel(int x, int y, Pixel pixel, bool IgnoreLayer)` : puts a pixel and 
 returns true if the operation was successful
-- `bool PutFrame(int x, int y, Frame frame)` : inserts a frame and 
+- `bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)` : inserts a frame and 
 returns true if the operation was successful
 - `void Fill(Pixel pixel)` : fills the frame with the given pixel
 
@@ -49,8 +49,8 @@ methods:
 - `void Init()` : initializes the buffers and the console
 - `bool PutPixel(int x, int y, Pixel pixel, bool IgnoreLayer)` : `Frame.PutPixel()` for 
 the `next` frame
-- `bool PutFrame(int x, int y, Frame frame)` : `Frame.PutFrame()` for
-the `next` frame
+- `bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)` : 
+`Frame.PutFrame()` for the `next` frame
 - `public static Frame TextToFrame(string text, 
             (byte r, byte g, byte b)? fg = null,
             (byte r, byte g, byte b)? bg = null, int layer = 0)` : converts a string 
