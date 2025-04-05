@@ -16,6 +16,8 @@ namespace RenderLib
             current = new Frame(w, h);
             next = new Frame(w, h);
             Console.Clear();
+            Fill(new(' '));
+            UpdateScreen();
         }
 
         public static bool PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false)
@@ -65,7 +67,8 @@ namespace RenderLib
                             _bg = pixel.bg;
                         }
 
-                        Console.SetCursorPosition(x, y);
+                        try { Console.SetCursorPosition(x, y); }
+                        catch { continue; }
                         Console.Write(output += pixel.character);
                     }
                 }
@@ -73,16 +76,11 @@ namespace RenderLib
             current = next;
             Clear();
         }
-    
+
         public static void Resize(int width, int height)
         {
-            if (width != current.width || height != current.height)
-            {
-                Frame temp = current;
-                current = new Frame(width, height);
-                next = new Frame(width, height);
-                PutFrame(0, 0, temp);
-            }
+            if (width != current.width || height != current.height) 
+                Init(width, height); 
         }
     }
 }

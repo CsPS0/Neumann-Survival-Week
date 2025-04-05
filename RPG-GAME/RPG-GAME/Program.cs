@@ -1,16 +1,12 @@
 ﻿using RPG_GAME;
 using RenderLib;
 using InputLib;
-using System.Text;
-
-Render.Init(Console.WindowWidth, Console.WindowHeight);
-
-Render.Fill(new(' '));
-Render.UpdateScreen();
 
 int frameCount = 0;
 DateTime startTime = DateTime.Now;
 int FPS = 0;
+
+Render.Init(Console.WindowWidth, Console.WindowHeight);
 
 char[] human = {
     ' ', 'o', ' ',
@@ -20,14 +16,16 @@ char[] human = {
 
 Frame Fhuman = new Frame(3, 3);
 
-for (int x = 0; x < 3; x++)
+for (int _x = 0; _x < 3; _x++)
 {
-    for (int y = 0; y < 3; y++)
+    for (int _y = 0; _y < 3; _y++)
     {
-        Fhuman.PutPixel(x, y, new(human[y * 3 + x]));
+        char c = human[_y * 3 + _x];
+        Fhuman.PutPixel(_x, _y, c == ' ' ? null : new(c, (100, 50, 255)));
     }
 }
 
+int x = 0, y = 0;
 
 while (true)
 {
@@ -42,9 +40,15 @@ while (true)
     }
 
     Frame text = Render.TextToFrame($"FPS: {FPS}");
-    Render.PutFrame(0, 0, text);
 
-    Render.PutFrame(5, 5, Fhuman);
+    Render.PutFrame(0, 0, text);
+    Render.PutFrame(x, y, Fhuman);
+
+    Thread.Sleep(20);
+    if (Input.IsDown(ConsoleKey.W)) y = Math.Max(0, y - 1);
+    if (Input.IsDown(ConsoleKey.S)) y = Math.Min(Render.height - Fhuman.width, y + 1);
+    if (Input.IsDown(ConsoleKey.A)) x = Math.Max(0, x - 2);
+    if (Input.IsDown(ConsoleKey.D)) x = Math.Min(Render.width - Fhuman.width, x + 2);
 
     Render.UpdateScreen();
 }
