@@ -25,12 +25,12 @@ A class that gives you information and functionalites for the mouse
 attributes:
 - `enum Button` : an enum that contains the buttons of the mouse like ConsoleKey
 - `struct POINT` : a struct that contains the x and y coordinates of the mouse
-- `POINT _LastPos` : hold the position of the mouse since last call to `DistanceTraveled`
 
 methods:
 - `bool GetCursorPos(out POINT lpPoint)` : writes the current position of the mouse to the 
 `lpPoint` variable and returns true if successful
-- `POINT? GetGlobalPos()` : returns the coordinates of the mouse
+- `POINT? GetPos()` : returns the coordinates of the mouse
+- `POINT GetMaxPos()` : returns the maximum position of the mouse (size of the screen)
 - `bool SetCursorPos(int X, int Y)` : move the mouse to the specified coordinates and returns 
 true if the operation was successful
 - `void MoveTo(int x, int y)` : more user friendly method to move the mouse
@@ -40,8 +40,6 @@ true if the operation was successful
 - `bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni)` :
 sets the system parameters, in this case the mouse cursor
 - `void RestoreDefaultCursors()` : resets the mouse cursor to the default
-- `POINT DistanceTraveled()` : returns the distance traveled by the mouse since the last call 
-to this method
 
 ## Input in Input.cs
 
