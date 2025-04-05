@@ -12,6 +12,7 @@ namespace RenderLib
 
         public static void Init(int w, int h)
         {
+            Console.CursorVisible = false;
             current = new Frame(w, h);
             next = new Frame(w, h);
             Console.Clear();
@@ -19,9 +20,27 @@ namespace RenderLib
 
         public static bool PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false)
             => next.PutPixel(x, y, pixel, IgnoreLayer);
-    
+
         public static bool PutFrame(int x, int y, Frame frame)
             => next.PutFrame(x, y, frame);
+
+        public static Frame TextToFrame(string text,
+            (byte r, byte g, byte b)? fg = null,
+            (byte r, byte g, byte b)? bg = null, int layer = 0)
+        {
+            Frame result = new Frame(text.Length, text.Count(l => l == '\n') + 1);
+            for (int x = 0, y = 0; x < text.Length;)
+            {
+                if (text[x] == '\n')
+                {
+                    y++;
+                    continue;
+                }
+                result.PutPixel(x, y, new(text[x], fg, bg, layer));
+                x++;
+            }
+            return result;
+        }
 
         public static void Fill(Pixel pixel)
             => next.Fill(pixel);
@@ -60,7 +79,7 @@ namespace RenderLib
                 }
             }
             current = next;
-            next = new Frame(current.width, current.height);
+            Clear();
         }
     
         public static void Resize(int width, int height)

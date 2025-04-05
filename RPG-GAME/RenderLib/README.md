@@ -51,6 +51,10 @@ methods:
 the `next` frame
 - `bool PutFrame(int x, int y, Frame frame)` : `Frame.PutFrame()` for
 the `next` frame
+- `public static Frame TextToFrame(string text, 
+            (byte r, byte g, byte b)? fg = null,
+            (byte r, byte g, byte b)? bg = null, int layer = 0)` : converts a string 
+to a `Frame`
 - `void Fill(Pixel pixel)` : `Frame.Fill()` for the `next` frame
 - `void UpdateScreen()` : renders the pixels from `next` to the console that differ
 from `current` and clears `next` and sets `current` to `next`
