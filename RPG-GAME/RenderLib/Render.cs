@@ -25,6 +25,9 @@ namespace RenderLib
         public static bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)
             => next.PutFrame(x, y, frame, IgnoreLayer);
 
+        public static Frame ReplacePixel(Pixel? Old, Pixel? New)
+            => next.ReplacePixel(Old, New);
+
         public static Frame TextToFrame(string text,
             (byte r, byte g, byte b)? fg = null,
             (byte r, byte g, byte b)? bg = null, int layer = 0)
