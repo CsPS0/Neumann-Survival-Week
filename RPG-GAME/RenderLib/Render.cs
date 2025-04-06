@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Threading.Channels;
 
 namespace RenderLib
 {
@@ -80,6 +81,13 @@ namespace RenderLib
         {
             if (width != current.width || height != current.height) 
                 Init(width, height); 
+        }
+    
+        public static void ResetStyle()
+        {
+            _fg = null;
+            _bg = null;
+            Console.WriteLine("\x1b[0m");
         }
     }
 }

@@ -65,3 +65,4 @@ from `current` and clears `next` and sets `current` to `next`
 - `void Clear()` : clears the `next` frame
 - `void Resize(int width, int height)` : creates new frames with the 
 given dimensions and inserts the previous `next` frame into the new one
+- `void ResetStyle()` : reset the colors
