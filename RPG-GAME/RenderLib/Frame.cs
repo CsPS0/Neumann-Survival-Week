@@ -64,6 +64,20 @@
             return null;
         }
 
+        public void RaplacePixels(Pixel? Old, Pixel? New, bool IgnoreLayer = false)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    if (Pixel.Equals(pixels[y, x], Old))
+                    {
+                        PutPixel(x, y, New, IgnoreLayer);
+                    }
+                }
+            }
+        }
+
         public void Fill(Pixel pixel)
         {
             for (int x = 0; x < width; x++)
