@@ -29,6 +29,8 @@ inside the frame
 returns true if the operation was successful
 - `bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)` : inserts a frame and 
 returns true if the operation was successful
+- `Frame? SubFrame(int x1, int y1, int countx, int county)` : returns a subframe 
+of the frame
 - `void Fill(Pixel pixel)` : fills the frame with the given pixel
 
 ## Render in Render.cs

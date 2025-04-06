@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks.Dataflow;
-
-namespace RenderLib
+﻿namespace RenderLib
 {
     public class Frame
     {
@@ -45,6 +43,25 @@ namespace RenderLib
             }
 
             return false;
+        }
+
+        public Frame? SubFrame(int x1, int y1, int countx, int county)
+        {
+            if (x1 >= 0 && x1 < countx && y1 >= 0 && y1 < county &&
+                countx <= width && county <= height)
+            {
+                Frame sub = new(countx - x1, county - y1);
+                for (int x = x1; x < countx; x++)
+                {
+                    for (int y = y1; y < county; y++)
+                    {
+                        sub.PutPixel(x - x1, y - y1, pixels[y, x]);
+                    }
+                }
+                return sub;
+            }
+
+            return null;
         }
 
         public void Fill(Pixel pixel)
