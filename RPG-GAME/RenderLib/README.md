@@ -29,7 +29,6 @@ inside the frame
 returns true if the operation was successful
 - `bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)` : inserts a frame and 
 returns true if the operation was successful
-- `Frame Replace(Pixel? Old, Pixel? New)` : replaces all pixels in the frame
 - `void Fill(Pixel pixel)` : fills the frame with the given pixel
 
 ## Render in Render.cs
@@ -52,7 +51,6 @@ methods:
 the `next` frame
 - `bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)` : 
 `Frame.PutFrame()` for the `next` frame
-- - `Frame Replace(Pixel? Old, Pixel? New)` : `Frame.Replace()` for the `next` frame
 - `public static Frame TextToFrame(string text, 
             (byte r, byte g, byte b)? fg = null,
             (byte r, byte g, byte b)? bg = null, int layer = 0)` : converts a string 

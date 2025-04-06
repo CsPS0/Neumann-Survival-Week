@@ -47,21 +47,6 @@ namespace RenderLib
             return false;
         }
 
-        public Frame ReplacePixel(Pixel? Old, Pixel? New)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    if (Pixel.Equals(pixels[y, x], Old))
-                    {
-                        PutPixel(x, y, New, true);
-                    }
-                }
-            }
-            return this;
-        }
-
         public void Fill(Pixel pixel)
         {
             for (int x = 0; x < width; x++)
