@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AssetsLib\AssetsLib.csproj" />
     <ProjectReference Include="..\InputLib\InputLib.csproj" />
     <ProjectReference Include="..\RenderLib\RenderLib.csproj" />
   </ItemGroup>
