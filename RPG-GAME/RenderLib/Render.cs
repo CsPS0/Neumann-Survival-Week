@@ -17,7 +17,6 @@ namespace RenderLib
             next = new Frame(w, h);
             Console.Clear();
             Fill(new(' '));
-            UpdateScreen();
         }
 
         public static bool PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false)
