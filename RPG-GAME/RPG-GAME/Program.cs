@@ -1,35 +1,42 @@
-﻿using RPG_GAME;
-using RenderLib;
+﻿using RenderLib;
 using InputLib;
 
-Console.WriteLine("Üdvözöllek a NJSZKI IKT RPG játékban!");
+// Set up envirement
+Render.Init(Console.WindowWidth, Console.WindowHeight);
 
-Character player = new Character("Játékos");
-GameMap map = new GameMap(20, 10);
-
-while (true)
+char[] human =
 {
-    Console.Clear();
-    map.DrawMap();
-    Console.WriteLine($"\nNév: {player.Name} | Élet: {player.Health} | Erő: {player.Strength}");
-    Console.WriteLine("Irányítás: W-fel, S-le, A-bal, D-jobb, Q-kilépés");
+    ' ', 'o', ' ',
+    '/', '|', '\\',
+    '/', ' ', '\\',
+};
 
-    var key = Console.ReadKey(true).Key;
-    switch (key)
-    {
-        case ConsoleKey.W:
-            // Mozgás felfelé
-            break;
-        case ConsoleKey.S:
-            // Mozgás lefelé
-            break;
-        case ConsoleKey.A:
-            // Mozgás balra
-            break;
-        case ConsoleKey.D:
-            // Mozgás jobbra
-            break;
-        case ConsoleKey.Q:
-            return;
-    }
+Frame humanF = new Frame(3, 3);
+for (int i = 0; i < human.Length; i++)
+{
+    char c = human[i];
+    humanF.PutPixel(i % 3, i / 3, new(human[i], (255, 100, 200), null, -1));
+}
+int x = 0, y = 0;
+
+// Main Loop
+while (!Input.IsPressed(ConsoleKey.Escape))
+{
+    int C_W = Console.WindowWidth, C_H = Console.WindowHeight;
+    if (C_W != Render.width || C_H != Render.height)
+    { Render.Init(C_W, C_H); }
+
+    Frame hello = Render.TextToFrame("Hello World!", (100, 150, 200));
+    hello.RaplacePixels(new Pixel(' ', (100, 150, 200)), null, true);
+    Render.PutFrame(Render.width / 2 - hello.width / 2, Render.height / 2, hello);
+
+    Render.PutFrame(x, y, humanF);
+
+    if (Input.IsDown(ConsoleKey.W)) y--;
+    if (Input.IsDown(ConsoleKey.S)) y++;
+    if (Input.IsDown(ConsoleKey.A)) x -= 2;
+    if (Input.IsDown(ConsoleKey.D)) x += 2;
+
+    Render.UpdateScreen();
+    Thread.Sleep(20);
 }

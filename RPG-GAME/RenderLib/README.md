@@ -27,8 +27,12 @@ methods:
 inside the frame
 - `bool PutPixel(int x, int y, Pixel pixel, bool IgnoreLayer)` : puts a pixel and 
 returns true if the operation was successful
-- `bool PutFrame(int x, int y, Frame frame)` : inserts a frame and 
+- `bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)` : inserts a frame and 
 returns true if the operation was successful
+- `Frame? SubFrame(int x1, int y1, int countx, int county)` : returns a subframe 
+of the frame
+- `void RaplacePixels(Pixel? Old, Pixel? New, bool IgnoreLayer = false)` :
+replaces the 'old' pixels with the 'new' pixels in the frame
 - `void Fill(Pixel pixel)` : fills the frame with the given pixel
 
 ## Render in Render.cs
@@ -49,11 +53,16 @@ methods:
 - `void Init()` : initializes the buffers and the console
 - `bool PutPixel(int x, int y, Pixel pixel, bool IgnoreLayer)` : `Frame.PutPixel()` for 
 the `next` frame
-- `bool PutFrame(int x, int y, Frame frame)` : `Frame.PutFrame()` for
-the `next` frame
+- `bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)` : 
+`Frame.PutFrame()` for the `next` frame
+- `public static Frame TextToFrame(string text, 
+            (byte r, byte g, byte b)? fg = null,
+            (byte r, byte g, byte b)? bg = null, int layer = 0)` : converts a string 
+to a `Frame`
 - `void Fill(Pixel pixel)` : `Frame.Fill()` for the `next` frame
 - `void UpdateScreen()` : renders the pixels from `next` to the console that differ
 from `current` and clears `next` and sets `current` to `next`
 - `void Clear()` : clears the `next` frame
 - `void Resize(int width, int height)` : creates new frames with the 
 given dimensions and inserts the previous `next` frame into the new one
+- `void ResetStyle()` : reset the colors

@@ -21,5 +21,8 @@
             if (a == null || b == null) return false;
             return a.character == b.character && a.fg.Equals(b.fg) && a.bg.Equals(b.bg);
         }
+
+        public override string ToString() 
+            => $"({character};{fg};{bg};{layer})";
     }
 }

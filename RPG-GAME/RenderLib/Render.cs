@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Threading.Channels;
 
 namespace RenderLib
 {
@@ -12,16 +13,28 @@ namespace RenderLib
 
         public static void Init(int w, int h)
         {
+            Console.CursorVisible = false;
             current = new Frame(w, h);
             next = new Frame(w, h);
             Console.Clear();
+            Fill(new(' '));
         }
 
         public static bool PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false)
             => next.PutPixel(x, y, pixel, IgnoreLayer);
-    
-        public static bool PutFrame(int x, int y, Frame frame)
-            => next.PutFrame(x, y, frame);
+
+        public static bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)
+            => next.PutFrame(x, y, frame, IgnoreLayer);
+
+        public static Frame TextToFrame(string text,
+            (byte r, byte g, byte b)? fg = null,
+            (byte r, byte g, byte b)? bg = null, int layer = 0)
+        {
+            Frame result = new Frame(text.Length, 1);
+            for (int i = 0; i < text.Length; i++)
+                result.PutPixel(i, 0, new(text[i], fg, bg, layer));
+            return result;
+        }
 
         public static void Fill(Pixel pixel)
             => next.Fill(pixel);
@@ -50,27 +63,31 @@ namespace RenderLib
                                 output += $"\x1b[38;2;{pixel.fg.r};{pixel.fg.g};{pixel.fg.b}m";
                                 _fg = pixel.fg;
                             }
+                            output += $"\x1b[48;2;{pixel.bg.r};{pixel.bg.g};{pixel.bg.b}m";
                             _bg = pixel.bg;
                         }
 
-                        Console.SetCursorPosition(x, y);
+                        try { Console.SetCursorPosition(x, y); }
+                        catch { continue; }
                         Console.Write(output += pixel.character);
                     }
                 }
             }
             current = next;
-            next = new Frame(current.width, current.height);
+            Clear();
         }
-    
+
         public static void Resize(int width, int height)
         {
-            if (width != current.width || height != current.height)
-            {
-                Frame temp = current;
-                current = new Frame(width, height);
-                next = new Frame(width, height);
-                PutFrame(0, 0, temp);
-            }
+            if (width != current.width || height != current.height) 
+                Init(width, height); 
+        }
+    
+        public static void ResetStyle()
+        {
+            _fg = null;
+            _bg = null;
+            Console.WriteLine("\x1b[0m");
         }
     }
 }
