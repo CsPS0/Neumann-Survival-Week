@@ -5,13 +5,15 @@
 A class for representing a pixel.
 
 attributes:
-- (byte r, byte g, byte b) `fg`, `bg` : Rgb foreground and background colors
 - char `character` : character to be displayed
+- (byte r, byte g, byte b) `fg`, `bg` : Rgb foreground and background colors
 - int `layer` : the layer of the pixel (for overlapping drawings)
 
 methods:
 - `bool Equals(Pixel? a, Pixel? b)` : checks if two pixels are have the same properties
 except for the layer
+- `Pixel? FromString(string pixel)` : Tries to reates a pixel from a string, 
+example string: 'a,255,255,255,0,100,30,0'
 
 ## Frame in Frame.cs
 
@@ -34,6 +36,16 @@ of the frame
 - `void RaplacePixels(Pixel? Old, Pixel? New, bool IgnoreLayer = false)` :
 replaces the 'old' pixels with the 'new' pixels in the frame
 - `void Fill(Pixel pixel)` : fills the frame with the given pixel
+- `Frame LoadFromFile(string path)` : Loads a frame from a file
+- `bool LoadToFile(string path, Frame frame)` : Saves a frame to a file
+
+**Frame(.frame) File Structure**
+0: width;height
+1: {`character`},{`fg`},{`bg`},{`layer`};{`character`},{`fg`},{`bg`},{`layer`};...
+2: {`character`},{`fg`},{`bg`},{`layer`};{`character`},{`fg`},{`bg`},{`layer`};...
+.
+.
+.
 
 ## Render in Render.cs
 
