@@ -1,8 +1,8 @@
 ﻿namespace AssetsLib
 {
-    public class Asset
+    public class Assets
     {
-        public static readonly string AssetPath =
+        public static readonly string Path =
             Directory.GetParent(Directory.GetCurrentDirectory())
             .Parent.Parent.Parent.FullName + "\\Assets";
 
