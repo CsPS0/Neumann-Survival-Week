@@ -23,6 +23,6 @@
         }
 
         public override string ToString() 
-            => $"({character};{fg};{bg};{layer})";
+            => $"{character},{fg},{bg},{layer}";
     }
 }
