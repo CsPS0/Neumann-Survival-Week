@@ -12,7 +12,7 @@ attributes:
 methods:
 - `bool Equals(Pixel? a, Pixel? b)` : checks if two pixels are have the same properties
 except for the layer
-- `Pixel? FromString(string pixel)` : Tries to reates a pixel from a string, 
+- `Pixel? FromString(string pixel)` : Tries to create a pixel from a string, 
 example string: 'a,255,255,255,0,100,30,0'
 
 ## Frame in Frame.cs
@@ -46,6 +46,7 @@ replaces the 'old' pixels with the 'new' pixels in the frame
 .
 .
 .
+{width}: {`character`},{`fg`},{`bg`},{`layer`};{`character`},{`fg`},{`bg`},{`layer`};...
 
 ## Render in Render.cs
 

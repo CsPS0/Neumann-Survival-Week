@@ -21,7 +21,7 @@
   - ❌ Rossz válaszok száma
 
 ## Kód dokumentáció
-- [Megjelenítés](/RPG-GAME/RenderLib/README-CODE.md)
+- [Megjelenítés](/RPG-GAME/)
 
 ## 🏗️ Csapattagok
 A fejlesztésért felelős csapat:
