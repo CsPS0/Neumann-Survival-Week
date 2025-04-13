@@ -5,25 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RPG Játék - IKT: Survival Week</title>
     <link rel="stylesheet" href="CSS/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
+<body class="light-mode">
     <header>
         <div class="container">
-            <h1>Neu RPG Játék</h1>
-            <nav>
+            <div class="header-content">
+                <div class="theme-toggle">
+                    <button id="theme-toggle-btn">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+                <h1>Neu RPG Játék</h1>
+                <div class="mobile-menu-toggle">
+                    <button id="mobile-menu-btn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+            <nav id="main-nav">
                 <ul>
                     <li><a href="#story">Történet</a></li>
                     <li><a href="#features">Játékmenet</a></li>
                     <li><a href="#characters">Karakterek</a></li>
                     <li><a href="#days">Napok</a></li>
                     <li><a href="#download">Letöltés</a></li>
-                    <li><a href="#contact">Kapcsolat</a></li>
                 </ul>
             </nav>
         </div>
     </header>
     <div class="container">
-        <div class="ascii-art">
+        <div class="ascii-art-container">
+            <div class="ascii-art">
   .   .                             .                .     .    ..                                  
                .       @@    ..       .   : .  . . .. .  ...  :  .  .  .....  ... ..   ..    . .    
     .     .     @@@@@@@@@@@@@@@ .         .  .   .. .    . ... . .. ... . :...: .. # . .   .  .   . 
@@ -58,6 +71,7 @@
   .%#=#@#%%%%%:  .       @@@@@@@@@@@@@@@@@@@@@@*@ #% %@*@@.=%@@#.=@@@%*-:.. ...-%@@*   .-@@@@@-.    
 .@@. -        .    @@@@@ @@@@@@@@@@@@@@@@@@@@@@@.:=@#@%:.@##%@@@*-+@#-.-:.  -@**#.. @@@@#    @@@@@% 
    .         .. @@@..@  #@@@@@@@@@@@@@@@@@@@@@@@@@*- :*-%-+@:.%%%. -=     ..      @.   .  @@   . %  
+            </div>
         </div>
         
         <section id="story">
@@ -173,21 +187,31 @@
         <section id="download">
             <h2>Letöltés</h2>
             <p>Töltsd le a játékot az alábbi gombra kattintva:</p>
-            <a href="game-download-link" class="button">Letöltés (.exe)</a>
+            <div id="download-container">
+                <a href="game-download-link" class="button" id="download-button">Letöltés (.exe)</a>
+                <p id="download-status" class="download-status"></p>
+            </div>
             <p>A játék elérhető portable (.exe) és telepíthető (.msi) változatban is.</p>
-        </section>
-        <section id="contact">
-            <h2>Kapcsolat</h2>
-            <p>Ha bármilyen kérdésed van, írj nekünk: <a href="mailto:info@rpgjatek.hu">info@rpgjatek.hu</a></p>
-            <p>Kövess minket és nézd meg a projekt fejlődését:</p>
-            <ul>
-                <li><a href="https://www.figma.com/board/lkadQfu8Z9tP84Dt3PnmEJ/IKT-RPG-Game?node-id=0-1&t=wisS5384czRZeygE-1" target="_blank">Figma</a></li>
-                <li><a href="https://trello.com/invite/b/67d05c280df88bd6352af5cc/ATTIb4fa5e82c9112b1b1ac80121c8d67cd5B0EDB92F/ikt-rpg-game" target="_blank">Trello</a></li>
-            </ul>
         </section>
     </div>
     <footer>
-        <p>&copy; 2025 Neu RPG Játék. Minden jog fenntartva.</p>
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2025 Neu RPG Játék. Minden jog fenntartva.</p>
+                <div class="footer-social">
+                    <a href="https://trello.com/b/pYIODyvt/ikt-rpg-game" target="_blank" class="social-link">
+                        <i class="fab fa-trello"></i>
+                    </a>
+                    <a href="https://www.figma.com/design/lNtPjEEdTLhZOYomnx8tIa/Design?node-id=0-1&p=f&t=7tYf1Csgtw3F3AEx-0" target="_blank" class="social-link">
+                        <i class="fab fa-figma"></i>
+                    </a>
+                    <a href="https://gitlab.neumann-bp.edu.hu/72613289398/njszki_ikt-rpg-game" target="_blank" class="social-link">
+                        <i class="fab fa-gitlab"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
     </footer>
+    <script src="js/script.js"></script>
 </body>
 </html>
