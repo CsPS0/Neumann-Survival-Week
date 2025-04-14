@@ -1,4 +1,6 @@
-﻿namespace RenderLib
+﻿using System.Security.Cryptography;
+
+namespace RenderLib
 {
     public class Frame
     {
@@ -73,6 +75,23 @@
                     if (Pixel.Equals(pixels[y, x], Old))
                     {
                         PutPixel(x, y, New, IgnoreLayer);
+                    }
+                }
+            }
+        }
+
+        public void RaplacePixels(Func<int, int, Pixel?, bool> Filter, Pixel? New, bool IgnoreLayer = false)
+        {  
+            if (Filter != null)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        if (Filter(x, y, pixels[y, x]))
+                        {
+                            PutPixel(x, y, New, IgnoreLayer);
+                        }
                     }
                 }
             }

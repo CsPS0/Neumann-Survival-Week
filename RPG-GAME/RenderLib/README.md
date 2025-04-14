@@ -38,15 +38,18 @@ returns true if the operation was successful
 of the frame
 - `void RaplacePixels(Pixel? Old, Pixel? New, bool IgnoreLayer = false)` :
 replaces the 'old' pixels with the 'new' pixels in the frame
+- `void RaplacePixels(Func<int, int, Pixel?, bool> Filter, Pixel? New, bool IgnoreLayer = false)` :
+replaces the pixels that are 'selected' by the Filter function
 - `void Fill(Pixel pixel)` : fills the frame with the given pixel
 - `Frame? FromStrings(string[] frame)` : Tries to create a frame from an array of 
 strings that containes the dimensions and the lines of the frame,
 example string:
 ```
-{
-	"3x1",
-	"A,0,0,0,255,255,255,0;B,0,0,0,255,255,255,0;C,0,0,0,255,255,255,0;"
-}
+[
+	"3x2",
+	"A,0,0,0,255,255,255,0;B,0,0,0,255,255,255,0;C,0,0,0,255,255,255,0;",
+	"A,0,0,0,255,255,255,0;null;C,0,0,0,255,255,255,0;"
+]
 ```
 
 ## Render in Render.cs
