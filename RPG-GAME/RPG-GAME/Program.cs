@@ -1,5 +1,7 @@
 ﻿using RenderLib;
 using InputLib;
+using AssetsLib;
+
 
 // Set up envirement
 Render.Init(Console.WindowWidth, Console.WindowHeight);
@@ -19,15 +21,14 @@ for (int i = 0; i < human.Length; i++)
 }
 int x = 0, y = 0;
 
+Frame hello = Render.TextToFrame("Hello World!", (100, 150, 200));
+hello.RaplacePixels(new Pixel(' ', (100, 150, 200)), null, true);
+
 // Main Loop
 while (!Input.IsPressed(ConsoleKey.Escape))
 {
-    int C_W = Console.WindowWidth, C_H = Console.WindowHeight;
-    if (C_W != Render.width || C_H != Render.height)
-    { Render.Init(C_W, C_H); }
+    Render.Resize(Console.WindowWidth, Console.WindowHeight);
 
-    Frame hello = Render.TextToFrame("Hello World!", (100, 150, 200));
-    hello.RaplacePixels(new Pixel(' ', (100, 150, 200)), null, true);
     Render.PutFrame(Render.width / 2 - hello.width / 2, Render.height / 2, hello);
 
     Render.PutFrame(x, y, humanF);

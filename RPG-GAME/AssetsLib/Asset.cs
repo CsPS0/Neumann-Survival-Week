@@ -4,7 +4,7 @@
     {
         public static string Path = "./";
 
-        public string[] ReadFileLines(string relative_path)
+        public static string[] ReadFileLines(string relative_path)
         {
             string full_path = $"{Path}/{relative_path}";
             if (!File.Exists(full_path))
@@ -12,12 +12,11 @@
             return File.ReadAllLines(full_path);
         }
 
-        public void WriteFileLines(string relative_path, string[] lines)
+        public static void WriteFileLines(string relative_path, string[] lines)
         {
-            string full_path = $"{Path}/{relative_path}";
-            if (!File.Exists(full_path))
+            if (!Directory.Exists(Path))
                 throw new FileNotFoundException("File not found.");
-            File.WriteAllLines(full_path, lines);
+            File.WriteAllLines($"{Path}/{relative_path}", lines);
         }
     }
 }
