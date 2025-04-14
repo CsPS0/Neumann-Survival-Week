@@ -36,17 +36,12 @@ of the frame
 - `void RaplacePixels(Pixel? Old, Pixel? New, bool IgnoreLayer = false)` :
 replaces the 'old' pixels with the 'new' pixels in the frame
 - `void Fill(Pixel pixel)` : fills the frame with the given pixel
-- `Frame LoadFromFile(string path)` : Loads a frame from a file
-- `bool LoadToFile(string path, Frame frame)` : Saves a frame to a file
-
-**Frame(.frame) File Structure**
-0: width;height
-1: {`character`},{`fg`},{`bg`},{`layer`};{`character`},{`fg`},{`bg`},{`layer`};...
-2: {`character`},{`fg`},{`bg`},{`layer`};{`character`},{`fg`},{`bg`},{`layer`};...
-.
-.
-.
-{width}: {`character`},{`fg`},{`bg`},{`layer`};{`character`},{`fg`},{`bg`},{`layer`};...
+- `Frame? FromString(string frame)` : Tries to create a pixel from a string,
+example string:
+"
+3x1
+**A,0,0,0,255,255,255,0**;**B,0,0,0,255,255,255,0**;**C,0,0,0,255,255,255,0**;
+"
 
 ## Render in Render.cs
 
