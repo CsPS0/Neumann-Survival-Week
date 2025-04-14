@@ -2,27 +2,22 @@
 {
     public class Assets
     {
-        public static readonly string Path =
-            Directory.GetParent(Directory.GetCurrentDirectory())
-            .Parent.Parent.Parent.FullName + "\\Assets";
+        public static string Path = "./";
 
-        public static Dictionary<string, object?>? GetFileTree(string path)
+        public string[] ReadFileLines(string relative_path)
         {
-            if (!Directory.Exists(path)) return null;
+            string full_path = $"{Path}/{relative_path}";
+            if (!File.Exists(full_path))
+                throw new FileNotFoundException("File not found.");
+            return File.ReadAllLines(full_path);
+        }
 
-            Dictionary<string, object?>? tree = new();
-
-            foreach (string file in Directory.GetFiles(path))
-            {
-                tree.Add(file, null);
-            }
-
-            foreach (string dir in Directory.GetDirectories(path))
-            {
-                tree.Add(dir, GetFileTree(dir));
-            }
-
-            return tree;
+        public void WriteFileLines(string relative_path, string[] lines)
+        {
+            string full_path = $"{Path}/{relative_path}";
+            if (!File.Exists(full_path))
+                throw new FileNotFoundException("File not found.");
+            File.WriteAllLines(full_path, lines);
         }
     }
 }
