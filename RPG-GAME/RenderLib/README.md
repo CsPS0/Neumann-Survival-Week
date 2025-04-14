@@ -15,7 +15,7 @@ except for the layer
 - `Pixel? FromString(string pixel)` : Tries to create a pixel from a string, 
 example string: 
 ```
-a,255,255,255,0,100,30,0
+"a,255,255,255,0,100,30,0"
 ```
 
 ## Frame in Frame.cs
@@ -39,11 +39,14 @@ of the frame
 - `void RaplacePixels(Pixel? Old, Pixel? New, bool IgnoreLayer = false)` :
 replaces the 'old' pixels with the 'new' pixels in the frame
 - `void Fill(Pixel pixel)` : fills the frame with the given pixel
-- `Frame? FromString(string frame)` : Tries to create a pixel from a string,
+- `Frame? FromStrings(string[] frame)` : Tries to create a frame from an array of 
+strings that containes the dimensions and the lines of the frame,
 example string:
 ```
-3x1
-A,0,0,0,255,255,255,0;B,0,0,0,255,255,255,0;C,0,0,0,255,255,255,0;
+{
+	"3x1",
+	"A,0,0,0,255,255,255,0;B,0,0,0,255,255,255,0;C,0,0,0,255,255,255,0;"
+}
 ```
 
 ## Render in Render.cs

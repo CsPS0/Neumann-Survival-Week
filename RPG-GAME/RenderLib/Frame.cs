@@ -88,5 +88,53 @@
                 }
             }
         }
+    
+        public static Frame? FromStrings(string[] frame)
+        {
+            try
+            {
+                int[] dimensions = frame[0].Split(";")
+                    .Select(dim => int.Parse(dim)).ToArray();
+                if (dimensions[1] != frame.Length - 1)
+                    throw new Exception("The frame height is not the same.");
+
+                frame = frame.Skip(1).ToArray();
+
+                Frame f = new(dimensions[0], dimensions[1]);
+
+                for (int i = 0; i < frame.Length; i++)
+                {
+                    string[] line = frame[i].Split(";");
+                    if (line.Length != f.width)
+                        throw new Exception("The frame width is not the same.");
+                    for (int j = 0; j < line.Length; j++)
+                    {
+                        f.PutPixel(j, i, Pixel.FromString(line[j]));
+                    }
+                }
+                return f;
+            }
+            catch (Exception ex)
+                { Console.WriteLine(ex.ToString()); }
+            return null;
+        }
+
+        public string[] ToStrings()
+        {
+            string[] output = new string[height + 1];
+            output[0] = $"{width};{height}";
+
+            for (int y = 0; y < height; y++)
+            {
+                string[] pixels = new string[width];
+                for (int x = 0; x < width; x++)
+                {
+                    pixels[x] = this.pixels[y, x]?.ToString() ?? "null";
+                }
+                output[y + 1] = string.Join(";", pixels);
+            }
+
+            return output;
+        }
     }
 }
