@@ -13,7 +13,10 @@ methods:
 - `bool Equals(Pixel? a, Pixel? b)` : checks if two pixels are have the same properties
 except for the layer
 - `Pixel? FromString(string pixel)` : Tries to create a pixel from a string, 
-example string: 'a,255,255,255,0,100,30,0'
+example string: 
+```
+a,255,255,255,0,100,30,0
+```
 
 ## Frame in Frame.cs
 
@@ -38,10 +41,10 @@ replaces the 'old' pixels with the 'new' pixels in the frame
 - `void Fill(Pixel pixel)` : fills the frame with the given pixel
 - `Frame? FromString(string frame)` : Tries to create a pixel from a string,
 example string:
-"
+```
 3x1
-**A,0,0,0,255,255,255,0**;**B,0,0,0,255,255,255,0**;**C,0,0,0,255,255,255,0**;
-"
+A,0,0,0,255,255,255,0;B,0,0,0,255,255,255,0;C,0,0,0,255,255,255,0;
+```
 
 ## Render in Render.cs
 
@@ -71,6 +74,6 @@ to a `Frame`
 - `void UpdateScreen()` : renders the pixels from `next` to the console that differ
 from `current` and clears `next` and sets `current` to `next`
 - `void Clear()` : clears the `next` frame
-- `void Resize(int width, int height)` : creates new frames with the 
-given dimensions and inserts the previous `next` frame into the new one
+- `void Resize(int width, int height)` : `Render.Init()` if the width or height is not
+the same as the current one
 - `void ResetStyle()` : reset the colors
