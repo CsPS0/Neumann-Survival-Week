@@ -16,13 +16,13 @@ char[] human =
 Frame humanF = new Frame(3, 3);
 for (int i = 0; i < human.Length; i++)
 {
-    char c = human[i];
-    humanF.PutPixel(i % 3, i / 3, new(human[i], (255, 100, 200), null, -1));
+    humanF.PutPixel(i % 3, i / 3, new(human[i], (255, 100, 200), null));
 }
+humanF.RaplacePixels((int x, int y, Pixel? p) => p?.character == ' ', null, true);
 int x = 0, y = 0;
 
 Frame hello = Render.TextToFrame("Hello World!", (100, 150, 200));
-hello.RaplacePixels(new Pixel(' ', (100, 150, 200)), null, true);
+hello.RaplacePixels((int x, int y, Pixel? p) => p?.character == ' ', null, true);
 
 // Main Loop
 while (!Input.IsPressed(ConsoleKey.Escape))

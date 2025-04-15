@@ -16,7 +16,6 @@ namespace RenderLib
             Console.CursorVisible = false;
             current = new Frame(w, h);
             next = new Frame(w, h);
-            Console.Clear();
             Fill(new(' '));
         }
 
