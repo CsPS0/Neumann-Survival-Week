@@ -1,6 +1,7 @@
 ﻿using RenderLib;
 using InputLib;
 using AssetsLib;
+using System.Security.Cryptography;
 
 
 // Set up envirement
@@ -21,7 +22,7 @@ for (int i = 0; i < human.Length; i++)
 humanF.RaplacePixels((int x, int y, Pixel? p) => p?.character == ' ', null, true);
 int x = 0, y = 0;
 
-Frame hello = Render.TextToFrame("Hello World!", (100, 150, 200));
+Frame hello = Draw.StringToFrame("Hello World!", (100, 150, 200));
 hello.RaplacePixels((int x, int y, Pixel? p) => p?.character == ' ', null, true);
 
 // Main Loop
@@ -30,6 +31,8 @@ while (!Input.IsPressed(ConsoleKey.Escape))
     Render.Resize(Console.WindowWidth, Console.WindowHeight);
 
     Render.PutFrame(Render.width / 2 - hello.width / 2, Render.height / 2, hello);
+    Render.PutFrame(Render.width / 2 - hello.width / 2 - 1, Render.height / 2 - 1, 
+        Draw.RectToFrame(hello.width + 2, 3, (100, 150, 200)));
 
     Render.PutFrame(x, y, humanF);
 

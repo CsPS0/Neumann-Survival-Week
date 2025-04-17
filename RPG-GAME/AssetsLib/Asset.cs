@@ -8,7 +8,7 @@
         {
             string full_path = $"{Path}/{relative_path}";
             if (!File.Exists(full_path))
-                throw new FileNotFoundException("File not found.");
+                throw new FileNotFoundException($"{relative_path}: File not found.");
             return File.ReadAllLines(full_path);
         }
 

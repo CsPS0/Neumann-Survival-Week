@@ -25,16 +25,6 @@ namespace RenderLib
         public static bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)
             => next.PutFrame(x, y, frame, IgnoreLayer);
 
-        public static Frame TextToFrame(string text,
-            (byte r, byte g, byte b)? fg = null,
-            (byte r, byte g, byte b)? bg = null, int layer = 0)
-        {
-            Frame result = new Frame(text.Length, 1);
-            for (int i = 0; i < text.Length; i++)
-                result.PutPixel(i, 0, new(text[i], fg, bg, layer));
-            return result;
-        }
-
         public static void Fill(Pixel pixel)
             => next.Fill(pixel);
 
