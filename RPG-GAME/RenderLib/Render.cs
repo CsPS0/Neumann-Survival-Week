@@ -78,8 +78,8 @@ namespace RenderLib
 
         public static void Resize(int width, int height)
         {
-            if (width != current.width || height != current.height) 
-                Init(width, height); 
+            if (width != current.width || height != current.height)
+                    Init(width, height);
         }
     
         public static void ResetStyle()

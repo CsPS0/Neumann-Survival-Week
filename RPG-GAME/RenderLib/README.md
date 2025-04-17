@@ -54,7 +54,7 @@ example string:
 
 ## Render in Render.cs
 
-A class for "drawing" things on the console. It uses 2 buffers(Pixel matrixies): 
+A class for "rendering" things on the console. It uses 2 buffers(Pixel matrixies): 
 	- Current buffer: stores the current content of the console
 	- Next buffer: stores the next frame to be rendered
 The render function only draws the pixels that have changed since the last frame.
@@ -72,10 +72,6 @@ methods:
 the `next` frame
 - `bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)` : 
 `Frame.PutFrame()` for the `next` frame
-- `public static Frame TextToFrame(string text, 
-            (byte r, byte g, byte b)? fg = null,
-            (byte r, byte g, byte b)? bg = null, int layer = 0)` : converts a string 
-to a `Frame`
 - `void Fill(Pixel pixel)` : `Frame.Fill()` for the `next` frame
 - `void UpdateScreen()` : renders the pixels from `next` to the console that differ
 from `current` and clears `next` and sets `current` to `next`
@@ -83,3 +79,12 @@ from `current` and clears `next` and sets `current` to `next`
 - `void Resize(int width, int height)` : `Render.Init()` if the width or height is not
 the same as the current one
 - `void ResetStyle()` : reset the colors
+
+## Draw in Draw.cs
+A class for further frame manipulation. It draws shades and text to frames.
+
+methods:
+- `Frame TextToFrame(string text, 
+            (byte r, byte g, byte b)? fg = null,
+            (byte r, byte g, byte b)? bg = null, int layer = 0,)` : creates a frame that holds
+the string data (spacial characters like '\n' will cause wierd behavior)

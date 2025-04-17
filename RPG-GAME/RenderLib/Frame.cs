@@ -113,7 +113,7 @@ namespace RenderLib
             try
             {
                 int[] dimensions = frame[0].Split(";")
-                    .Select(dim => int.Parse(dim)).ToArray();
+                    .Select(int.Parse).ToArray();
                 if (dimensions[1] != frame.Length - 1)
                     throw new Exception("The frame height is not the same.");
 
