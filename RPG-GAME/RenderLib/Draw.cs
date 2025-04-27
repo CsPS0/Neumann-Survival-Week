@@ -2,7 +2,7 @@
 {
     public class Draw
     {
-        public static Frame StringToFrame(string text, 
+        public static Frame TextToFrame(string text, 
             (byte r, byte g, byte b)? fg = null, 
             (byte r, byte g, byte b)? bg = null, 
             int layer = 0)

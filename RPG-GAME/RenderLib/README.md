@@ -81,7 +81,7 @@ the same as the current one
 - `void ResetStyle()` : reset the colors
 
 ## Draw in Draw.cs
-A class for further frame manipulation. It draws shades and text to frames.
+A class for further frame manipulation. It kinda draws shades and text to frames.
 
 methods:
 - `Frame TextToFrame(string text, 

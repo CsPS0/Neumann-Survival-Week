@@ -76,7 +76,7 @@ namespace RenderLib
         {
             _fg = null;
             _bg = null;
-            Console.WriteLine("\x1b[0m");
+            Console.Write("\x1b[0m");
         }
     }
 }

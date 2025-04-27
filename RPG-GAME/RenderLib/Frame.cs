@@ -142,6 +142,9 @@ namespace RenderLib
                 string[] pixels = new string[width];
                 for (int x = 0; x < width; x++)
                 {
+                    if (";,".Contains(this.pixels[y, x]?.character ?? ' '))
+                        throw new Exception("Frame cannot contain [;] or [,] because" +
+                            " it will break at reconversion");
                     pixels[x] = this.pixels[y, x]?.ToString() ?? "null";
                 }
                 output[y + 1] = string.Join(";", pixels);
