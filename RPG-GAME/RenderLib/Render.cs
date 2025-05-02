@@ -1,7 +1,4 @@
-﻿using System.Diagnostics;
-using System.Threading.Channels;
-
-namespace RenderLib
+﻿namespace RenderLib
 {
     public class Render
     {
@@ -14,6 +11,7 @@ namespace RenderLib
         public static void Init(int w, int h)
         {
             Console.CursorVisible = false;
+            Console.SetBufferSize(w, h);
             current = new Frame(w, h);
             next = new Frame(w, h);
             Fill(new(' '));
@@ -69,7 +67,7 @@ namespace RenderLib
         public static void Resize(int width, int height)
         {
             if (width != current.width || height != current.height)
-                    Init(width, height);
+                Init(width, height);
         }
     
         public static void ResetStyle()

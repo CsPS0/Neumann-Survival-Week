@@ -108,7 +108,7 @@ namespace RenderLib
             }
         }
     
-        public static Frame? FromStrings(string[] frame)
+        public static Frame? Parse(string[] frame)
         {
             int[] dimensions = frame[0].Split(";")
                     .Select(int.Parse).ToArray();
@@ -126,7 +126,7 @@ namespace RenderLib
                     throw new Exception("The frame width is not the same.");
                 for (int j = 0; j < line.Length; j++)
                 {
-                    f.PutPixel(j, i, Pixel.FromString(line[j]));
+                    f.PutPixel(j, i, Pixel.Parse(line[j]));
                 }
             }
             return f;

@@ -12,7 +12,7 @@ attributes:
 methods:
 - `bool Equals(Pixel? a, Pixel? b)` : checks if two pixels are have the same properties
 except for the layer
-- `Pixel? FromString(string pixel)` : Tries to create a pixel from a string, 
+- `Pixel? Parse(string pixel)` : Tries to create a pixel from a string, 
 example string: 
 ```
 "a,255,255,255,0,100,30,0"
@@ -41,7 +41,7 @@ replaces the 'old' pixels with the 'new' pixels in the frame
 - `void RaplacePixels(Func<int, int, Pixel?, bool> Filter, Pixel? New, bool IgnoreLayer = false)` :
 replaces the pixels that are 'selected' by the Filter function
 - `void Fill(Pixel pixel)` : fills the frame with the given pixel
-- `Frame? FromStrings(string[] frame)` : Tries to create a frame from an array of 
+- `Frame? Parse(string[] frame)` : Tries to create a frame from an array of 
 strings that containes the dimensions and the lines of the frame,
 example string:
 ```

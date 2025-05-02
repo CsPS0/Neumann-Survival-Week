@@ -68,3 +68,6 @@ while (!Input.IsPressed(ConsoleKey.Escape))
     delta = timer.ElapsedMilliseconds;
     timer.Restart();
 }
+
+Console.Clear();
+Render.ResetStyle();

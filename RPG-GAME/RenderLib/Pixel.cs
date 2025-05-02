@@ -21,7 +21,7 @@
             if (a == null || b == null) return false;
             return a.character == b.character && a.fg.Equals(b.fg) && a.bg.Equals(b.bg);
         }
-        public static Pixel? FromString(string pixel)
+        public static Pixel? Parse(string pixel)
         {
             string[] parts = pixel.Split(',');
             if (parts.Length == 8 &&
