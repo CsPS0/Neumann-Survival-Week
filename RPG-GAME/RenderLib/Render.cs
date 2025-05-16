@@ -1,4 +1,6 @@
-﻿namespace RenderLib
+﻿using System.Diagnostics;
+
+namespace RenderLib
 {
     public class Render
     {
@@ -17,10 +19,10 @@
             Fill(new(' '));
         }
 
-        public static bool PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false)
+        public static void PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false)
             => next.PutPixel(x, y, pixel, IgnoreLayer);
 
-        public static bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)
+        public static void PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)
             => next.PutFrame(x, y, frame, IgnoreLayer);
 
         public static void Fill(Pixel pixel)
@@ -43,13 +45,13 @@
                         Pixel pixel = next.pixels[y, x] ?? new(' ');
                         string output = "";
 
-                        if (pixel.fg != _fg || pixel.bg != _bg)
+                        if (pixel.fg != _fg && pixel.character != ' ')
                         {
-                            if (pixel.character != ' ')
-                            {
-                                output += $"\x1b[38;2;{pixel.fg.r};{pixel.fg.g};{pixel.fg.b}m";
-                                _fg = pixel.fg;
-                            }
+                            output += $"\x1b[38;2;{pixel.fg.r};{pixel.fg.g};{pixel.fg.b}m";
+                            _fg = pixel.fg;
+                        }
+                        if (pixel.bg != _bg)
+                        {
                             output += $"\x1b[48;2;{pixel.bg.r};{pixel.bg.g};{pixel.bg.b}m";
                             _bg = pixel.bg;
                         }

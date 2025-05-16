@@ -16,20 +16,17 @@ namespace RenderLib
         public bool InFrameBounds(int x, int y) => 
             x >= 0 && x < width && y >= 0 && y < height;
 
-        public bool PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false)
+        public void PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false)
         {
             if (InFrameBounds(x, y) && !Pixel.Equals(pixel, pixels[y, x]) &&
                 (IgnoreLayer || pixels[y, x] == null ||
                 pixel?.layer >= pixels[y, x]?.layer))
             {
                 pixels[y, x] = pixel;
-                return true;
             }
-
-            return false;
         }
 
-        public bool PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)
+        public void PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)
         {
             if (InFrameBounds(x, y) ||
                 InFrameBounds(x + frame.width, y + frame.height))
@@ -41,10 +38,7 @@ namespace RenderLib
                         PutPixel(x + _x, y + _y, frame.pixels[_y, _x], IgnoreLayer);
                     }
                 }
-                return true;
             }
-
-            return false;
         }
 
         public Frame? SubFrame(int x1, int y1, int countx, int county)

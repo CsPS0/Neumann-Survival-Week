@@ -27,8 +27,7 @@ namespace GameLogicLib
         public static void Stop()
         {
             RUN = false;
-            TUpdate.Join();
-            TRender.Join();
+            RenderLib.Render.ResetStyle();
             OnStop?.Invoke();
         }
 
@@ -56,6 +55,7 @@ namespace GameLogicLib
                     lastTicks = currentTicks;
                     OnRender?.Invoke();
                     RenderLib.Render.UpdateScreen();
+                    RenderLib.Render.Resize(Console.WindowWidth, Console.WindowHeight);
                 }
                 else Thread.Sleep((int)(targetFrameTime - deltaTime));
             }

@@ -1,6 +1,31 @@
 ﻿using RenderLib;
 using InputLib;
 using System.Diagnostics;
+using GameLogicLib;
+
+
+Frame hello_frame = Draw.TextToFrame("Hello World");
+Game.OnRender += () =>
+{
+    int x = Render.width / 2 - hello_frame.width / 2;
+    int y = Render.height / 2;
+
+    Render.PutFrame(x, y, hello_frame);
+};
+
+Game.OnStop += () => Console.WriteLine("The game is stopped...");
+
+
+Game.Start(Console.WindowWidth, Console.WindowHeight);
+
+
+
+
+
+
+
+
+return;
 
 // Set up envirement
 Render.Init(Console.WindowWidth, Console.WindowHeight);
