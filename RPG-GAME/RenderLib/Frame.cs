@@ -74,18 +74,15 @@ namespace RenderLib
             }
         }
 
-        public void RaplacePixels(Func<int, int, Pixel?, bool> Filter, Pixel? New, bool IgnoreLayer = false)
+        public void RaplacePixels(Func<int, int, Pixel?, Pixel?> Replace, bool IgnoreLayer = false)
         {  
-            if (Filter != null)
+            if (Replace != null)
             {
                 for (int x = 0; x < width; x++)
                 {
                     for (int y = 0; y < height; y++)
                     {
-                        if (Filter(x, y, pixels[y, x]))
-                        {
-                            PutPixel(x, y, New, IgnoreLayer);
-                        }
+                        PutPixel(x, y, Replace(x, y, pixels[y, x]), IgnoreLayer);
                     }
                 }
             }

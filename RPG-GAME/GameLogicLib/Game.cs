@@ -4,12 +4,12 @@ namespace GameLogicLib
 {
     public class Game
     {
-        static int? TargetFPS = null;
+        static int? TargetFps = null;
         static int? _Fps = null;
         public static int? Fps
         {
             get => _Fps;
-            set => TargetFPS = value;
+            set => TargetFps = value;
         }
 
         static bool RUN = false;
@@ -45,7 +45,7 @@ namespace GameLogicLib
                 long currentTicks = stopwatch.ElapsedTicks;
                 long tickDelta = currentTicks - lastTicks;
 
-                int targetFrameTime = 1000 / (TargetFPS ?? 1000);
+                int targetFrameTime = 1000 / (TargetFps ?? 1000);
 
                 deltaTime = (tickDelta * 1000f) / Stopwatch.Frequency;
                 _Fps = deltaTime == 0 ? 1000 : (int)(1000 / deltaTime);

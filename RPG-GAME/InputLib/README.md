@@ -1,13 +1,8 @@
 # Input documentation
 
-dependencies:
-- System.Runtime.InteropServices
-
 ## Input in Input.cs
 
 A class that captures input from the user.
-
-attributes:
 
 methods:
 - `short GetAsyncKeyState(int vKey)` : gets the state of a key, returns a 16-bit number and

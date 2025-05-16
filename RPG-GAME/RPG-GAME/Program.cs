@@ -3,7 +3,6 @@ using InputLib;
 using System.Diagnostics;
 using GameLogicLib;
 
-
 Frame hello_frame = Draw.TextToFrame("Hello World");
 Game.OnRender += () =>
 {
@@ -13,9 +12,7 @@ Game.OnRender += () =>
     Render.PutFrame(x, y, hello_frame);
 };
 
-Game.OnStop += () => Console.WriteLine("The game is stopped...");
-
-
+Game.Fps = 60;
 Game.Start(Console.WindowWidth, Console.WindowHeight);
 
 
@@ -30,23 +27,23 @@ return;
 // Set up envirement
 Render.Init(Console.WindowWidth, Console.WindowHeight);
 
-char[] human =
+char[,] human =
 {
-    ' ', 'o', ' ',
-    '/', '|', '\\',
-    '/', ' ', '\\',
+    { ' ', 'o', ' ' },
+    { '/', '|', '\\' },
+    { '/', ' ', '\\' },
 };
 
 Frame humanF = new Frame(3, 3);
-for (int i = 0; i < human.Length; i++)
+humanF.RaplacePixels((int x, int y, Pixel? p) =>
 {
-    humanF.PutPixel(i % 3, i / 3, new(human[i], (255, 100, 200), null));
-}
-humanF.RaplacePixels((int x, int y, Pixel? p) => p?.character == ' ', null, true);
+    return human[y, x] != ' ' ? new(human[y, x], (255, 100, 200)) : null; 
+}, true);
+
 int x = 0, y = 0;
 
 Frame hello = Draw.TextToFrame("Hello World!", (100, 150, 200));
-hello.RaplacePixels((int x, int y, Pixel? p) => p?.character == ' ', null, true);
+hello.RaplacePixels((int x, int y, Pixel? p) => p?.character == ' ' ? null : p, true);
 Frame rect = Draw.RectToFrame(hello.width + 2, 3, (100, 150, 200));
 
 Stopwatch timer = Stopwatch.StartNew();
