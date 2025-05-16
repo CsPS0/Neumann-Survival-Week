@@ -1,6 +1,50 @@
 ﻿using RenderLib;
 using InputLib;
 using System.Diagnostics;
+using GameLogicLib;
+
+Game.OnStart += () =>
+{
+    Console.WriteLine("Game has started...");
+    Render.Init(Console.WindowWidth, Console.WindowHeight);
+};
+Game.OnStop += () => Console.WriteLine("Game has stopped...");
+Game.OnRender += () => Console.WriteLine($"[Render] fps: {Game.Fps}");
+Game.OnUpdate += (double delta) => Console.WriteLine($"[Update] delta: {delta}ms");
+
+Game.Start();
+Thread.Sleep(3000);
+Game.Stop();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+return;
 
 // Set up envirement
 Render.Init(Console.WindowWidth, Console.WindowHeight);
