@@ -16,8 +16,9 @@ namespace GameLogicLib
         static Thread TRender = new(Render);
         static Thread TUpdate = new(Update);
 
-        public static void Start()
+        public static void Start(int w, int h)
         {
+            RenderLib.Render.Init(w, h);
             RUN = true;
             OnStart?.Invoke();
             TUpdate.Start();
@@ -54,6 +55,7 @@ namespace GameLogicLib
                 {
                     lastTicks = currentTicks;
                     OnRender?.Invoke();
+                    RenderLib.Render.UpdateScreen();
                 }
                 else Thread.Sleep((int)(targetFrameTime - deltaTime));
             }
