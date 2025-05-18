@@ -1,6 +1,4 @@
-﻿using RenderLib;
-
-namespace GameObjectsLib
+﻿namespace GameObjectsLib
 {
     public class Object
     {
