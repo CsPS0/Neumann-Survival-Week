@@ -3,25 +3,55 @@ using InputLib;
 using System.Diagnostics;
 using GameLogicLib;
 
-Frame hello_frame = Draw.TextToFrame("Hello World");
+int lastWidth = Console.WindowWidth;
+int lastHeight = Console.WindowHeight;
+
+Frame hello_frame = Draw.TextToFrame("Hello World", (100, 150, 200));
+
+Frame rect_frame = null;
+
+Game.OnStart += () =>
+{
+    UpdateRectFrame();
+};
+
+void UpdateRectFrame()
+{
+    rect_frame = Draw.RectToFrame(hello_frame.width + 4, 3, (100, 150, 200), Rounded: true);
+}
+
+Game.OnUpdate += (deltaTime) =>
+{
+    int currentWidth = Console.WindowWidth;
+    int currentHeight = Console.WindowHeight;
+
+    if (currentWidth != lastWidth || currentHeight != lastHeight)
+    {
+        lastWidth = currentWidth;
+        lastHeight = currentHeight;
+    }
+};
+
 Game.OnRender += () =>
 {
+    Render.Fill(new Pixel(' '));
+
     int x = Render.width / 2 - hello_frame.width / 2;
     int y = Render.height / 2;
 
+    if (rect_frame != null)
+    {
+        Render.PutFrame(x - 2, y - 1, rect_frame);
+    }
+
     Render.PutFrame(x, y, hello_frame);
+
+    Frame resolution = Draw.TextToFrame($"Resolution: {Console.WindowWidth}x{Console.WindowHeight}", (200, 200, 200));
+    Render.PutFrame(Render.width / 2 - resolution.width / 2, Render.height - 2, resolution);
 };
 
 Game.Fps = 60;
 Game.Start(Console.WindowWidth, Console.WindowHeight);
-
-
-
-
-
-
-
-
 return;
 
 // Set up envirement
