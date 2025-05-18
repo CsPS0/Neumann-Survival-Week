@@ -21,6 +21,7 @@ namespace GameLogicLib
             RenderLib.Render.Init(w, h);
             RUN = true;
             OnStart?.Invoke();
+            OnResized?.Invoke(w, h);
             TUpdate.Start();
             TRender.Start();
         }
@@ -31,52 +32,44 @@ namespace GameLogicLib
             OnStop?.Invoke();
         }
 
-
         static void Render()
         {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            long lastTicks = stopwatch.ElapsedTicks;
-            double deltaTime;
+            Stopwatch time = Stopwatch.StartNew();
 
             while (RUN)
             {
-                long currentTicks = stopwatch.ElapsedTicks;
-                long tickDelta = currentTicks - lastTicks;
+                OnRender?.Invoke();
+                RenderLib.Render.UpdateScreen();
 
-                int targetFrameTime = 1000 / (TargetFps ?? 1000);
-
-                deltaTime = (tickDelta * 1000f) / Stopwatch.Frequency;
-                _Fps = deltaTime == 0 ? 1000 : (int)(1000 / deltaTime);
-
-                if (deltaTime >= targetFrameTime)
+                int w = Console.WindowWidth;
+                int h = Console.WindowHeight;
+                if (RenderLib.Render.width != w ||
+                    RenderLib.Render.height != h)
                 {
-                    lastTicks = currentTicks;
-                    OnRender?.Invoke();
-                    RenderLib.Render.UpdateScreen();
-                    RenderLib.Render.Resize(Console.WindowWidth, Console.WindowHeight);
+                    RenderLib.Render.Init(w, h);
+                    OnResized?.Invoke(w, h);
                 }
-                else Thread.Sleep((int)(targetFrameTime - deltaTime));
+
+
+                int fps;
+                if (TargetFps == null || TargetFps.Value == 0) fps = 1000;
+                else fps = TargetFps.Value;
+
+                while (time.ElapsedMilliseconds < 1000 / fps) { }
+                _Fps = (int)(1000 / time.ElapsedMilliseconds);
+
+                time.Restart();
             }
         }
         static void Update()
         {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            long lastTicks = stopwatch.ElapsedTicks;
-            double deltaTime;
+            Stopwatch time = Stopwatch.StartNew();
 
             while (RUN)
             {
-                long currentTicks = stopwatch.ElapsedTicks;
-                long tickDelta = currentTicks - lastTicks;
-                lastTicks = currentTicks;
-
-                deltaTime = (tickDelta * 1000f) / Stopwatch.Frequency;
-
-                OnUpdate?.Invoke(deltaTime);
+                while (time.ElapsedMilliseconds < 1) { }
+                OnUpdate?.Invoke(time.ElapsedTicks * 1000d / Stopwatch.Frequency);
+                time.Restart();
             }
         }
 
@@ -84,5 +77,6 @@ namespace GameLogicLib
         public static event Action<double> OnUpdate = null;
         public static event Action OnStart = null;
         public static event Action OnStop = null;
+        public static event Action<int, int> OnResized = null;
     }
 }

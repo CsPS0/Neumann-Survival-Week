@@ -13,10 +13,9 @@ namespace RenderLib
         public static void Init(int w, int h)
         {
             Console.CursorVisible = false;
-            Console.SetBufferSize(w, h);
+            try { Console.SetBufferSize(w, h); } catch { }
             current = new Frame(w, h);
             next = new Frame(w, h);
-            Fill(new(' '));
         }
 
         public static void PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false)
@@ -35,12 +34,11 @@ namespace RenderLib
             int WindowWidth = Console.WindowWidth;
             int WindowHeight = Console.WindowHeight;
 
-            for (int x = 0; x < next.width; x++)
+            for (int x = 0; x < Math.Min(next.width, WindowWidth); x++)
             {
-                for (int y = 0; y < next.height; y++)
+                for (int y = 0; y < Math.Min(next.height, WindowHeight); y++)
                 {
-                    if (x >= 0 && x < WindowWidth && y >= 0 && y < WindowHeight &&
-                        !Pixel.Equals(next.pixels[y, x], current.pixels[y, x]))
+                    if (!Pixel.Equals(next.pixels[y, x], current.pixels[y, x]))
                     {
                         Pixel pixel = next.pixels[y, x] ?? new(' ');
                         string output = "";
@@ -58,18 +56,12 @@ namespace RenderLib
 
                         try { Console.SetCursorPosition(x, y); }
                         catch { continue; }
-                        Console.Write(output += pixel.character);
+                        Console.Write(output + pixel.character);
                     }
                 }
             }
             current = next;
             Clear();
-        }
-
-        public static void Resize(int width, int height)
-        {
-            if (width != current.width || height != current.height)
-                Init(width, height);
         }
     
         public static void ResetStyle()
