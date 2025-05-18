@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography;
-
-namespace RenderLib
+﻿namespace RenderLib
 {
     public class Frame
     {
@@ -13,7 +11,7 @@ namespace RenderLib
             pixels = new Pixel[height, width];
         }
 
-        public bool InFrameBounds(int x, int y) => 
+        public bool InFrameBounds(int x, int y) =>
             x >= 0 && x < width && y >= 0 && y < height;
 
         public void PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false)
@@ -75,7 +73,7 @@ namespace RenderLib
         }
 
         public void RaplacePixels(Func<int, int, Pixel?, Pixel?> Replace, bool IgnoreLayer = false)
-        {  
+        {
             if (Replace != null)
             {
                 for (int x = 0; x < width; x++)
@@ -98,7 +96,7 @@ namespace RenderLib
                 }
             }
         }
-    
+
         public static Frame? Parse(string[] frame)
         {
             int[] dimensions = frame[0].Split(";")
