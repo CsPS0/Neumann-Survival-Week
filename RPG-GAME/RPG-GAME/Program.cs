@@ -13,7 +13,7 @@ char[,] player_chars =
 Frame player_frame = new Frame(3, 3);
 player_frame.RaplacePixels((int x, int y, Pixel? p) =>
 {
-    return player_chars[y, x] != ' ' ? new(player_chars[y, x], (255, 100, 200)) : null;
+    return player_chars[y, x] != ' ' ? new(player_chars[y, x], (255, 100, 200), layer: 1) : null;
 }, true);
 
 double x = 0, y = 0;
@@ -37,10 +37,11 @@ Game.OnUpdate += (delta) =>
 Game.OnRender += () => Render.PutFrame((int)Math.Round(x), (int)Math.Round(y), player_frame);
 
 // hello world box
-string text = "Hello world";
+string text = "Hello world!!!";
 Frame hello_frame = Draw.RectToFrame(text.Length + 2, 3, (100, 150, 200));
-hello_frame.PutFrame(1, 1, Draw.TextToFrame("Hello World!", (100, 150, 200)));
-hello_frame.RaplacePixels((int x, int y, Pixel? p) => p?.character == ' ' ? null : p, true);
+hello_frame.PutFrame(1, 1, Draw.TextToFrame(text, (100, 150, 200)));
+Game.OnRender += () => 
+    Render.PutFrame(Render.width / 2 - hello_frame.width / 2, Render.height / 2, hello_frame);
 
 // fps counter
 Frame fps_frame = new(0, 0);
@@ -52,9 +53,9 @@ Game.OnUpdate += (delta) =>
         string fps_string = $"Redner: {(Game.Fps ?? 0)} Fps";
         string delta_string = $"Update: {delta}ms";
         int max_length = Math.Max(fps_string.Length, delta_string.Length);
-        fps_frame = Draw.RectToFrame(max_length + 2, 4, layer: 1);
-        fps_frame.PutFrame(1, 1, Draw.TextToFrame(fps_string, layer: 1));
-        fps_frame.PutFrame(1, 2, Draw.TextToFrame(delta_string, layer: 1));
+        fps_frame = Draw.RectToFrame(max_length + 2, 4);
+        fps_frame.PutFrame(1, 1, Draw.TextToFrame(fps_string));
+        fps_frame.PutFrame(1, 2, Draw.TextToFrame(delta_string));
         second_watcher.Restart();
     }
 };

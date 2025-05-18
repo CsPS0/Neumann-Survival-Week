@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace RenderLib
+﻿namespace RenderLib
 {
     public class Render
     {
