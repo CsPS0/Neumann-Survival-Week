@@ -2,10 +2,216 @@
 {
     public static class Sprites
     {
+        public const string Open =
+            @"       " + "\n" +
+            @"       " + "\n" +
+            @"       " + "\n" +
+            @"       ";
+        public const string Town =
+            @"╔══ ══╗" + "\n" +
+            @"║▀▀ ▀▀║" + "\n" +
+            @"║▄▄ ▄▄║" + "\n" +
+            @"╚══ ══╝";
+        public const string Castle =
+            @"╔══ ══╗" + "\n" +
+            @"║╔═══╗║" + "\n" +
+            @"║╚═══╝║" + "\n" +
+            @"╚══ ══╝";
+        public const string Building =
+            @" /---\ " + "\n" +
+            @"/-----\" + "\n" +
+            @"|     |" + "\n" +
+            @"|  █  |";
+        public const string Inn =
+            @" /---\ " + "\n" +
+            @"/-Inn-\" + "\n" +
+            @"|     |" + "\n" +
+            @"|  █  |";
+        public const string Store =
+            @" /---\ " + "\n" +
+            @"/Store\" + "\n" +
+            @"|     |" + "\n" +
+            @"|  █  |";
+        public const string Chest =
+            @"       " + "\n" +
+            @"  _._  " + "\n" +
+            @" |___| " + "\n" +
+            @"       ";
+        public const string EmptyChest =
+            @"       " + "\n" +
+            @"       " + "\n" +
+            @" |___| " + "\n" +
+            @"       ";
+        public const string Water =
+            @"~~~~~~~" + "\n" +
+            @"~~~~~~~" + "\n" +
+            @"~~~~~~~" + "\n" +
+            @"~~~~~~~";
+        public const string Wall_0000 =
+            @"╔═════╗" + "\n" +
+            @"║█████║" + "\n" +
+            @"║█████║" + "\n" +
+            @"╚═════╝";
+        public const string Wall_0001 =
+            @"══════╗" + "\n" +
+            @"██████║" + "\n" +
+            @"██████║" + "\n" +
+            @"══════╝";
+        public const string Wall_0010 =
+            @"╔═════╗" + "\n" +
+            @"║█████║" + "\n" +
+            @"║█████║" + "\n" +
+            @"║█████║";
+        public const string Wall_0011 =
+            @"══════╗" + "\n" +
+            @"██████║" + "\n" +
+            @"██████║" + "\n" +
+            @"╗█████║";
+        public const string Wall_0100 =
+            @"╔══════" + "\n" +
+            @"║██████" + "\n" +
+            @"║██████" + "\n" +
+            @"╚══════";
+        public const string Wall_0101 =
+            @"═══════" + "\n" +
+            @"███████" + "\n" +
+            @"███████" + "\n" +
+            @"═══════";
+        public const string Wall_0110 =
+            @"╔══════" + "\n" +
+            @"║██████" + "\n" +
+            @"║██████" + "\n" +
+            @"║█████╔";
+        public const string Wall_0111 =
+            @"═══════" + "\n" +
+            @"███████" + "\n" +
+            @"███████" + "\n" +
+            @"╗█████╔";
+        public const string Wall_1000 =
+            @"║█████║" + "\n" +
+            @"║█████║" + "\n" +
+            @"║█████║" + "\n" +
+            @"╚═════╝";
+        public const string Wall_1001 =
+            @"╝█████║" + "\n" +
+            @"██████║" + "\n" +
+            @"██████║" + "\n" +
+            @"══════╝";
+        public const string Wall_1010 =
+            @"║█████║" + "\n" +
+            @"║█████║" + "\n" +
+            @"║█████║" + "\n" +
+            @"║█████║";
+        public const string Wall_1011 =
+            @"╝█████║" + "\n" +
+            @"██████║" + "\n" +
+            @"██████║" + "\n" +
+            @"╗█████║";
+        public const string Wall_1100 =
+            @"║█████╚" + "\n" +
+            @"║██████" + "\n" +
+            @"║██████" + "\n" +
+            @"╚══════";
+        public const string Wall_1101 =
+            @"╝█████╚" + "\n" +
+            @"███████" + "\n" +
+            @"███████" + "\n" +
+            @"═══════";
+        public const string Wall_1110 =
+            @"║█████╚" + "\n" +
+            @"║██████" + "\n" +
+            @"║██████" + "\n" +
+            @"║█████╔";
+        public const string Wall_1111 =
+            @"╝█████╚" + "\n" +
+            @"███████" + "\n" +
+            @"███████" + "\n" +
+            @"╗█████╔";
+        public const string Gate =
+            @"▀▄▀▄▀▄▀" + "\n" +
+            @"▀▄▀▄▀▄▀" + "\n" +
+            @"▀▄▀▄▀▄▀" + "\n" +
+            @"▀▄▀▄▀▄▀";
+        public const string Tree =
+            @" /---\ " + "\n" +
+            @" \___/ " + "\n" +
+            @"  | |  " + "\n" +
+            @"  / \  ";
+        public const string Tree2 =
+            @"  (@@) " + "\n" +
+            @" (@@@@)" + "\n" +
+            @"   ||  " + "\n" +
+            @"   ||  ";
+        public const string Barrels1 =
+            @"       " + "\n" +
+            @"  /---\ " + "\n" +
+            @"/-\/-\|" + "\n" +
+            @"\ /\ //";
+        public const string Barrels2 =
+            @"       " + "\n" +
+            @"/---\  " + "\n" +
+            @"|/-\/-\" + "\n" +
+            @"\\ /\ /";
+        public const string Barrels3 =
+            @"       " + "\n" +
+            @" /---\ " + "\n" +
+            @"/--\/-\" + "\n" +
+            @"\  /\ /";
+        public const string Fence =
+            @"       " + "\n" +
+            @"       " + "\n" +
+            @"#######" + "\n" +
+            @"#######";
+        public const string ArrowDown =
+            @"  |-|  " + "\n" +
+            @" _| |_ " + "\n" +
+            @" \   / " + "\n" +
+            @"  \ /  ";
+        public const string ArrowUp =
+            @"  / \  " + "\n" +
+            @" /_ _\ " + "\n" +
+            @"  | |  " + "\n" +
+            @"  |_|  ";
+        public const string Mountains =
+            @" /_\   " + "\n" +
+            @"/   /_\" + "\n" +
+            @"/_\/   " + "\n" +
+            @"   \   ";
+        public const string Mountain =
+            @"   /\  " + "\n" +
+            @"  /--\ " + "\n" +
+            @" /    \" + "\n" +
+            @"/      ";
+        public const string Mountain2 =
+            @"   /\  " + "\n" +
+            @"  /\/\ " + "\n" +
+            @" /    \" + "\n" +
+            @"/      ";
+        public const string Mountain3 =
+            @"   /\  " + "\n" +
+            @"  /**\ " + "\n" +
+            @" /    \" + "\n" +
+            @"/      ";
+        public const string Guard =
+            @" ^  O  " + "\n" +
+            @" |--|> " + "\n" +
+            @" |  |  " + "\n" +
+            @" | | | ";
+        public const string King =
+            @"  'O'  " + "\n" +
+            @"  /|\  " + "\n" +
+            @"   |   " + "\n" +
+            @"  | |  ";
+        public const string Error =
+            @"╔═════╗" + "\n" +
+            @"║error║" + "\n" +
+            @"║error║" + "\n" +
+            @"╚═════╝";
+
         public static readonly string[] RunRight =
-    [
-		// 0
-		@"   O   " + '\n' +
+        [
+            // 0
+            @"   O   " + '\n' +
         @"   |_  " + '\n' +
         @"   |>  " + '\n' +
         @"  /|   ",
@@ -41,10 +247,10 @@
         @"   /|  ",
     ];
 
-    public static readonly string[] RunLeft =
-    [
-        // 0
-        @"   O   " + '\n' +
+        public static readonly string[] RunLeft =
+        [
+            // 0
+            @"   O   " + '\n' +
         @"  _|   " + '\n' +
         @"  <|   " + '\n' +
         @"   |\  ",
@@ -80,7 +286,40 @@
         @"  |\   ",
     ];
 
-    public static readonly string[] RunDown = (string[])RunRight.Clone();
-    public static readonly string[] RunUp = (string[])RunLeft.Clone();
+        public static readonly string[] RunDown = (string[])RunRight.Clone();
+        public static readonly string[] RunUp = (string[])RunLeft.Clone();
+
+        public static readonly string IdleLeft1 =
+            @"   O   " + '\n' +
+            @"  )|J  " + '\n' +
+            @"   |   " + '\n' +
+            @"  / )  ";
+
+        public static readonly string IdleLeft2 =
+            @"   o   " + '\n' +
+            @"  J))  " + '\n' +
+            @"   |   " + '\n' +
+            @"  ( \  ";
+
+        public static readonly string[] IdleLeft =
+            Enumerable.Repeat(IdleLeft1, 10).Concat(Enumerable.Repeat(IdleLeft2, 10)).ToArray();
+
+        public static readonly string IdleRight1 =
+            @"   O   " + '\n' +
+            @"  L|(  " + '\n' +
+            @"   |   " + '\n' +
+            @"  ( \  ";
+
+        public static readonly string IdleRight2 =
+            @"   o   " + '\n' +
+            @"  ((L  " + '\n' +
+            @"   |   " + '\n' +
+            @"  / )  ";
+
+        public static readonly string[] IdleRight =
+            Enumerable.Repeat(IdleRight1, 10).Concat(Enumerable.Repeat(IdleRight2, 10)).ToArray();
+
+        public static readonly string[] IdleDown = (string[])IdleRight.Clone();
+        public static readonly string[] IdleUp = (string[])IdleLeft.Clone();
     }
 }
