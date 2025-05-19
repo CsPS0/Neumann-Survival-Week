@@ -28,31 +28,28 @@ namespace GameObjectsLib
         public int animation_fps = 24;
         public Dictionary<string, Frame[]> animations = new();
 
-        private string animation_name;
+        public string animation_name;
         private Stopwatch timer = new();
         private int animation_index = 0;
 
-        public void PlayAnimation(string name)
+        public void PlayAnimation()
         {
-            if (name == null) return;
+            if (animation_name == null) return;
 
             double frame_time = 1000f / animation_fps;
 
-            if (animation_name == null)
+            if (animations.ContainsKey(animation_name))
             {
-                if (animations.ContainsKey(name))
+                if (!timer.IsRunning) timer.Start();
+
+                if (timer.ElapsedMilliseconds >= frame_time)
                 {
-                    animation_name = name;
-                    animation_index = 0;
+                    int frames_passed = (int)(timer.ElapsedMilliseconds / frame_time);
+                    animation_index = (animation_index + frames_passed) % animations[animation_name].Length;
                     timer.Restart();
                 }
-                else throw new Exception($"{name} animation not found.");
-            } else if (timer.ElapsedMilliseconds >= frame_time)
-            {
-                int frames_passed = (int)(timer.ElapsedMilliseconds / frame_time);
-                animation_index = (animation_index + frames_passed) % animations[animation_name].Length;
-                timer.Restart();
             }
+            else throw new Exception($"{animation_name} animation not found.");
 
             Render.PutFrame(int_x, int_y, animations[animation_name][animation_index]);
         }
