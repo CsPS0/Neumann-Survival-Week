@@ -2,6 +2,7 @@
 using InputLib;
 using System.Diagnostics;
 using GameLogicLib;
+using GameObjectsLib;
 
 // Player
 char[,] player_chars =
@@ -59,7 +60,7 @@ Game.OnUpdate += (delta) =>
         second_watcher.Restart();
     }
 };
-Game.OnRender += () => Render.PutFrame(1, 1, fps_frame);
+Game.OnRender += () => Render.PutFrame(0, 0, fps_frame);
 
 // resolution counter
 Frame resolution_frame = new(0, 0);
@@ -69,7 +70,51 @@ Game.OnResized += (w, h) =>
     resolution_frame = Draw.RectToFrame(resolution_string.Length + 2, 3);
     resolution_frame.PutFrame(1, 1, Draw.TextToFrame(resolution_string));
 };
-Game.OnRender += () => Render.PutFrame(1, fps_frame.height + 1, resolution_frame);
+Game.OnRender += () => Render.PutFrame(0, fps_frame.height, resolution_frame);
+
+
+// test------------------------
+
+
+// THIS SETUP IS SOOO LONG
+string[] walk1 =
+{
+    " O ",
+    "/|\\",
+    "/ \\"
+};
+Frame walk1_frame = new(3, 3);
+walk1_frame.RaplacePixels((int x, int y, Pixel? p) =>
+{
+    char current = walk1[y][x];
+    return current != ' ' ? new(current, (255, 100, 200)) : null;
+}, true);
+
+string[] walk2 =
+{
+    " O ",
+    " | ",
+    " | "
+};
+Frame walk2_frame = new(3, 3);
+walk2_frame.RaplacePixels((int x, int y, Pixel? p) =>
+{
+    char current = walk2[y][x];
+    return current != ' ' ? new(current, (255, 100, 200)) : null;
+}, true);
+// THIS SETUP IS SOOO LONG
+
+// this is soo good and easy though
+GameObjectsLib.Object test = new(20, 20);
+test.animation_fps = 5;
+test.animations.Add("walk", [ walk1_frame, walk2_frame ]);
+Game.OnRender += () => test.PlayAnimation("walk");
+// this is soo good and easy though
+
+
+// test------------------------
+
+
 
 // Main
 Game.Fps = 100;
