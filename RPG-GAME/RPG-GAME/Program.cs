@@ -5,20 +5,72 @@ using GameLogicLib;
 using GameObjectsLib;
 
 // Player
-char[,] player_chars =
+string[] idle =
 {
-    { ' ', 'o', ' ' },
-    { '/', '|', '\\' },
-    { '/', ' ', '\\' },
+    " O ",
+    "|H|",
+    "| |"
 };
-Frame player_frame = new Frame(3, 3);
-player_frame.RaplacePixels((int x, int y, Pixel? p) =>
-{
-    return player_chars[y, x] != ' ' ? new(player_chars[y, x], (255, 100, 200), layer: 1) : null;
-}, true);
+Frame idle_frame = new Frame(3, 3);
+idle_frame.RaplacePixels((int x, int y, Pixel? p) =>
+{ return idle[y][x] != ' ' ? new(idle[y][x], (255, 100, 200), layer: 1) : null; });
 
-double x = 0, y = 0;
-double speed = 0.075;
+string[] walk1 =
+{
+    " O ",
+    "/H\\",
+    "/ \\"
+};
+Frame walk1_frame = new Frame(3, 3);
+walk1_frame.RaplacePixels((int x, int y, Pixel? p) =>
+{ return walk1[y][x] != ' ' ? new(walk1[y][x], (255, 100, 200), layer: 1) : null; });
+
+string[] walk2 =
+{
+    " O ",
+    " | ",
+    " | "
+};
+Frame walk2_frame = new Frame(3, 3);
+walk2_frame.RaplacePixels((int x, int y, Pixel? p) =>
+{ return walk2[y][x] != ' ' ? new(walk2[y][x], (255, 100, 200), layer: 1) : null; });
+
+string[] wave1 =
+{
+    " O __",
+    "|H   ",
+    "| |  "
+};
+Frame wave1_frame = new Frame(5, 3);
+wave1_frame.RaplacePixels((int x, int y, Pixel? p) =>
+{ return wave1[y][x] != ' ' ? new(wave1[y][x], (255, 100, 200), layer: 1) : null; });
+
+string[] wave2 =
+{
+    " O /",
+    "|H  ",
+    "| | "
+};
+Frame wave2_frame = new Frame(4, 3);
+wave2_frame.RaplacePixels((int x, int y, Pixel? p) =>
+{ return wave2[y][x] != ' ' ? new(wave2[y][x], (255, 100, 200), layer: 1) : null; });
+
+string[] wave3 =
+{
+    " O|",
+    "|H ",
+    "| |"
+};
+Frame wave3_frame = new Frame(3, 3);
+wave3_frame.RaplacePixels((int x, int y, Pixel? p) =>
+{ return wave3[y][x] != ' ' ? new(wave3[y][x], (255, 100, 200), layer: 1) : null; });
+
+GameObjectsLib.Object player = new(0, 0);
+player.animations.Add("idle", [ idle_frame ]);
+player.animations.Add("walk", [ walk1_frame, walk2_frame ]);
+player.animations.Add("wave", [wave1_frame, wave2_frame, wave3_frame, wave2_frame]);
+player.animation_name = "idle";
+double player_speed = 0.075;
 Game.OnUpdate += (delta) =>
 {
     double moveX = 0, moveY = 0;
@@ -32,10 +84,18 @@ Game.OnUpdate += (delta) =>
         moveX /= length;
         moveY /= length;
     }
-    x += moveX * speed * delta;
-    y += moveY * speed / 2 * delta;
+
+    if (moveX != 0 || moveY != 0) player.animation_name = "walk";
+    else if (player.animation_name == "walk") player.animation_name = "idle";
+    if (Input.IsPressed(ConsoleKey.E)) player.animation_name = "wave";
+
+    if (player.animation_name == "walk") player.animation_fps = 15;
+    else if (player.animation_name == "wave") player.animation_fps = 10;
+
+        player.x += moveX * player_speed * delta;
+    player.y += moveY * player_speed / 2 * delta;
 };
-Game.OnRender += () => Render.PutFrame((int)Math.Round(x), (int)Math.Round(y), player_frame);
+Game.OnRender += () => player.PlayAnimation();
 
 // hello world box
 string text = "Hello world!!!";
@@ -71,50 +131,6 @@ Game.OnResized += (w, h) =>
     resolution_frame.PutFrame(1, 1, Draw.TextToFrame(resolution_string));
 };
 Game.OnRender += () => Render.PutFrame(0, fps_frame.height, resolution_frame);
-
-
-// test------------------------
-
-
-// THIS SETUP IS SOOO LONG
-string[] walk1 =
-{
-    " O ",
-    "/|\\",
-    "/ \\"
-};
-Frame walk1_frame = new(3, 3);
-walk1_frame.RaplacePixels((int x, int y, Pixel? p) =>
-{
-    char current = walk1[y][x];
-    return current != ' ' ? new(current, (255, 100, 200)) : null;
-}, true);
-
-string[] walk2 =
-{
-    " O ",
-    " | ",
-    " | "
-};
-Frame walk2_frame = new(3, 3);
-walk2_frame.RaplacePixels((int x, int y, Pixel? p) =>
-{
-    char current = walk2[y][x];
-    return current != ' ' ? new(current, (255, 100, 200)) : null;
-}, true);
-// THIS SETUP IS SOOO LONG
-
-// this is soo good and easy though
-GameObjectsLib.Object test = new(20, 20);
-test.animation_fps = 5;
-test.animations.Add("walk", [ walk1_frame, walk2_frame ]);
-test.animation_name = "walk";
-Game.OnRender += () => test.PlayAnimation();
-// this is soo good and easy though
-
-
-// test------------------------
-
 
 
 // Main

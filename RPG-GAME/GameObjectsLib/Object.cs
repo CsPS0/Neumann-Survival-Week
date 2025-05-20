@@ -28,7 +28,19 @@ namespace GameObjectsLib
         public int animation_fps = 24;
         public Dictionary<string, Frame[]> animations = new();
 
-        public string animation_name;
+        private string? _animation_name;
+        public string? animation_name 
+        { 
+            get => _animation_name;
+            set
+            {
+                if (_animation_name != value)
+                {
+                    _animation_name = value;
+                    animation_index = 0;
+                }
+            }
+        }
         private Stopwatch timer = new();
         private int animation_index = 0;
 
