@@ -133,8 +133,8 @@
                 {
                     if (";,".Contains(this.pixels[y, x]?.character ?? ' '))
                         throw new Exception("Frame cannot contain [;] or [,] because" +
-                            " it will break at reconversion");
-                    pixels[x] = this.pixels[y, x]?.ToString() ?? "null";
+                            " it will break at parsing");
+                    pixels[x] = this.pixels[y, x]?.ToString() ?? "";
                 }
                 output[y + 1] = string.Join(";", pixels);
             }

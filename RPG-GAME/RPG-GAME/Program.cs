@@ -2,6 +2,7 @@
 using InputLib;
 using System.Diagnostics;
 using GameLogicLib;
+using AssetsLib;
 using GameObjectsLib;
 
 // Player
@@ -14,6 +15,7 @@ string[] idle =
 Frame idle_frame = new Frame(3, 3);
 idle_frame.RaplacePixels((int x, int y, Pixel? p) =>
 { return idle[y][x] != ' ' ? new(idle[y][x], (255, 100, 200), layer: 1) : null; });
+
 
 string[] walk1 =
 {
@@ -70,7 +72,7 @@ player.animations.Add("idle", [ idle_frame ]);
 player.animations.Add("walk", [ walk1_frame, walk2_frame ]);
 player.animations.Add("wave", [wave1_frame, wave2_frame, wave3_frame, wave2_frame]);
 player.animation_name = "idle";
-double player_speed = 0.075;
+double player_speed = 0.05;
 Game.OnUpdate += (delta) =>
 {
     double moveX = 0, moveY = 0;
@@ -98,7 +100,7 @@ Game.OnUpdate += (delta) =>
 Game.OnRender += () => player.PlayAnimation();
 
 // hello world box
-string text = "Hello world!!!";
+string text = " Hello world!!! ";
 Frame hello_frame = Draw.RectToFrame(text.Length + 2, 3, (100, 150, 200));
 hello_frame.PutFrame(1, 1, Draw.TextToFrame(text, (100, 150, 200)));
 Game.OnRender += () => 
@@ -111,8 +113,8 @@ Game.OnUpdate += (delta) =>
 {
     if (second_watcher.ElapsedMilliseconds >= 1000)
     {
-        string fps_string = $"Redner: {(Game.Fps ?? 0)} Fps";
-        string delta_string = $"Update: {delta}ms";
+        string fps_string = $" Redner: {(Game.Fps ?? 0)} Fps ";
+        string delta_string = $" Update: {delta}ms ";
         int max_length = Math.Max(fps_string.Length, delta_string.Length);
         fps_frame = Draw.RectToFrame(max_length + 2, 4);
         fps_frame.PutFrame(1, 1, Draw.TextToFrame(fps_string));
@@ -126,7 +128,7 @@ Game.OnRender += () => Render.PutFrame(0, 0, fps_frame);
 Frame resolution_frame = new(0, 0);
 Game.OnResized += (w, h) =>
 {
-    string resolution_string = $"{w}x{h}";
+    string resolution_string = $" {w}x{h} ";
     resolution_frame = Draw.RectToFrame(resolution_string.Length + 2, 3);
     resolution_frame.PutFrame(1, 1, Draw.TextToFrame(resolution_string));
 };
