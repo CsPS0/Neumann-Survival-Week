@@ -133,6 +133,7 @@ Game.OnResized += (w, h) =>
 Game.OnRender += () => Render.PutFrame(0, fps_frame.height, resolution_frame);
 
 
+
 // Main
 Game.Fps = 100;
 Game.OnStart += () => Render.Fill(new(' '));
