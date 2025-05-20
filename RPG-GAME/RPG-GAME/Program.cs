@@ -108,7 +108,7 @@ walk2_frame.RaplacePixels((int x, int y, Pixel? p) =>
 GameObjectsLib.Object test = new(20, 20);
 test.animation_fps = 5;
 test.animations.Add("walk", [ walk1_frame, walk2_frame ]);
-Game.OnRender += () => test.PlayAnimation("walk");
+Game.OnRender += () => test.PlayAnimation();
 // this is soo good and easy though
 
 
