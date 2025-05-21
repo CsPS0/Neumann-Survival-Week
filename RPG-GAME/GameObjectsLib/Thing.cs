@@ -3,7 +3,7 @@ using RenderLib;
 
 namespace GameObjectsLib
 {
-    public class Object
+    public class Thing
     {
         public double x;
         public double y;
@@ -22,7 +22,7 @@ namespace GameObjectsLib
         public int w = 0;
         public int h = 0;
 
-        public Object(double x, double y)
+        public Thing(double x, double y)
         {
             this.x = x;
             this.y = y;
@@ -77,7 +77,7 @@ namespace GameObjectsLib
             }
         }
 
-        public bool IsColliding(GameObjectsLib.Object obj)
+        public bool IsColliding(Thing obj)
         {
             return !(this.int_x + this.w < obj.int_x ||
             this.int_x > obj.int_x + obj.w ||
@@ -85,13 +85,11 @@ namespace GameObjectsLib
             this.int_y > obj.int_y + obj.h);
         }
 
-        public bool IsColliding(int x, int y, int w, int h)
-        {
-            return !(this.int_x + this.w - 1 < x ||
-                     this.int_x > x + w - 1 ||
-                     this.int_y + this.h - 1 < y ||
-                     this.int_y > y + h - 1);
-        }
+        public bool IsColliding(int x, int y, int w, int h) => 
+            !(this.int_x + this.w - 1 < x ||
+            this.int_x > x + w - 1 ||
+            this.int_y + this.h - 1 < y ||
+            this.int_y > y + h - 1);
 
     }
 }

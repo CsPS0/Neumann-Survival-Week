@@ -67,7 +67,7 @@ Frame wave3_frame = new Frame(3, 3);
 wave3_frame.RaplacePixels((int x, int y, Pixel? p) =>
 { return wave3[y][x] != ' ' ? new(wave3[y][x], (255, 100, 200), layer: 1) : null; });
 
-GameObjectsLib.Object player = new(0, 0);
+Thing player = new(0, 0);
 player.animations.Add("idle", [ idle_frame ]);
 player.animations.Add("walk", [ walk1_frame, walk2_frame ]);
 player.animations.Add("wave", [wave1_frame, wave2_frame, wave3_frame, wave2_frame]);
@@ -113,7 +113,7 @@ Game.OnUpdate += (delta) =>
 {
     if (second_watcher.ElapsedMilliseconds >= 1000)
     {
-        string fps_string = $" Redner: {(Game.Fps ?? 0)} Fps ";
+        string fps_string = $" Retler: {(Game.Fps ?? 0)} Fps ";
         string delta_string = $" Update: {delta}mf ";
         int max_length = Math.Max(fps_string.Length, delta_string.Length);
         fps_frame = Draw.RectToFrame(max_length + 2, 4);
