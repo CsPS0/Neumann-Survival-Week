@@ -85,11 +85,12 @@ namespace GameObjectsLib
             this.int_y > obj.int_y + obj.h);
         }
 
-        public bool IsColliding(int x, int y, int w, int h) => 
-            !(this.int_x + this.w - 1 < x ||
+        public bool IsColliding(int x, int y, int w, int h)
+        {
+            return !(this.int_x + this.w - 1 < x ||
             this.int_x > x + w - 1 ||
             this.int_y + this.h - 1 < y ||
             this.int_y > y + h - 1);
-
+        }
     }
 }

@@ -2,75 +2,14 @@
 using InputLib;
 using System.Diagnostics;
 using GameLogicLib;
-using AssetsLib;
 using GameObjectsLib;
 
-// Player
-string[] idle =
-{
-    " O ",
-    "|H|",
-    " ║ "
-};
-Frame idle_frame = new Frame(3, 3);
-idle_frame.RaplacePixels((int x, int y, Pixel? p) =>
-{ return idle[y][x] != ' ' ? new(idle[y][x], (255, 100, 200), layer: 1) : null; });
-
-
-string[] walk1 =
-{
-    " O ",
-    "/H\\",
-    "/ \\"
-};
-Frame walk1_frame = new Frame(3, 3);
-walk1_frame.RaplacePixels((int x, int y, Pixel? p) =>
-{ return walk1[y][x] != ' ' ? new(walk1[y][x], (255, 100, 200), layer: 1) : null; });
-
-string[] walk2 =
-{
-    " O ",
-    " | ",
-    " | "
-};
-Frame walk2_frame = new Frame(3, 3);
-walk2_frame.RaplacePixels((int x, int y, Pixel? p) =>
-{ return walk2[y][x] != ' ' ? new(walk2[y][x], (255, 100, 200), layer: 1) : null; });
-
-string[] wave1 =
-{
-    " O __",
-    "|H   ",
-    " ║   "
-};
-Frame wave1_frame = new Frame(5, 3);
-wave1_frame.RaplacePixels((int x, int y, Pixel? p) =>
-{ return wave1[y][x] != ' ' ? new(wave1[y][x], (255, 100, 200), layer: 1) : null; });
-
-string[] wave2 =
-{
-    " O /",
-    "|H  ",
-    " ║  "
-};
-Frame wave2_frame = new Frame(4, 3);
-wave2_frame.RaplacePixels((int x, int y, Pixel? p) =>
-{ return wave2[y][x] != ' ' ? new(wave2[y][x], (255, 100, 200), layer: 1) : null; });
-
-string[] wave3 =
-{
-    " O|",
-    "|H ",
-    " ║ "
-};
-Frame wave3_frame = new Frame(3, 3);
-wave3_frame.RaplacePixels((int x, int y, Pixel? p) =>
-{ return wave3[y][x] != ' ' ? new(wave3[y][x], (255, 100, 200), layer: 1) : null; });
+Textures t = new();
 
 Thing player = new(0, 0);
-player.animations.Add("idle", [ idle_frame ]);
-player.animations.Add("walk", [ walk1_frame, walk2_frame ]);
-player.animations.Add("wave", [wave1_frame, wave2_frame, wave3_frame, wave2_frame]);
+player.animations.Add("idle", t.Load([ "player_idle" ]));
+player.animations.Add("walk", t.Load([ "player_walk1", "player_walk2" ]));
+player.animations.Add("wave", t.Load([ "player_wave1", "player_wave2", "player_wave3", "player_wave2" ]));
 player.animation_name = "idle";
 double player_speed = 0.05;
 Game.OnUpdate += (delta) =>
