@@ -10,7 +10,7 @@ string[] idle =
 {
     " O ",
     "|H|",
-    "| |"
+    " ║ "
 };
 Frame idle_frame = new Frame(3, 3);
 idle_frame.RaplacePixels((int x, int y, Pixel? p) =>
@@ -41,7 +41,7 @@ string[] wave1 =
 {
     " O __",
     "|H   ",
-    "| |  "
+    " ║   "
 };
 Frame wave1_frame = new Frame(5, 3);
 wave1_frame.RaplacePixels((int x, int y, Pixel? p) =>
@@ -51,7 +51,7 @@ string[] wave2 =
 {
     " O /",
     "|H  ",
-    "| | "
+    " ║  "
 };
 Frame wave2_frame = new Frame(4, 3);
 wave2_frame.RaplacePixels((int x, int y, Pixel? p) =>
@@ -61,7 +61,7 @@ string[] wave3 =
 {
     " O|",
     "|H ",
-    "| |"
+    " ║ "
 };
 Frame wave3_frame = new Frame(3, 3);
 wave3_frame.RaplacePixels((int x, int y, Pixel? p) =>
@@ -91,7 +91,7 @@ Game.OnUpdate += (delta) =>
     else if (player.animation_name == "walk") player.animation_name = "idle";
     if (Input.IsPressed(ConsoleKey.E)) player.animation_name = "wave";
 
-    if (player.animation_name == "walk") player.animation_fps = 15;
+    if (player.animation_name == "walk") player.animation_fps = 7;
     else if (player.animation_name == "wave") player.animation_fps = 10;
 
         player.x += moveX * player_speed * delta;
@@ -114,7 +114,7 @@ Game.OnUpdate += (delta) =>
     if (second_watcher.ElapsedMilliseconds >= 1000)
     {
         string fps_string = $" Redner: {(Game.Fps ?? 0)} Fps ";
-        string delta_string = $" Update: {delta}ms ";
+        string delta_string = $" Update: {delta}mf ";
         int max_length = Math.Max(fps_string.Length, delta_string.Length);
         fps_frame = Draw.RectToFrame(max_length + 2, 4);
         fps_frame.PutFrame(1, 1, Draw.TextToFrame(fps_string));

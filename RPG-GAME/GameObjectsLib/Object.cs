@@ -19,6 +19,9 @@ namespace GameObjectsLib
             set => y = value;
         }
 
+        public int w = 0;
+        public int h = 0;
+
         public Object(double x, double y)
         {
             this.x = x;
@@ -46,24 +49,49 @@ namespace GameObjectsLib
 
         public void PlayAnimation()
         {
-            if (animation_name == null) return;
-
-            double frame_time = 1000f / animation_fps;
-
-            if (animations.ContainsKey(animation_name))
+            if (animation_name != null)
             {
-                if (!timer.IsRunning) timer.Start();
+                double frame_time = 1000f / animation_fps;
 
-                if (timer.ElapsedMilliseconds >= frame_time)
+                if (animations.ContainsKey(animation_name))
                 {
-                    int frames_passed = (int)(timer.ElapsedMilliseconds / frame_time);
-                    animation_index = (animation_index + frames_passed) % animations[animation_name].Length;
-                    timer.Restart();
-                }
-            }
-            else throw new Exception($"{animation_name} animation not found.");
+                    if (!timer.IsRunning) timer.Start();
 
-            Render.PutFrame(int_x, int_y, animations[animation_name][animation_index]);
+                    if (timer.ElapsedMilliseconds >= frame_time)
+                    {
+                        int frames_passed = (int)(timer.ElapsedMilliseconds / frame_time);
+                        animation_index = (animation_index + frames_passed) % animations[animation_name].Length;
+                        timer.Restart();
+                    }
+                }
+                else throw new Exception($"{animation_name} animation not found.");
+
+                Frame frame = animations[animation_name][animation_index];
+                w = frame.width;
+                h = frame.height;
+                Render.PutFrame(int_x, int_y, frame);
+            } else
+            {
+                w = 0;
+                h = 0;
+            }
         }
+
+        public bool IsColliding(GameObjectsLib.Object obj)
+        {
+            return !(this.int_x + this.w < obj.int_x ||
+            this.int_x > obj.int_x + obj.w ||
+            this.int_y + this.h < obj.int_y ||
+            this.int_y > obj.int_y + obj.h);
+        }
+
+        public bool IsColliding(int x, int y, int w, int h)
+        {
+            return !(this.int_x + this.w - 1 < x ||
+                     this.int_x > x + w - 1 ||
+                     this.int_y + this.h - 1 < y ||
+                     this.int_y > y + h - 1);
+        }
+
     }
 }
