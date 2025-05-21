@@ -19,8 +19,8 @@ namespace GameObjectsLib
             set => y = value;
         }
 
-        public int w = 0;
-        public int h = 0;
+        public int w { get => Output == null ? 0 : Output.width; }
+        public int h { get => Output == null ? 0 : Output.height; }
 
         public Thing(double x, double y)
         {
@@ -47,6 +47,8 @@ namespace GameObjectsLib
         private Stopwatch timer = new();
         private int animation_index = 0;
 
+        public Frame? Output;
+
         public void PlayAnimation()
         {
             if (animation_name != null)
@@ -66,14 +68,7 @@ namespace GameObjectsLib
                 }
                 else throw new Exception($"{animation_name} animation not found.");
 
-                Frame frame = animations[animation_name][animation_index];
-                w = frame.width;
-                h = frame.height;
-                Render.PutFrame(int_x, int_y, frame);
-            } else
-            {
-                w = 0;
-                h = 0;
+                Output = animations[animation_name][animation_index];
             }
         }
 

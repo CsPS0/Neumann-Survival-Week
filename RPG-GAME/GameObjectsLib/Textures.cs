@@ -34,12 +34,13 @@ namespace GameObjectsLib
             (byte r, byte g, byte b) pants_color = (19, 119, 214);
             (byte r, byte g, byte b) shirt_color = pants_color;
 
+            Pixel head = new('O', skin_color, layer: player_layer);
+            Pixel shirt = new('#', shirt_color, layer: player_layer);
+
             // idle
             options.Add("player_idle", () =>
             {
-                Pixel head = new('O', skin_color, layer: player_layer);
                 Pixel arm = new('|', skin_color, layer: player_layer);
-                Pixel shirt = new('H', shirt_color, layer: player_layer);
                 Pixel leg = new('║', pants_color, layer: player_layer);
 
                 return new Frame(0, 0)
@@ -56,10 +57,8 @@ namespace GameObjectsLib
             // walk1
             options.Add("player_walk1", () =>
             {
-                Pixel head = new('O', skin_color, layer: player_layer);
                 Pixel l_arm = new('/', skin_color, layer: player_layer);
                 Pixel r_arm = new('\\', skin_color, layer: player_layer);
-                Pixel shirt = new('H', shirt_color, layer: player_layer);
                 Pixel l_leg = new('/', pants_color, layer: player_layer);
                 Pixel r_leg = new('\\', pants_color, layer: player_layer);
 
@@ -77,7 +76,6 @@ namespace GameObjectsLib
             // walk2
             options.Add("player_walk2", () =>
             {
-                Pixel head = new('O', skin_color, layer: player_layer);
                 Pixel arm = new('|', skin_color, layer: player_layer);
                 Pixel leg = new('|', pants_color, layer: player_layer);
 
@@ -95,9 +93,7 @@ namespace GameObjectsLib
             // wave1
             options.Add("player_wave1", () =>
             {
-                Pixel head = new('O', skin_color, layer: player_layer);
                 Pixel l_arm = new('|', skin_color, layer: player_layer);
-                Pixel shirt = new('H', shirt_color, layer: player_layer);
                 Pixel r_arm = new('_', skin_color, layer: player_layer);
                 Pixel leg = new('║', pants_color, layer: player_layer);
 
@@ -115,9 +111,7 @@ namespace GameObjectsLib
             // wave2
             options.Add("player_wave2", () =>
             {
-                Pixel head = new('O', skin_color, layer: player_layer);
                 Pixel l_arm = new('|', skin_color, layer: player_layer);
-                Pixel shirt = new('H', shirt_color, layer: player_layer);
                 Pixel r_arm = new('/', skin_color, layer: player_layer);
                 Pixel leg = new('║', pants_color, layer: player_layer);
 
@@ -135,9 +129,7 @@ namespace GameObjectsLib
             // wave3
             options.Add("player_wave3", () =>
             {
-                Pixel head = new('O', skin_color, layer: player_layer);
                 Pixel arm = new('|', skin_color, layer: player_layer);
-                Pixel shirt = new('H', shirt_color, layer: player_layer);
                 Pixel leg = new('║', pants_color, layer: player_layer);
 
                 return new Frame(0, 0)
