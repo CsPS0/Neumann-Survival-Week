@@ -2,8 +2,8 @@
 
 # Objetc in Objects.c
 
-A class that implements a game object that can have different animations (exmp: "walk", 
-"idle") and can play the animations from the game `Render` loop
+A class that implements a game object that holds the position and the state of animtion 
+of the object
 
 attributes:
 - `double x`: precise x position of the object

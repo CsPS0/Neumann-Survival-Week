@@ -44,5 +44,7 @@
 
         public override string ToString()
             => $"{character},{fg.r},{fg.g},{fg.b},{bg.r},{bg.g},{bg.b},{layer}";
+    
+        public Pixel Clone() => new(character, fg, bg, layer);
     }
 }

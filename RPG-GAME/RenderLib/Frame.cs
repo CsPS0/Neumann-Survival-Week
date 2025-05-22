@@ -26,14 +26,34 @@
 
         public void PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)
         {
-            if (InFrameBounds(x, y) ||
-                InFrameBounds(x + frame.width, y + frame.height))
+            int fw = frame.width;
+            int fh = frame.height;
+
+            if (x >= 0 && y >= 0 && x + fw <= width && y + fh <= height)
             {
-                for (int _x = 0; _x < frame.width; _x++)
+                for (int _x = 0; _x < fw; _x++)
                 {
-                    for (int _y = 0; _y < frame.height; _y++)
+                    for (int _y = 0; _y < fh; _y++)
                     {
                         PutPixel(x + _x, y + _y, frame.pixels[_y, _x], IgnoreLayer);
+                    }
+                }
+            }
+            else
+            {
+                int left = Math.Max(x, 0);
+                int top = Math.Max(y, 0);
+                int right = Math.Min(x + fw, width);
+                int bottom = Math.Min(y + fh, height);
+
+                if (right > left && bottom > top)
+                {
+                    for (int _x = left - x; _x < right - x; _x++)
+                    {
+                        for (int _y = top - y; _y < bottom - y; _y++)
+                        {
+                            PutPixel(x + _x, y + _y, frame.pixels[_y, _x], IgnoreLayer);
+                        }
                     }
                 }
             }
@@ -133,8 +153,8 @@
                 {
                     if (";,".Contains(this.pixels[y, x]?.character ?? ' '))
                         throw new Exception("Frame cannot contain [;] or [,] because" +
-                            " it will break at reconversion");
-                    pixels[x] = this.pixels[y, x]?.ToString() ?? "null";
+                            " it will break at parsing");
+                    pixels[x] = this.pixels[y, x]?.ToString() ?? "";
                 }
                 output[y + 1] = string.Join(";", pixels);
             }

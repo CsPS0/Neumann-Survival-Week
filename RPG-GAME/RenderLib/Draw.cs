@@ -17,7 +17,8 @@
             (byte r, byte g, byte b)? fg = null, 
             (byte r, byte g, byte b)? bg = null,
             int layer = 0,
-            bool Rounded = false)
+            bool Rounded = false,
+            bool Filled = false)
         {
             Pixel tl = new(Rounded ? '╭' : '┌', fg, bg, layer);
             Pixel tr = new(Rounded ? '╮' :'┐', fg, bg, layer);
@@ -37,11 +38,11 @@
                     else if (x == w - 1 && y == h - 1) result.PutPixel(x, y, br);
                     else if (x > 0 && x < w - 1 && (y == 0 || y == h - 1)) result.PutPixel(x, y, vr);
                     else if (y > 0 && y < h - 1 && (x == 0 || x == w - 1)) result.PutPixel(x, y, hr);
+                    else if (Filled) result.PutPixel(x, y, new(' ', bg: bg, layer: layer));
                 }
             }
 
             return result;
         }
-
     }
 }

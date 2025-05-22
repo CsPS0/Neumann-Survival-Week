@@ -4,21 +4,20 @@ using System.Diagnostics;
 using GameLogicLib;
 using GameObjectsLib;
 
-// Player
-char[,] player_chars =
-{
-    { ' ', 'o', ' ' },
-    { '/', '|', '\\' },
-    { '/', ' ', '\\' },
-};
-Frame player_frame = new Frame(3, 3);
-player_frame.RaplacePixels((int x, int y, Pixel? p) =>
-{
-    return player_chars[y, x] != ' ' ? new(player_chars[y, x], (255, 100, 200), layer: 1) : null;
-}, true);
+Textures t = new();
 
-double x = 0, y = 0;
-double speed = 0.075;
+// Std out (max lines: 10)
+string[] StdOutLines = new string[10];
+Thing StdOut = new(0, 0);
+
+
+// player
+Thing player = new(0, 0);
+player.animations.Add("idle", t.Load([ "player_idle" ]));
+player.animations.Add("walk", t.Load([ "player_walk1", "player_walk2" ]));
+player.animations.Add("wave", t.Load([ "player_wave1", "player_wave2", "player_wave3", "player_wave2" ]));
+player.animation_name = "idle";
+double player_speed = 0.05;
 Game.OnUpdate += (delta) =>
 {
     double moveX = 0, moveY = 0;
@@ -32,88 +31,73 @@ Game.OnUpdate += (delta) =>
         moveX /= length;
         moveY /= length;
     }
-    x += moveX * speed * delta;
-    y += moveY * speed / 2 * delta;
+
+    if (moveX != 0 || moveY != 0) player.animation_name = "walk";
+    else if (player.animation_name == "walk") player.animation_name = "idle";
+    if (Input.IsPressed(ConsoleKey.E)) player.animation_name = "wave";
+
+    if (player.animation_name == "walk") player.animation_fps = 10;
+    else if (player.animation_name == "wave") player.animation_fps = 10;
+
+    player.x += moveX * player_speed * delta;
+    player.y += moveY * player_speed / 2 * delta;
 };
-Game.OnRender += () => Render.PutFrame((int)Math.Round(x), (int)Math.Round(y), player_frame);
+Game.OnRender += () =>
+{
+    player.PlayAnimation();
+    if (player.Output != null) 
+        Render.PutFrame(player.int_x, player.int_y, player.Output);
+};
 
 // hello world box
-string text = "Hello world!!!";
+string text = " Hello world!!! ";
 Frame hello_frame = Draw.RectToFrame(text.Length + 2, 3, (100, 150, 200));
 hello_frame.PutFrame(1, 1, Draw.TextToFrame(text, (100, 150, 200)));
 Game.OnRender += () => 
     Render.PutFrame(Render.width / 2 - hello_frame.width / 2, Render.height / 2, hello_frame);
 
 // fps counter
-Frame fps_frame = new(0, 0);
 Stopwatch second_watcher = Stopwatch.StartNew();
 Game.OnUpdate += (delta) =>
 {
     if (second_watcher.ElapsedMilliseconds >= 1000)
     {
-        string fps_string = $"Redner: {(Game.Fps ?? 0)} Fps";
+        string fps_string = $"Render: {(Game.Fps ?? 0)} Fps";
         string delta_string = $"Update: {delta}ms";
-        int max_length = Math.Max(fps_string.Length, delta_string.Length);
-        fps_frame = Draw.RectToFrame(max_length + 2, 4);
-        fps_frame.PutFrame(1, 1, Draw.TextToFrame(fps_string));
-        fps_frame.PutFrame(1, 2, Draw.TextToFrame(delta_string));
+        StdOutLines[0] = fps_string;
+        StdOutLines[1] = delta_string;
         second_watcher.Restart();
     }
 };
-Game.OnRender += () => Render.PutFrame(0, 0, fps_frame);
 
 // resolution counter
-Frame resolution_frame = new(0, 0);
 Game.OnResized += (w, h) =>
 {
-    string resolution_string = $"{w}x{h}";
-    resolution_frame = Draw.RectToFrame(resolution_string.Length + 2, 3);
-    resolution_frame.PutFrame(1, 1, Draw.TextToFrame(resolution_string));
+    string resolution_string = $"resolution: {w}x{h}";
+    StdOutLines[2] = resolution_string;
 };
-Game.OnRender += () => Render.PutFrame(0, fps_frame.height, resolution_frame);
 
 
-// test------------------------
-
-
-// THIS SETUP IS SOOO LONG
-string[] walk1 =
+// StdOut render
+Game.OnRender += () =>
 {
-    " O ",
-    "/|\\",
-    "/ \\"
+    int l = StdOutLines.Count(l => l != null);
+    Frame text_frame = new(Render.width - 2, l);
+    for (int i = 0; i < l; i++)
+    {
+        string line = StdOutLines[i];
+        if (line != null) text_frame.PutFrame(0, i, Draw.TextToFrame(line));
+    }
+    Frame box_frame = Draw.RectToFrame(text_frame.width + 4, text_frame.height + 2, Filled: true);
+    box_frame.PutFrame(2, 1, text_frame);
+
+    Frame name_tag = Draw.TextToFrame("Std output");
+
+    int x = Render.width / 2 - box_frame.width / 2;
+    int y = Render.height - box_frame.height + 1;
+    Render.PutFrame(x, y, box_frame, true);
+    Render.PutFrame(Render.width / 2 - name_tag.width / 2, y, name_tag, true);
 };
-Frame walk1_frame = new(3, 3);
-walk1_frame.RaplacePixels((int x, int y, Pixel? p) =>
-{
-    char current = walk1[y][x];
-    return current != ' ' ? new(current, (255, 100, 200)) : null;
-}, true);
-
-string[] walk2 =
-{
-    " O ",
-    " | ",
-    " | "
-};
-Frame walk2_frame = new(3, 3);
-walk2_frame.RaplacePixels((int x, int y, Pixel? p) =>
-{
-    char current = walk2[y][x];
-    return current != ' ' ? new(current, (255, 100, 200)) : null;
-}, true);
-// THIS SETUP IS SOOO LONG
-
-// this is soo good and easy though
-GameObjectsLib.Object test = new(20, 20);
-test.animation_fps = 5;
-test.animations.Add("walk", [ walk1_frame, walk2_frame ]);
-Game.OnRender += () => test.PlayAnimation();
-// this is soo good and easy though
-
-
-// test------------------------
-
 
 
 // Main
