@@ -67,7 +67,7 @@ namespace GameObjectsLib
 
         public static readonly char[][] frontNeu =
         [
-        
+       
         ];
 
         public static readonly char[][] classRoom5 =
