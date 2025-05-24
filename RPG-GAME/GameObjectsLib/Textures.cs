@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using System.Linq.Expressions;
+using System.Xml;
 using RenderLib;
 
 namespace GameObjectsLib
@@ -34,14 +35,16 @@ namespace GameObjectsLib
             (byte r, byte g, byte b) pants_color = (19, 119, 214);
             (byte r, byte g, byte b) shirt_color = pants_color;
 
-            Pixel head = new('O', skin_color, layer: player_layer);
-            Pixel shirt = new('#', shirt_color, layer: player_layer);
+            Pixel template = new(' ', layer: player_layer);
+
+            Pixel head = template.Clone('O', skin_color);
+            Pixel shirt = template.Clone('#', shirt_color);
 
             // idle
             options.Add("player_idle", () =>
             {
-                Pixel arm = new('|', skin_color, layer: player_layer);
-                Pixel leg = new('║', pants_color, layer: player_layer);
+                Pixel arm = template.Clone('|', skin_color);
+                Pixel leg = template.Clone('║', pants_color);
 
                 return new Frame(0, 0)
                 {
@@ -57,10 +60,10 @@ namespace GameObjectsLib
             // walk1
             options.Add("player_walk1", () =>
             {
-                Pixel l_arm = new('/', skin_color, layer: player_layer);
-                Pixel r_arm = new('\\', skin_color, layer: player_layer);
-                Pixel l_leg = new('/', pants_color, layer: player_layer);
-                Pixel r_leg = new('\\', pants_color, layer: player_layer);
+                Pixel l_arm = template.Clone('/', skin_color);
+                Pixel r_arm = template.Clone('\\', skin_color);
+                Pixel l_leg = template.Clone('/', pants_color);
+                Pixel r_leg = template.Clone('\\', pants_color);
 
                 return new Frame(0, 0)
                 {
@@ -76,8 +79,8 @@ namespace GameObjectsLib
             // walk2
             options.Add("player_walk2", () =>
             {
-                Pixel arm = new('|', skin_color, layer: player_layer);
-                Pixel leg = new('|', pants_color, layer: player_layer);
+                Pixel arm = template.Clone('|', skin_color);
+                Pixel leg = template.Clone('|', pants_color);
 
                 return new Frame(0, 0)
                 {
@@ -93,9 +96,9 @@ namespace GameObjectsLib
             // wave1
             options.Add("player_wave1", () =>
             {
-                Pixel l_arm = new('|', skin_color, layer: player_layer);
-                Pixel r_arm = new('_', skin_color, layer: player_layer);
-                Pixel leg = new('║', pants_color, layer: player_layer);
+                Pixel l_arm = template.Clone('|', skin_color);
+                Pixel r_arm = template.Clone('_', skin_color);
+                Pixel leg = template.Clone('║', pants_color);
 
                 return new Frame(0, 0)
                 {
@@ -111,9 +114,9 @@ namespace GameObjectsLib
             // wave2
             options.Add("player_wave2", () =>
             {
-                Pixel l_arm = new('|', skin_color, layer: player_layer);
-                Pixel r_arm = new('/', skin_color, layer: player_layer);
-                Pixel leg = new('║', pants_color, layer: player_layer);
+                Pixel l_arm = template.Clone('|', skin_color);
+                Pixel r_arm = template.Clone('/', skin_color);
+                Pixel leg = template.Clone('║', pants_color);
 
                 return new Frame(0, 0)
                 {
@@ -129,8 +132,8 @@ namespace GameObjectsLib
             // wave3
             options.Add("player_wave3", () =>
             {
-                Pixel arm = new('|', skin_color, layer: player_layer);
-                Pixel leg = new('║', pants_color, layer: player_layer);
+                Pixel arm = template.Clone('|', skin_color);
+                Pixel leg = template.Clone('║', pants_color);
 
                 return new Frame(0, 0)
                 {
@@ -143,6 +146,60 @@ namespace GameObjectsLib
                 };
             });
             // --- Player ---
+
+            //# ┌
+            //# ┐
+            //# └
+            //# ┘
+            //# │ ║
+            //# ─ ═
+            //# ┴ ╨
+            //# ┤
+            //# ┬ ╥
+            //# ├
+            //# ╲
+            Pixel hr = new('│');
+            Pixel vr = new('─');
+            Pixel tl = new('┌');
+            Pixel tr = new('┐');
+            Pixel bl = new('└');
+            Pixel br = new('┘');
+
+            // --- School ---
+            options.Add("school_front", () =>
+            {
+                (byte r, byte g, byte b) window_color = (0, 0, 0);
+                (byte r, byte g, byte b) wall_color = (0, 0, 0);
+                (byte r, byte g, byte b) door_color = (0, 0, 0);
+
+                Pixel[] window_top_frame = new Pixel[] { tl, vr, vr, vr, vr, vr, tr };
+                Frame window_middle_frame = new Frame(0, 0)
+                {
+                    pixels = new Pixel[,]
+                    {
+                        { hr, null, null, null, null, null, hr }
+                    }
+                };
+                Frame window_bottom_frame = new Frame(0, 0)
+                {
+                    pixels = new Pixel[,]
+                    {
+                        { bl, vr, vr, vr, vr, vr, br }
+                    }
+                };
+
+                return new Frame(0, 0);
+            });
+            // --- School ---
+
+            // --- Start Button ---
+            // active
+            options.Add("start_button_active", () => 
+            Draw.TextBoxToFrame("Start Game", (1, 0), modifiers: new(underline: true)));
+            // inactive
+            options.Add("start_button_inactive", () => 
+            Draw.TextBoxToFrame("Start Game", (1, 0)));
+            // --- Start Button ---
         }
     }
 }

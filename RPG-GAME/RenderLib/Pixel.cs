@@ -1,18 +1,64 @@
-﻿namespace RenderLib
+﻿using System.ComponentModel;
+
+namespace RenderLib
 {
+    public class Modifiers
+    {
+        public bool italic = false;
+        public bool bold = false;
+        public bool underline = false;
+        public bool strikethrough = false;
+        public bool blink = false;
+
+        public Modifiers(
+            bool italic = false,
+            bool bold = false,
+            bool underline = false,
+            bool strikethrough = false,
+            bool blink = false
+            )
+        {
+            if (italic) this.italic = italic;
+            if (bold) this.bold = bold;
+            if (underline) this.underline = underline;
+            if (strikethrough) this.strikethrough = strikethrough;
+            if (blink) this.blink = blink;
+        }
+
+        public void Reset ()
+        {
+            italic = false;
+            bold = false;
+            underline = false;
+            strikethrough = false;
+            blink = false;
+        }
+
+        public Modifiers Clone()
+        {
+            return new Modifiers(italic, bold, underline, strikethrough, blink);
+        }
+    }
+
     public class Pixel
     {
+        public static (byte r, byte g, byte b) DefaultFg = (255, 255, 255);
+        public static (byte r, byte g, byte b) DefaultBg = (0, 0, 0);
+
         public (byte r, byte g, byte b) fg, bg;
         public char character;
         public int layer;
+        public Modifiers modifiers;
 
         public Pixel(char c, (byte r, byte g, byte b)? fg = null,
-            (byte r, byte g, byte b)? bg = null, int layer = 0)
+            (byte r, byte g, byte b)? bg = null, int layer = 0, 
+            Modifiers? modifiers = null)
         {
             character = c;
-            this.fg = fg ?? (255, 255, 255);
-            this.bg = bg ?? (0, 0, 0);
+            this.fg = fg ?? DefaultFg;
+            this.bg = bg ?? DefaultBg;
             this.layer = layer;
+            this.modifiers = modifiers ?? new();
         }
 
         public static bool Equals(Pixel? a, Pixel? b)
@@ -45,6 +91,13 @@
         public override string ToString()
             => $"{character},{fg.r},{fg.g},{fg.b},{bg.r},{bg.g},{bg.b},{layer}";
     
-        public Pixel Clone() => new(character, fg, bg, layer);
+        public Pixel Clone(char? c = null, (byte r, byte g, byte b)? fg = null,
+            (byte r, byte g, byte b)? bg = null, int? layer = null)
+            => new(
+                c ?? character, 
+                fg ?? this.fg, 
+                bg ?? this.bg, 
+                layer ?? this.layer
+                );
     }
 }

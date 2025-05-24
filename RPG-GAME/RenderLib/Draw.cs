@@ -5,11 +5,12 @@
         public static Frame TextToFrame(string text, 
             (byte r, byte g, byte b)? fg = null, 
             (byte r, byte g, byte b)? bg = null, 
-            int layer = 0)
+            int layer = 0,
+            Modifiers? modifiers = null)
         {
             Frame result = new Frame(text.Length, 1);
             for (int i = 0; i < text.Length; i++)
-                result.PutPixel(i, 0, new(text[i], fg, bg, layer));
+                result.PutPixel(i, 0, new(text[i], fg, bg, layer, modifiers));
             return result;
         }
 
@@ -43,6 +44,30 @@
             }
 
             return result;
+        }
+
+        public static Frame TextBoxToFrame(
+            string text,
+            (int horizontal, int vertical)? padding = null,
+            (byte r, byte g, byte b)? text_fg = null,
+            (byte r, byte g, byte b)? bg = null,
+            (byte r, byte g, byte b)? border_fg = null,
+            int layer = 0,
+            Modifiers? modifiers = null,
+            bool Rounded = false,
+            bool Filled = false)
+        {
+            padding = padding ?? (0, 0);
+
+            Frame Text = TextToFrame(text, text_fg, bg, layer, modifiers);
+            Frame Rect = RectToFrame(
+                Text.width + padding.Value.horizontal * 2 + 2, 
+                Text.height + padding.Value.vertical * 2 + 2, 
+                border_fg, bg, layer, Rounded, Filled);
+            Rect.PutFrame(padding.Value.horizontal + 1, padding.Value.vertical + 1, 
+                Text);
+
+            return Rect;
         }
     }
 }

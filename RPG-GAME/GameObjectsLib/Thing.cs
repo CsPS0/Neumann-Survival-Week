@@ -19,8 +19,8 @@ namespace GameObjectsLib
             set => y = value;
         }
 
-        public int w { get => Output == null ? 0 : Output.width; }
-        public int h { get => Output == null ? 0 : Output.height; }
+        public int width { get => Output == null ? 0 : Output.width; }
+        public int height { get => Output == null ? 0 : Output.height; }
 
         public Thing(double x, double y)
         {
@@ -74,17 +74,17 @@ namespace GameObjectsLib
 
         public bool IsColliding(Thing obj)
         {
-            return !(this.int_x + this.w < obj.int_x ||
-            this.int_x > obj.int_x + obj.w ||
-            this.int_y + this.h < obj.int_y ||
-            this.int_y > obj.int_y + obj.h);
+            return !(this.int_x + this.width < obj.int_x ||
+            this.int_x > obj.int_x + obj.width ||
+            this.int_y + this.height < obj.int_y ||
+            this.int_y > obj.int_y + obj.height);
         }
 
         public bool IsColliding(int x, int y, int w, int h)
         {
-            return !(this.int_x + this.w - 1 < x ||
+            return !(this.int_x + this.width - 1 < x ||
             this.int_x > x + w - 1 ||
-            this.int_y + this.h - 1 < y ||
+            this.int_y + this.height - 1 < y ||
             this.int_y > y + h - 1);
         }
     }
