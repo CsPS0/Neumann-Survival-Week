@@ -2,6 +2,9 @@
 using InputLib;
 using System.Diagnostics;
 using GameLogicLib;
+<<<<<<< HEAD
+using GameObjectsLib;
+=======
 using GameObjectsLib;
 
 Textures t = new();
@@ -13,9 +16,9 @@ Thing StdOut = new(0, 0);
 
 // player
 Thing player = new(0, 0);
-player.animations.Add("idle", t.Load([ "player_idle" ]));
-player.animations.Add("walk", t.Load([ "player_walk1", "player_walk2" ]));
-player.animations.Add("wave", t.Load([ "player_wave1", "player_wave2", "player_wave3", "player_wave2" ]));
+player.animations.Add("idle", t.Load(["player_idle"]));
+player.animations.Add("walk", t.Load(["player_walk1", "player_walk2"]));
+player.animations.Add("wave", t.Load(["player_wave1", "player_wave2", "player_wave3", "player_wave2"]));
 player.animation_name = "idle";
 double player_speed = 0.05;
 Game.OnUpdate += (delta) =>
@@ -45,7 +48,7 @@ Game.OnUpdate += (delta) =>
 Game.OnRender += () =>
 {
     player.PlayAnimation();
-    if (player.Output != null) 
+    if (player.Output != null)
         Render.PutFrame(player.int_x, player.int_y, player.Output);
 };
 
@@ -53,7 +56,7 @@ Game.OnRender += () =>
 string text = " Hello world!!! ";
 Frame hello_frame = Draw.RectToFrame(text.Length + 2, 3, (100, 150, 200));
 hello_frame.PutFrame(1, 1, Draw.TextToFrame(text, (100, 150, 200)));
-Game.OnRender += () => 
+Game.OnRender += () =>
     Render.PutFrame(Render.width / 2 - hello_frame.width / 2, Render.height / 2, hello_frame);
 
 // fps counter
@@ -111,3 +114,4 @@ Game.OnStop += () =>
 };
 Game.OnUpdate += (delta) => { if (Input.IsPressed(ConsoleKey.Escape)) Game.Stop(); };
 Game.Start(Console.WindowWidth, Console.WindowHeight);
+>>>>>>> 17e990dbeb610773a5dba6f7767fbbcdcc159732
