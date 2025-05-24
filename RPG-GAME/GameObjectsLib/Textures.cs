@@ -48,7 +48,7 @@ namespace GameObjectsLib
 
                 return new Frame(0, 0)
                 {
-                    pixels = new Pixel[,]
+                    pixels = new Pixel?[,]
                     {
                         { null, head, null },
                         { arm, shirt, arm },
@@ -67,7 +67,7 @@ namespace GameObjectsLib
 
                 return new Frame(0, 0)
                 {
-                    pixels = new Pixel[,]
+                    pixels = new Pixel?[,]
                     {
                         { null, head, null },
                         { l_arm, shirt, r_arm },
@@ -84,7 +84,7 @@ namespace GameObjectsLib
 
                 return new Frame(0, 0)
                 {
-                    pixels = new Pixel[,]
+                    pixels = new Pixel?[,]
                     {
                         { null, head, null },
                         { null, arm, null },
@@ -102,7 +102,7 @@ namespace GameObjectsLib
 
                 return new Frame(0, 0)
                 {
-                    pixels = new Pixel[,]
+                    pixels = new Pixel?[,]
                     {
                         { null, head, null, r_arm, r_arm },
                         { l_arm, shirt, null, null, null },
@@ -120,7 +120,7 @@ namespace GameObjectsLib
 
                 return new Frame(0, 0)
                 {
-                    pixels = new Pixel[,]
+                    pixels = new Pixel?[,]
                     {
                         { null, head, null, r_arm },
                         { l_arm, shirt, null, null },
@@ -137,7 +137,7 @@ namespace GameObjectsLib
 
                 return new Frame(0, 0)
                 {
-                    pixels = new Pixel[,]
+                    pixels = new Pixel?[,]
                     {
                         { null, head, arm },
                         { arm, shirt, null },
