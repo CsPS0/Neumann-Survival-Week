@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace GameObjectsLib
+﻿namespace GameObjectsLib
 {
     public static class Maps
     {
@@ -19,7 +13,8 @@ namespace GameObjectsLib
             {
                 'w' => Sprites.Water,
                 'W' => Sprites.Wall_0000,
-                'b' => Sprites.Building,
+                'b' => Sprites.Barbie, // Barbie (moved above 'B')
+                'B' => Sprites.Barrels1,
                 't' => Sprites.Tree,
                 ' ' or 'X' => Sprites.Open,
                 'i' => Sprites.Inn,
@@ -27,7 +22,6 @@ namespace GameObjectsLib
                 'f' => Sprites.Fence,
                 'c' => Sprites.Chest,
                 'e' => Sprites.EmptyChest,
-                'B' => Sprites.Barrels1,
                 '1' => tileJ < map.Length / 2 ? Sprites.ArrowUp : Sprites.ArrowDown,
                 'm' => Sprites.Mountain,
                 '0' => Sprites.Town,
@@ -38,6 +32,9 @@ namespace GameObjectsLib
                 'k' => Sprites.King,
                 'h' => Sprites.Wall_0000,
                 'd' => Sprites.Gate, // Door
+                'y' => Sprites.Branyo, // Branyó
+                'r' => Sprites.Rizzler, // Rizzler
+                'l' => Sprites.Leibi, // Leibi
                 _ => Sprites.Error,
             };
         }
@@ -90,7 +87,7 @@ namespace GameObjectsLib
             "WWWWWWWWWWWW".ToCharArray(),
             "W    B    gW".ToCharArray(),
             "W  B B B   W".ToCharArray(),
-            "d          W".ToCharArray(),
+            "d     y    W".ToCharArray(), // 'y' for Branyó
             "W  B B B   W".ToCharArray(),
             "W          W".ToCharArray(),
             "W  B B B   W".ToCharArray(),
@@ -105,7 +102,7 @@ namespace GameObjectsLib
         public static readonly char[][] Aula =
         [
             "WWWWWWWWWWWW".ToCharArray(),
-            "W          W".ToCharArray(),
+            "W    r b l W".ToCharArray(), // 'r' = Rizzler, 'b' = Barbie, 'l' = Leibi
             "d B B B B  W".ToCharArray(),
             "W B B B B  W".ToCharArray(),
             "W B B B B  W".ToCharArray(),
@@ -115,74 +112,6 @@ namespace GameObjectsLib
             "W          W".ToCharArray(),
             "W    k     W".ToCharArray(),
             "W  g  1  g W".ToCharArray(),
-            "WWWWWWWWWWWW".ToCharArray(),
-        ];
-
-        // Library map
-        public static readonly char[][] Library =
-        [
-            "WWWWWWWWWWWW".ToCharArray(),
-            "W B  c  B  W".ToCharArray(),
-            "W          W".ToCharArray(),
-            "W B     B  W".ToCharArray(),
-            "d          W".ToCharArray(),
-            "W B  e  B  W".ToCharArray(),
-            "W          W".ToCharArray(),
-            "W B     B  W".ToCharArray(),
-            "W          W".ToCharArray(),
-            "W B  c  B gW".ToCharArray(),
-            "W    s     W".ToCharArray(),
-            "WWWWWWWWWWWW".ToCharArray(),
-        ];
-
-        // Cafeteria map
-        public static readonly char[][] Cafeteria =
-        [
-            "WWWWWWWWWWWW".ToCharArray(),
-            "W  B B B B W".ToCharArray(),
-            "W  B B B B W".ToCharArray(),
-            "d          W".ToCharArray(),
-            "W  B B B B W".ToCharArray(),
-            "W  B B B B W".ToCharArray(),
-            "W          W".ToCharArray(),
-            "W i    s   W".ToCharArray(),
-            "W          W".ToCharArray(),
-            "W g   k   gW".ToCharArray(),
-            "W  c e c   W".ToCharArray(),
-            "WWWWWWWWWWWW".ToCharArray(),
-        ];
-
-        // Courtyard - outdoor area with trees and water
-        public static readonly char[][] Courtyard =
-        [
-            "tttttttttttt".ToCharArray(),
-            "t ww    ww t".ToCharArray(),
-            "t w      w t".ToCharArray(),
-            "t    T T   t".ToCharArray(),
-            "1   T  T   1".ToCharArray(),
-            "   T    T   ".ToCharArray(),
-            "   T    T   ".ToCharArray(),
-            "1   T  T   1".ToCharArray(),
-            "t    T T   t".ToCharArray(),
-            "t w      w t".ToCharArray(),
-            "t ww    ww t".ToCharArray(),
-            "tttttttttttt".ToCharArray(),
-        ];
-
-        // Principal's Office
-        public static readonly char[][] PrincipalOffice =
-        [
-            "WWWWWWWWWWWW".ToCharArray(),
-            "W    c     W".ToCharArray(),
-            "W          W".ToCharArray(),
-            "W    B     W".ToCharArray(),
-            "d          W".ToCharArray(),
-            "W          W".ToCharArray(),
-            "W    B     W".ToCharArray(),
-            "W          W".ToCharArray(),
-            "W  k       W".ToCharArray(),
-            "W        g W".ToCharArray(),
-            "W  s   e   W".ToCharArray(),
             "WWWWWWWWWWWW".ToCharArray(),
         ];
     };
