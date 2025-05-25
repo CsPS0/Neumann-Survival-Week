@@ -2,9 +2,6 @@
 using InputLib;
 using System.Diagnostics;
 using GameLogicLib;
-<<<<<<< HEAD
-using GameObjectsLib;
-=======
 using GameObjectsLib;
 
 Textures t = new();
@@ -114,4 +111,3 @@ Game.OnStop += () =>
 };
 Game.OnUpdate += (delta) => { if (Input.IsPressed(ConsoleKey.Escape)) Game.Stop(); };
 Game.Start(Console.WindowWidth, Console.WindowHeight);
->>>>>>> 17e990dbeb610773a5dba6f7767fbbcdcc159732
