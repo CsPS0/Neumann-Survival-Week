@@ -1,5 +1,3 @@
-# 🎮 NJSZKI IKT RPG Game - IKT: Survival Week
-
 ```
                     ┌─────────────────────────────────────────────────────┐
                     │ ┌─────┐ ┌─────┐ ┌─────┬─────┬─────┐ ┌─────┐ ┌─────┐ │
@@ -18,6 +16,7 @@
 │                   │            _/─────────────────────────\_            │                   │
 │                   │           /─────────────────────────────\           │                   │
 ```
+# 🎮 NJSZKI IKT RPG Game - IKT: Survival Week
 
 ## 📖 Story
 - Új diák vagy a Neumannban, és 2 napot kell túlélned.
