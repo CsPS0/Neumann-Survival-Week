@@ -119,20 +119,6 @@ void HandleMenuInput()
 // --- Map Roaming ---
 void HandleMapInput()
 {
-    int px = player.int_x;
-    int py = player.int_y;
-    int nx = px, ny = py;
-    if (Input.IsPressed(ConsoleKey.W)) ny--;
-    if (Input.IsPressed(ConsoleKey.S)) ny++;
-    if (Input.IsPressed(ConsoleKey.A)) nx--;
-    if (Input.IsPressed(ConsoleKey.D)) nx++;
-    
-    if ((nx != px || ny != py) && Maps.IsValidCharacterMapTile(currentMap, nx, ny))
-    {
-        player.x = nx;
-        player.y = ny;
-    }
-    
     // Interact with NPC
     char tile = currentMap[ny][nx];
     if ((tile == 'y' || tile == 'r' || tile == 'b' || tile == 'l') && Input.IsPressed(ConsoleKey.E))
