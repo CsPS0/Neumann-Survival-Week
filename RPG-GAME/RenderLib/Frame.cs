@@ -140,6 +140,17 @@
             }
             return f;
         }
+        
+        public static Frame FromStrings(string[] frame)
+        {
+            Frame result = new(frame.Max(line => line.Length), frame.Length);
+            result.RaplacePixels((x, y, p) =>
+            {
+                if (frame[y].Length > x) return new(frame[y][x]);
+                else return null;
+            }, true);
+            return result;
+        }
 
         public string[] ToStrings()
         {
