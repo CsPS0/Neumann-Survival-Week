@@ -27,7 +27,7 @@
 - ✅ A játék különböző küldetésekre épül, ahol a játékos választhat a lehetőségek között.
 - ~~🎲 Véletlenszerű események (*random eventek*) teszik izgalmassá a játékmenetet.~~
 - 🕵️ Bizonyos lépésekre reagáló *easter egg*-ek is lesznek elrejtve.
-- 🏆 Minden nap végén egy *boss fight* vár a játékosra.
+- ~~🏆 Minden nap végén egy *boss fight* vár a játékosra.~~
 - 🔊 Animációk ~~és hangeffektek~~ fokozzák az élményt.
 - 🎛️ Részletes főmenü és almenük a könnyebb navigációhoz.
 - 💾 **A játékos válaszai eltárolásra kerülnek a játék bezárásáig**:
@@ -61,7 +61,7 @@ A fejlesztésért felelős csapat:
 
 ## 🔗 Dokumentumok
 * [Licensz](LICENSE)
-* [Dokumentáció](DOCS/Dokumentacio.docx)
+* [Dokumentáció](DOCS/Dokumentacio.pdf)
 
 ---
 
