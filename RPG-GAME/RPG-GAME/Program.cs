@@ -10,7 +10,6 @@ Textures t = new();
 string[] StdOutLines = new string[10];
 Thing StdOut = new(0, 0);
 
-
 // player
 Thing player = new(0, 0);
 player.animations.Add("idle", t.Load(["player_idle"]));
@@ -99,6 +98,9 @@ void HandleMenuInput()
                 player.x = 5; player.y = 5;
             }
             inMenu = false;
+            // Update map dimensions
+            mapWidth = currentMap[0].Length;
+            mapHeight = currentMap.Length;
         }
         else if (currentMenu.Type == Menus.MenuType.Settings)
         {
@@ -124,18 +126,23 @@ void HandleMapInput()
     if (Input.IsPressed(ConsoleKey.S)) ny++;
     if (Input.IsPressed(ConsoleKey.A)) nx--;
     if (Input.IsPressed(ConsoleKey.D)) nx++;
+    
     if ((nx != px || ny != py) && Maps.IsValidCharacterMapTile(currentMap, nx, ny))
     {
         player.x = nx;
         player.y = ny;
     }
+    
     // Interact with NPC
     char tile = currentMap[ny][nx];
     if ((tile == 'y' || tile == 'r' || tile == 'b' || tile == 'l') && Input.IsPressed(ConsoleKey.E))
     {
         string day = currentMapName == "classRoom5" ? "Kedd" : "Hétfő";
         currentDiscussion = GetNpcDiscussion(tile, day);
-        inConversation = true;
+        if (currentDiscussion != null)
+        {
+            inConversation = true;
+        }
     }
     if (Input.IsPressed(ConsoleKey.Escape))
     {
@@ -175,9 +182,13 @@ void HandleConversationInput()
     }
 }
 
+// fps counter
+Stopwatch second_watcher = Stopwatch.StartNew();
+
 // --- Main Update Loop ---
 Game.OnUpdate += (delta) =>
 {
+    // Handle input based on current state
     if (inMenu)
     {
         HandleMenuInput();
@@ -189,51 +200,43 @@ Game.OnUpdate += (delta) =>
     else
     {
         HandleMapInput();
+        
+        // Handle smooth movement and animations when not in menu/conversation
+        double moveX = 0, moveY = 0;
+        if (Input.IsDown(ConsoleKey.W)) moveY -= 1;
+        if (Input.IsDown(ConsoleKey.S)) moveY += 1;
+        if (Input.IsDown(ConsoleKey.A)) moveX -= 1;
+        if (Input.IsDown(ConsoleKey.D)) moveX += 1;
+        
+        double length = Math.Sqrt(moveX * moveX + moveY * moveY);
+        if (length > 1)
+        {
+            moveX /= length;
+            moveY /= length;
+        }
+
+        if (moveX != 0 || moveY != 0) 
+            player.animation_name = "walk";
+        else if (player.animation_name == "walk") 
+            player.animation_name = "idle";
+        
+        if (Input.IsPressed(ConsoleKey.E)) 
+            player.animation_name = "wave";
+
+        if (player.animation_name == "walk") 
+            player.animation_fps = 10;
+        else if (player.animation_name == "wave") 
+            player.animation_fps = 10;
+
+        player.x += moveX * player_speed * delta;
+        player.y += moveY * player_speed / 2 * delta;
     }
-};
-
-Game.OnUpdate += (delta) =>
-{
-    double moveX = 0, moveY = 0;
-    if (Input.IsDown(ConsoleKey.W)) moveY -= 1;
-    if (Input.IsDown(ConsoleKey.S)) moveY += 1;
-    if (Input.IsDown(ConsoleKey.A)) moveX -= 1;
-    if (Input.IsDown(ConsoleKey.D)) moveX += 1;
-    double length = Math.Sqrt(moveX * moveX + moveY * moveY);
-    if (length > 1)
-    {
-        moveX /= length;
-        moveY /= length;
-    }
-
-    if (moveX != 0 || moveY != 0) player.animation_name = "walk";
-    else if (player.animation_name == "walk") player.animation_name = "idle";
-    if (Input.IsPressed(ConsoleKey.E)) player.animation_name = "wave";
-
-    if (player.animation_name == "walk") player.animation_fps = 10;
-    else if (player.animation_name == "wave") player.animation_fps = 10;
-
-    player.x += moveX * player_speed * delta;
-    player.y += moveY * player_speed / 2 * delta;
-};
-Game.OnRender += () =>
-{
-    player.PlayAnimation();
-    if (player.Output != null)
-        Render.PutFrame(player.int_x, player.int_y, player.Output);
-};
-
-// hello world box
-string text = " Hello world!!! ";
-Frame hello_frame = Draw.RectToFrame(text.Length + 2, 3, ((byte)100, (byte)150, (byte)200));
-hello_frame.PutFrame(1, 1, Draw.TextToFrame(text, ((byte)100, (byte)150, (byte)200)));
-Game.OnRender += () =>
-    Render.PutFrame(Render.width / 2 - hello_frame.width / 2, Render.height / 2, hello_frame);
-
-// fps counter
-Stopwatch second_watcher = Stopwatch.StartNew();
-Game.OnUpdate += (delta) =>
-{
+    
+    // Global escape handling
+    if (Input.IsPressed(ConsoleKey.Escape) && !inMenu && !inConversation) 
+        Game.Stop();
+    
+    // FPS counter update
     if (second_watcher.ElapsedMilliseconds >= 1000)
     {
         string fps_string = $"Render: {(Game.Fps ?? 0)} Fps";
@@ -244,52 +247,11 @@ Game.OnUpdate += (delta) =>
     }
 };
 
-// resolution counter
-Game.OnResized += (w, h) =>
-{
-    string resolution_string = $"resolution: {w}x{h}";
-    StdOutLines[2] = resolution_string;
-};
-
-
-// StdOut render
-Game.OnRender += () =>
-{
-    int l = StdOutLines.Count(l => l != null);
-    Frame text_frame = new(Render.width - 2, l);
-    for (int i = 0; i < l; i++)
-    {
-        string line = StdOutLines[i];
-        if (line != null) text_frame.PutFrame(0, i, Draw.TextToFrame(line));
-    }
-    Frame box_frame = Draw.RectToFrame(text_frame.width + 4, text_frame.height + 2, Filled: true);
-    box_frame.PutFrame(2, 1, text_frame);
-
-    Frame name_tag = Draw.TextToFrame("Std output");
-
-    int x = Render.width / 2 - box_frame.width / 2;
-    int y = Render.height - box_frame.height + 1;
-    Render.PutFrame(x, y, box_frame, true);
-    Render.PutFrame(Render.width / 2 - name_tag.width / 2, y, name_tag, true);
-};
-
-
-// Main
-Game.Fps = 100;
-Game.OnStart += () => Render.Fill(new(' '));
-Game.OnResized += (w, h) => Render.Fill(new(' '));
-Game.OnStop += () =>
-{
-    Console.Clear();
-    Render.ResetStyle();
-};
-Game.OnUpdate += (delta) => { if (Input.IsPressed(ConsoleKey.Escape)) Game.Stop(); };
-Game.Start(Console.WindowWidth, Console.WindowHeight);
-
 // --- Main Render Loop ---
 Game.OnRender += () =>
 {
     Render.Fill(new(' '));
+    
     if (inMenu)
     {
         // Draw menu
@@ -339,4 +301,59 @@ Game.OnRender += () =>
         if (player.Output != null)
             Render.PutFrame(player.int_x * 8, player.int_y * 4, player.Output);
     }
+    
+    // Only show additional UI elements when not in menu
+    if (!inMenu)
+    {
+        // hello world box
+        string text = " Hello world!!! ";
+        Frame hello_frame = Draw.RectToFrame(text.Length + 2, 3, ((byte)100, (byte)150, (byte)200));
+        hello_frame.PutFrame(1, 1, Draw.TextToFrame(text, ((byte)100, (byte)150, (byte)200)));
+        Render.PutFrame(Render.width / 2 - hello_frame.width / 2, Render.height / 2, hello_frame);
+        
+        // StdOut render
+        int l = StdOutLines.Count(l => l != null);
+        if (l > 0)
+        {
+            Frame text_frame = new(Render.width - 2, l);
+            for (int i = 0; i < l; i++)
+            {
+                string line = StdOutLines[i];
+                if (line != null) text_frame.PutFrame(0, i, Draw.TextToFrame(line));
+            }
+            Frame box_frame = Draw.RectToFrame(text_frame.width + 4, text_frame.height + 2, Filled: true);
+            box_frame.PutFrame(2, 1, text_frame);
+
+            Frame name_tag = Draw.TextToFrame("Std output");
+
+            int x = Render.width / 2 - box_frame.width / 2;
+            int y = Render.height - box_frame.height + 1;
+            Render.PutFrame(x, y, box_frame, true);
+            Render.PutFrame(Render.width / 2 - name_tag.width / 2, y, name_tag, true);
+        }
+    }
 };
+
+// resolution counter
+Game.OnResized += (w, h) =>
+{
+    string resolution_string = $"resolution: {w}x{h}";
+    StdOutLines[2] = resolution_string;
+    Render.Init(w, h); // Reinitialize render system on resize
+};
+
+// Main initialization and startup
+Game.Fps = 100;
+Game.OnStart += () => 
+{
+    Render.Init(Console.WindowWidth, Console.WindowHeight);
+    Render.Fill(new(' '));
+};
+Game.OnResized += (w, h) => Render.Fill(new(' '));
+Game.OnStop += () =>
+{
+    Console.Clear();
+    Render.ResetStyle();
+};
+
+Game.Start(Console.WindowWidth, Console.WindowHeight);
