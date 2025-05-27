@@ -59,10 +59,17 @@ Discussion? GetNpcDiscussion(char npc, string day)
 // --- Menu Navigation ---
 void HandleMenuInput()
 {
-    if (Input.IsPressed(ConsoleKey.UpArrow))
+    // WS for up/down
+    if (Input.IsPressed(ConsoleKey.W))
         currentMenu.SelectedIndex = (currentMenu.SelectedIndex - 1 + currentMenu.Options.Count) % currentMenu.Options.Count;
-    if (Input.IsPressed(ConsoleKey.DownArrow))
+    if (Input.IsPressed(ConsoleKey.S))
         currentMenu.SelectedIndex = (currentMenu.SelectedIndex + 1) % currentMenu.Options.Count;
+    // AD for toggle (Settings ON/OFF)
+    if (currentMenu.Type == Menus.MenuType.Settings && (Input.IsPressed(ConsoleKey.A) || Input.IsPressed(ConsoleKey.D)))
+    {
+        colorsOn = !colorsOn;
+        currentMenu = Menus.GetSettingsMenu(colorsOn);
+    }
     if (Input.IsPressed(ConsoleKey.Enter))
     {
         if (currentMenu.Type == Menus.MenuType.Main)
@@ -100,8 +107,7 @@ void HandleMenuInput()
         }
         else if (currentMenu.Type == Menus.MenuType.Settings)
         {
-            colorsOn = !colorsOn;
-            currentMenu = Menus.GetSettingsMenu(colorsOn);
+            // Enter does nothing in settings
         }
     }
     if (Input.IsPressed(ConsoleKey.Escape))
