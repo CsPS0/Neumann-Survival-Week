@@ -302,36 +302,36 @@ Game.OnRender += () =>
             Render.PutFrame(player.int_x * 8, player.int_y * 4, player.Output);
     }
     
-    // Only show additional UI elements when not in menu
-    if (!inMenu)
-    {
-        // hello world box
-        string text = " Hello world!!! ";
-        Frame hello_frame = Draw.RectToFrame(text.Length + 2, 3, ((byte)100, (byte)150, (byte)200));
-        hello_frame.PutFrame(1, 1, Draw.TextToFrame(text, ((byte)100, (byte)150, (byte)200)));
-        Render.PutFrame(Render.width / 2 - hello_frame.width / 2, Render.height / 2, hello_frame);
+    //// Only show additional UI elements when not in menu
+    //if (!inMenu)
+    //{
+    //    // hello world box
+    //    string text = " Hello world!!! ";
+    //    Frame hello_frame = Draw.RectToFrame(text.Length + 2, 3, ((byte)100, (byte)150, (byte)200));
+    //    hello_frame.PutFrame(1, 1, Draw.TextToFrame(text, ((byte)100, (byte)150, (byte)200)));
+    //    Render.PutFrame(Render.width / 2 - hello_frame.width / 2, Render.height / 2, hello_frame);
         
-        // StdOut render
-        int l = StdOutLines.Count(l => l != null);
-        if (l > 0)
-        {
-            Frame text_frame = new(Render.width - 2, l);
-            for (int i = 0; i < l; i++)
-            {
-                string line = StdOutLines[i];
-                if (line != null) text_frame.PutFrame(0, i, Draw.TextToFrame(line));
-            }
-            Frame box_frame = Draw.RectToFrame(text_frame.width + 4, text_frame.height + 2, Filled: true);
-            box_frame.PutFrame(2, 1, text_frame);
+    //    // StdOut render
+    //    int l = StdOutLines.Count(l => l != null);
+    //    if (l > 0)
+    //    {
+    //        Frame text_frame = new(Render.width - 2, l);
+    //        for (int i = 0; i < l; i++)
+    //        {
+    //            string line = StdOutLines[i];
+    //            if (line != null) text_frame.PutFrame(0, i, Draw.TextToFrame(line));
+    //        }
+    //        Frame box_frame = Draw.RectToFrame(text_frame.width + 4, text_frame.height + 2, Filled: true);
+    //        box_frame.PutFrame(2, 1, text_frame);
 
-            Frame name_tag = Draw.TextToFrame("Std output");
+    //        Frame name_tag = Draw.TextToFrame("Std output");
 
-            int x = Render.width / 2 - box_frame.width / 2;
-            int y = Render.height - box_frame.height + 1;
-            Render.PutFrame(x, y, box_frame, true);
-            Render.PutFrame(Render.width / 2 - name_tag.width / 2, y, name_tag, true);
-        }
-    }
+    //        int x = Render.width / 2 - box_frame.width / 2;
+    //        int y = Render.height - box_frame.height + 1;
+    //        Render.PutFrame(x, y, box_frame, true);
+    //        Render.PutFrame(Render.width / 2 - name_tag.width / 2, y, name_tag, true);
+    //    }
+    //}
 };
 
 // resolution counter
@@ -339,7 +339,6 @@ Game.OnResized += (w, h) =>
 {
     string resolution_string = $"resolution: {w}x{h}";
     StdOutLines[2] = resolution_string;
-    Render.Init(w, h); // Reinitialize render system on resize
 };
 
 // Main initialization and startup
