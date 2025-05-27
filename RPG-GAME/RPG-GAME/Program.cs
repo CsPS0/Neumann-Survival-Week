@@ -1,13 +1,8 @@
-﻿using RenderLib;
-using InputLib;
-using System.Diagnostics;
-using GameLogicLib;
+﻿using GameLogicLib;
 using GameObjectsLib;
-using System.Collections.Generic;
-using System.Linq;
-
-// --- Project-wide using directives for all C# classes (no duplicates) ---
-using AssetsLib;
+using InputLib;
+using RenderLib;
+using System.Diagnostics;
 
 Textures t = new();
 
