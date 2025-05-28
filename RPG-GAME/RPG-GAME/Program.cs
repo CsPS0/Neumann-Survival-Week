@@ -2,13 +2,8 @@
 using GameObjectsLib;
 using InputLib;
 using RenderLib;
-using System.Diagnostics;
 
 Textures t = new();
-
-// Std out (max lines: 10)
-string[] StdOutLines = new string[10];
-Thing StdOut = new(0, 0);
 
 // player
 Thing player = new(0, 0);
@@ -16,7 +11,10 @@ player.animations.Add("idle", t.Load(["player_idle"]));
 player.animations.Add("walk", t.Load(["player_walk1", "player_walk2"]));
 player.animations.Add("wave", t.Load(["player_wave1", "player_wave2", "player_wave3", "player_wave2"]));
 player.animation_name = "idle";
+player.animation_fps = 10;
 double player_speed = 0.05;
+player.x = 5;
+player.y = 5;
 
 // --- Menu State ---
 Menus.Menu? currentMenu = Menus.GetMainMenu();
@@ -29,9 +27,6 @@ string currentMapName = "Aula";
 int mapWidth = currentMap[0].Length;
 int mapHeight = currentMap.Length;
 
-// --- Player State ---
-player.x = 5;
-player.y = 5;
 
 // --- Conversation State ---
 Discussion? currentDiscussion = null;
@@ -120,21 +115,21 @@ void HandleMenuInput()
 void HandleMapInput()
 {
     // Interact with NPC
-    char tile = currentMap[ny][nx];
-    if ((tile == 'y' || tile == 'r' || tile == 'b' || tile == 'l') && Input.IsPressed(ConsoleKey.E))
-    {
-        string day = currentMapName == "classRoom5" ? "Kedd" : "Hétfő";
-        currentDiscussion = GetNpcDiscussion(tile, day);
-        if (currentDiscussion != null)
-        {
-            inConversation = true;
-        }
-    }
-    if (Input.IsPressed(ConsoleKey.Escape))
-    {
-        inMenu = true;
-        currentMenu = Menus.GetMainMenu(colorsOn);
-    }
+    //char tile = currentMap[ny][nx];
+    //if ((tile == 'y' || tile == 'r' || tile == 'b' || tile == 'l') && Input.IsPressed(ConsoleKey.E))
+    //{
+    //    string day = currentMapName == "classRoom5" ? "Kedd" : "Hétfő";
+    //    currentDiscussion = GetNpcDiscussion(tile, day);
+    //    if (currentDiscussion != null)
+    //    {
+    //        inConversation = true;
+    //    }
+    //}
+    //if (Input.IsPressed(ConsoleKey.Escape))
+    //{
+    //    inMenu = true;
+    //    currentMenu = Menus.GetMainMenu(colorsOn);
+    //}
 }
 
 // --- Conversation Input ---
@@ -168,12 +163,13 @@ void HandleConversationInput()
     }
 }
 
-// fps counter
-Stopwatch second_watcher = Stopwatch.StartNew();
-
 // --- Main Update Loop ---
 Game.OnUpdate += (delta) =>
 {
+    // Global escape handling
+    if (Input.IsPressed(ConsoleKey.Escape) && !inMenu && !inConversation)
+        Game.Stop();
+
     // Handle input based on current state
     if (inMenu)
     {
@@ -209,35 +205,14 @@ Game.OnUpdate += (delta) =>
         if (Input.IsPressed(ConsoleKey.E)) 
             player.animation_name = "wave";
 
-        if (player.animation_name == "walk") 
-            player.animation_fps = 10;
-        else if (player.animation_name == "wave") 
-            player.animation_fps = 10;
-
         player.x += moveX * player_speed * delta;
         player.y += moveY * player_speed / 2 * delta;
-    }
-    
-    // Global escape handling
-    if (Input.IsPressed(ConsoleKey.Escape) && !inMenu && !inConversation) 
-        Game.Stop();
-    
-    // FPS counter update
-    if (second_watcher.ElapsedMilliseconds >= 1000)
-    {
-        string fps_string = $"Render: {(Game.Fps ?? 0)} Fps";
-        string delta_string = $"Update: {delta}ms";
-        StdOutLines[0] = fps_string;
-        StdOutLines[1] = delta_string;
-        second_watcher.Restart();
     }
 };
 
 // --- Main Render Loop ---
 Game.OnRender += () =>
 {
-    Render.Fill(new(' '));
-    
     if (inMenu)
     {
         // Draw menu
@@ -280,60 +255,17 @@ Game.OnRender += () =>
             {
                 string tileSprite = Maps.GetMapTileRender(currentMap, i, j);
                 Frame tileFrame = Draw.TextToFrame(tileSprite, ((byte)150, (byte)150, (byte)150));
-                Render.PutFrame(i * 8, j * 4, tileFrame);
+                Render.PutFrame(i, j, tileFrame);
             }
         }
         player.PlayAnimation();
         if (player.Output != null)
-            Render.PutFrame(player.int_x * 8, player.int_y * 4, player.Output);
+            Render.PutFrame(player.int_x, player.int_y, player.Output);
     }
-    
-    //// Only show additional UI elements when not in menu
-    //if (!inMenu)
-    //{
-    //    // hello world box
-    //    string text = " Hello world!!! ";
-    //    Frame hello_frame = Draw.RectToFrame(text.Length + 2, 3, ((byte)100, (byte)150, (byte)200));
-    //    hello_frame.PutFrame(1, 1, Draw.TextToFrame(text, ((byte)100, (byte)150, (byte)200)));
-    //    Render.PutFrame(Render.width / 2 - hello_frame.width / 2, Render.height / 2, hello_frame);
-        
-    //    // StdOut render
-    //    int l = StdOutLines.Count(l => l != null);
-    //    if (l > 0)
-    //    {
-    //        Frame text_frame = new(Render.width - 2, l);
-    //        for (int i = 0; i < l; i++)
-    //        {
-    //            string line = StdOutLines[i];
-    //            if (line != null) text_frame.PutFrame(0, i, Draw.TextToFrame(line));
-    //        }
-    //        Frame box_frame = Draw.RectToFrame(text_frame.width + 4, text_frame.height + 2, Filled: true);
-    //        box_frame.PutFrame(2, 1, text_frame);
-
-    //        Frame name_tag = Draw.TextToFrame("Std output");
-
-    //        int x = Render.width / 2 - box_frame.width / 2;
-    //        int y = Render.height - box_frame.height + 1;
-    //        Render.PutFrame(x, y, box_frame, true);
-    //        Render.PutFrame(Render.width / 2 - name_tag.width / 2, y, name_tag, true);
-    //    }
-    //}
-};
-
-// resolution counter
-Game.OnResized += (w, h) =>
-{
-    string resolution_string = $"resolution: {w}x{h}";
-    StdOutLines[2] = resolution_string;
 };
 
 // Main initialization and startup
 Game.Fps = 100;
-Game.OnStart += () => 
-{
-    Render.Init(Console.WindowWidth, Console.WindowHeight);
-    Render.Fill(new(' '));
-};
 Game.OnResized += (w, h) => Render.Fill(new(' '));
 Game.OnStop += () =>
 {
