@@ -53,7 +53,7 @@
 
             for (int x = 0, endx = Math.Min(next.width, WindowWidth); x < endx; x++)
             {
-                for (int y = 0, endy; y < Math.Min(next.height, WindowHeight); y++)
+                for (int y = 0, endy = Math.Min(next.height, WindowHeight); y < endy; y++)
                 {
                     if (!Pixel.Equals(next.pixels[y, x], current.pixels[y, x]))
                     {

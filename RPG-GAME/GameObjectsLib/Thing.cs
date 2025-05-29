@@ -1,8 +1,6 @@
 ﻿using System.Diagnostics;
 using RenderLib;
-using GameObjectsLib;
 using GameLogicLib;
-using System.Numerics;
 
 namespace GameObjectsLib
 {
@@ -10,6 +8,8 @@ namespace GameObjectsLib
     {
         public double double_x;
         public double double_y;
+
+        public bool hide = false;
 
         public int x
         {
@@ -27,13 +27,14 @@ namespace GameObjectsLib
         public int width { get => Output == null ? 0 : Output.width; }
         public int height { get => Output == null ? 0 : Output.height; }
 
-        public Thing(double x, double y)
+        public Thing(double x, double y, bool IgnoreLayer = false)
         {
             double_x = x;
             double_y = y;
             Game.OnRender += () =>
             {
-                if (Output != null) Render.PutFrame(this.x, this.y, Output);
+                if (Output != null && !hide)
+                    Render.PutFrame(this.x, this.y, Output, IgnoreLayer);
             };
         }
 
@@ -82,18 +83,26 @@ namespace GameObjectsLib
 
         public void Move(double x, double y)
         {
-            double new_x = x + double_x;
-            double new_y = y + double_y;
-            for (int i = 0, l = Collisions.Count; i < l; i++)
+            double new_x = double_x + x;
+            double new_y = double_y + y;
+
+            foreach (Thing thing in Collisions)
             {
-                Thing thing = Collisions[i];
-                if (
-                    new_x < thing.x + thing.width && new_x + width > thing.x &&
-                    new_y < thing.y + thing.height && new_y + height > thing.y
-                    ) return;
+                bool newXOverlap = new_x < thing.x + thing.width && new_x + width > thing.x;
+                bool newYOverlap = new_y < thing.y + thing.height && new_y + height > thing.y;
+                bool oldXOverlap = double_x < thing.x + thing.width && double_x + width > thing.x;
+                bool oldYOverlap = double_y < thing.y + thing.height && double_y + height > thing.y;
+
+                if (newXOverlap && newYOverlap)
+                {
+                    if (!oldXOverlap) x = 0;
+                    if (!oldYOverlap) y = 0;
+                }
             }
+
             double_x += x;
             double_y += y;
         }
+
     }
 }

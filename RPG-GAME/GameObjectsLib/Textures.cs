@@ -10,7 +10,8 @@ namespace GameObjectsLib
         public Frame Load(string texture_name)
         {
             if (options.ContainsKey(texture_name)) return options[texture_name]();
-            else throw new Exception($"{texture_name} not found in options");
+            else throw new Exception($"{texture_name} option not found. " +
+                $"Available options are: [{string.Join(", ", options.Keys)}]");
         }
 
         public Frame[] Load(string[] texture_names)
@@ -168,38 +169,27 @@ namespace GameObjectsLib
             // --- School ---
             options.Add("school_front", () =>
             {
-                (byte r, byte g, byte b) window_color = (0, 0, 0);
-                (byte r, byte g, byte b) wall_color = (0, 0, 0);
-                (byte r, byte g, byte b) door_color = (0, 0, 0);
-
-                Pixel[] window_top_frame = new Pixel[] { tl, vr, vr, vr, vr, vr, tr };
-                Frame window_middle_frame = new Frame(0, 0)
-                {
-                    pixels = new Pixel[,]
-                    {
-                        { hr, null, null, null, null, null, hr }
-                    }
-                };
-                Frame window_bottom_frame = new Frame(0, 0)
-                {
-                    pixels = new Pixel[,]
-                    {
-                        { bl, vr, vr, vr, vr, vr, br }
-                    }
-                };
-
-                return new Frame(0, 0);
+                string[] school = [
+"                    ┌─────────────────────────────────────────────────────┐",
+"                    │ ┌─────┐ ┌─────┐ ┌─────┬─────┬─────┐ ┌─────┐ ┌─────┐ │",
+"                    │ │     │ │     │ │     │     │     │ │     │ │     │ │",
+"                    │ └─────┘ └─────┘ └─────┴─────┴─────┘ └─────┘ └─────┘ │",
+"┌───────────────────┤ ┌─────┐ ┌─────┐ ┌─────┬─────┬─────┐ ┌─────┐ ┌─────┐ ├───────────────────┐",
+"│                   │ │     │ │     │ │     │     │     │ │     │ │     │ │                   │",
+"│ ┌─────┐ ┌─────┐   │ └─────┘ └─────┘ └─────┴─────┴─────┘ └─────┘ └─────┘ │  ┌─────┐ ┌─────┐  │",
+"│ │     │ │     │   │  ┌───────────────────────────────────────────────┐  │  │     │ │     │  │",
+"│ │     │ │     │   │  │NEUMANN JÁNOS SZÁMITÁSTECHNIKAI SZAKKÖZÉPISKOLA│  │  │     │ │     │  │",
+"│ │     │ │     │   │  └─────────────┬───╥───╥───╥───╥───┬─────────────┘  │  │     │ │     │  │",
+"│ │     │ │     │   │┌─────┐ ┌─────┐ │   ║   ║   ║   ║   │ ┌─────┐ ┌─────┐│  │     │ │     │  │",
+"│ │     │ │     │   ││     │ │     │ │ --║---║---║---║-- │ │     │ │     ││  │     │ │     │  │",
+"│ └─────┘ └─────┘   │└─────┘ └─────┘ │   ║   ║   ║   ║   │ └─────┘ └─────┘│  └─────┘ └─────┘  │",
+"│                   │              _/┴───╨───╨───╨───╨───┴\\_              │                   │",
+"│                   │            _/─────────────────────────\\_            │                   │",
+"│                   │           /─────────────────────────────\\           │                   │"
+                ];
+                return Frame.FromStrings(school);
             });
             // --- School ---
-
-            // --- Start Button ---
-            // active
-            options.Add("start_button_active", () => 
-            Draw.TextBoxToFrame("Start Game", (1, 0), modifiers: new(underline: true)));
-            // inactive
-            options.Add("start_button_inactive", () => 
-            Draw.TextBoxToFrame("Start Game", (1, 0)));
-            // --- Start Button ---
         }
     }
 }

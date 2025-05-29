@@ -7,6 +7,28 @@ Textures TextureLoader = new();
 (byte r, byte g, byte b) Gray_color = (100, 100, 100),
                          Blue_color = (150, 150, 255);
 
+// -- Game border barriers
+Thing LeftBarrier = new(-1, -1, true);
+Thing TopBarrier = new(-1 , -1, true);
+Thing RightBarrier = new(0, 0, true);
+Thing BottomBarrier = new(0, 0, true);
+Game.OnResized += (w, h) => 
+{
+    Frame horizontal = new(w, 1);
+    horizontal.Fill(new('#'));
+
+    Frame vertical = new(1, h);
+    vertical.Fill(new('#'));
+
+    RightBarrier.x = w;
+    BottomBarrier.y = h;
+
+    LeftBarrier.Output = vertical;
+    TopBarrier.Output = horizontal;
+    RightBarrier.Output = vertical;
+    BottomBarrier.Output = horizontal;
+};
+
 // -- Player --
 Thing player = new(5, 5);
 player.animations.Add("idle", TextureLoader.Load(["player_idle"]));
@@ -41,13 +63,26 @@ void PlayerUpdate(double delta)
 
     player.Move(moveX * player_speed * delta, moveY * player_speed / 2 * delta);
 }
+player.Collisions.Add(LeftBarrier);
+player.Collisions.Add(RightBarrier);
+player.Collisions.Add(TopBarrier);
+player.Collisions.Add(BottomBarrier);
+
+// -- Shool --
+Thing School = new(0, 0);
+School.Output = TextureLoader.Load("school_front");
+void SchoolUpdate()
+{
+    School.double_x = Render.width / 2 - School.width / 2;
+    School.double_y = Render.height - School.height;
+}
 
 // -- Menus --
-Menu? CurrentMenu = null;
 Menu Main_menu = new(MenuType.Main, [ "Start", "Settings", "Exit" ]);
 Menu Start_menu = new(MenuType.Start, [ "Hétfő", "Kedd" ]);
 Menu Settings_menu = new(MenuType.Settings, [ "Colors ON" ]);
 bool COLOR_ON = true;
+Menu? CurrentMenu = null;
 
 void MenuUpdate()
 {
@@ -166,6 +201,7 @@ Game.OnRender += () =>
     else
     {
         player.PlayAnimation();
+        SchoolUpdate();
     }
 };
 

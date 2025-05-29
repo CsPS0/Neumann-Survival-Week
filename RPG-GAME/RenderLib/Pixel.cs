@@ -61,6 +61,18 @@ namespace RenderLib
             this.modifiers = modifiers ?? new();
         }
 
+        public override string ToString()
+            => $"{character},{fg.r},{fg.g},{fg.b},{bg.r},{bg.g},{bg.b},{layer}";
+
+        public Pixel Clone(char? c = null, (byte r, byte g, byte b)? fg = null,
+            (byte r, byte g, byte b)? bg = null, int? layer = null)
+            => new(
+                c ?? character,
+                fg ?? this.fg,
+                bg ?? this.bg,
+                layer ?? this.layer
+                );
+
         public static bool Equals(Pixel? a, Pixel? b)
         {
             if (a == null && b == null) return true;
@@ -73,12 +85,12 @@ namespace RenderLib
             if (parts.Length == 8 &&
                 char.TryParse(parts[0], out char ch) &&
                 byte.TryParse(parts[1], out byte r1) &&
-	            byte.TryParse(parts[2], out byte g1) &&
-	            byte.TryParse(parts[3], out byte b1) &&
-	            byte.TryParse(parts[4], out byte r2) &&
-	            byte.TryParse(parts[5], out byte g2) &&
-	            byte.TryParse(parts[6], out byte b2) &&
-	            int.TryParse(parts[7], out int layer))
+                byte.TryParse(parts[2], out byte g1) &&
+                byte.TryParse(parts[3], out byte b1) &&
+                byte.TryParse(parts[4], out byte r2) &&
+                byte.TryParse(parts[5], out byte g2) &&
+                byte.TryParse(parts[6], out byte b2) &&
+                int.TryParse(parts[7], out int layer))
             {
                 var fg = (r1, g1, b1);
                 var bg = (r2, g2, b2);
@@ -87,17 +99,5 @@ namespace RenderLib
 
             return null;
         }
-
-        public override string ToString()
-            => $"{character},{fg.r},{fg.g},{fg.b},{bg.r},{bg.g},{bg.b},{layer}";
-    
-        public Pixel Clone(char? c = null, (byte r, byte g, byte b)? fg = null,
-            (byte r, byte g, byte b)? bg = null, int? layer = null)
-            => new(
-                c ?? character, 
-                fg ?? this.fg, 
-                bg ?? this.bg, 
-                layer ?? this.layer
-                );
     }
 }
