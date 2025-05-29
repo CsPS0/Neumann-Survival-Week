@@ -3,264 +3,169 @@ using GameObjectsLib;
 using InputLib;
 using RenderLib;
 
-Textures t = new();
+Textures TextureLoader = new();
+(byte r, byte g, byte b) Gray_color = (100, 100, 100),
+                         Blue_color = (150, 150, 255);
 
-// player
-Thing player = new(0, 0);
-player.animations.Add("idle", t.Load(["player_idle"]));
-player.animations.Add("walk", t.Load(["player_walk1", "player_walk2"]));
-player.animations.Add("wave", t.Load(["player_wave1", "player_wave2", "player_wave3", "player_wave2"]));
+// -- Player --
+Thing player = new(5, 5);
+player.animations.Add("idle", TextureLoader.Load(["player_idle"]));
+player.animations.Add("walk", TextureLoader.Load(["player_walk1", "player_walk2"]));
+player.animations.Add("wave", 
+    TextureLoader.Load(["player_wave1", "player_wave2", "player_wave3", "player_wave2"]));
 player.animation_name = "idle";
 player.animation_fps = 10;
 double player_speed = 0.05;
-player.x = 5;
-player.y = 5;
-
-// --- Menu State ---
-Menus.Menu? currentMenu = Menus.GetMainMenu();
-bool inMenu = true;
-bool colorsOn = true;
-
-// --- Map State ---
-char[][] currentMap = Maps.Aula;
-string currentMapName = "Aula";
-int mapWidth = currentMap[0].Length;
-int mapHeight = currentMap.Length;
-
-
-// --- Conversation State ---
-Discussion? currentDiscussion = null;
-bool inConversation = false;
-
-// --- Helper: Get NPC Discussion by map tile ---
-Discussion? GetNpcDiscussion(char npc, string day)
+void PlayerUpdate(double delta)
 {
-    return npc switch
+    double moveX = 0, moveY = 0;
+    if (Input.IsDown(ConsoleKey.W)) moveY -= 1;
+    if (Input.IsDown(ConsoleKey.S)) moveY += 1;
+    if (Input.IsDown(ConsoleKey.A)) moveX -= 1;
+    if (Input.IsDown(ConsoleKey.D)) moveX += 1;
+
+    double length = Math.Sqrt(moveX * moveX + moveY * moveY);
+    if (length > 1)
     {
-        'y' => day == "Kedd" ? Conversations.BranyoTuesday : Conversations.BranyoMonday,
-        'r' => day == "Kedd" ? Conversations.RizzlerTuesday : Conversations.RizzlerMonday,
-        'b' => day == "Kedd" ? Conversations.BarbieTuesday : Conversations.BarbieMonday,
-        'l' => day == "Kedd" ? Conversations.LeibiTuesday : Conversations.LeibiMonday,
-        _ => null
-    };
+        moveX /= length;
+        moveY /= length;
+    }
+
+    if (moveX != 0 || moveY != 0)
+        player.animation_name = "walk";
+    else if (player.animation_name == "walk")
+        player.animation_name = "idle";
+
+    if (Input.IsPressed(ConsoleKey.E))
+        player.animation_name = "wave";
+
+    player.Move(moveX * player_speed * delta, moveY * player_speed / 2 * delta);
 }
 
-// --- Menu Navigation ---
-void HandleMenuInput()
+// -- Menus --
+Menu? CurrentMenu = null;
+Menu Main_menu = new(MenuType.Main, [ "Start", "Settings", "Exit" ]);
+Menu Start_menu = new(MenuType.Start, [ "Hétfő", "Kedd" ]);
+Menu Settings_menu = new(MenuType.Settings, [ "Colors ON" ]);
+bool COLOR_ON = true;
+
+void MenuUpdate()
 {
-    // WS for up/down
-    if (Input.IsPressed(ConsoleKey.W))
-        currentMenu.SelectedIndex = (currentMenu.SelectedIndex - 1 + currentMenu.Options.Count) % currentMenu.Options.Count;
-    if (Input.IsPressed(ConsoleKey.S))
-        currentMenu.SelectedIndex = (currentMenu.SelectedIndex + 1) % currentMenu.Options.Count;
-    // AD for toggle (Settings ON/OFF)
-    if (currentMenu.Type == Menus.MenuType.Settings && (Input.IsPressed(ConsoleKey.A) || Input.IsPressed(ConsoleKey.D)))
+    int i = CurrentMenu.SelectedIndex;
+    string selected = CurrentMenu.Options[i];
+    int l = CurrentMenu.Options.Count;
+
+    // if the current menu is not settings
+    if (CurrentMenu.Type == MenuType.Settings && i == 0)
     {
-        colorsOn = !colorsOn;
-        currentMenu = Menus.GetSettingsMenu(colorsOn);
+        // AD for toggle (Settings ON/OFF)
+        if (Input.IsPressed(ConsoleKey.A) || Input.IsPressed(ConsoleKey.D))
+        {
+            COLOR_ON = !COLOR_ON;
+            Settings_menu.Options[i] = $"Colors {(COLOR_ON ? "ON" : "OFF")}";
+        }
     }
+
+    // WS for up/down
+    if (Input.IsPressed(ConsoleKey.W)) CurrentMenu.SelectedIndex = (i - 1 + l) % l;
+    if (Input.IsPressed(ConsoleKey.S)) CurrentMenu.SelectedIndex = (i + 1) % l;
+
     if (Input.IsPressed(ConsoleKey.Enter))
     {
-        if (currentMenu.Type == Menus.MenuType.Main)
+        switch (CurrentMenu.Type)
         {
-            if (currentMenu.SelectedIndex == 0) // Start
-            {
-                currentMenu = Menus.GetStartMenu(colorsOn);
-            }
-            else if (currentMenu.SelectedIndex == 1) // Settings
-            {
-                currentMenu = Menus.GetSettingsMenu(colorsOn);
-            }
-            else if (currentMenu.SelectedIndex == 2) // Exit
-            {
-                Game.Stop();
-            }
-        }
-        else if (currentMenu.Type == Menus.MenuType.Start)
-        {
-            // Pick day and go to map
-            string day = currentMenu.Options[currentMenu.SelectedIndex];
-            if (day == "Hétfő")
-            {
-                currentMap = Maps.Aula;
-                currentMapName = "Aula";
-                player.x = 5; player.y = 5;
-            }
-            else if (day == "Kedd")
-            {
-                currentMap = Maps.classRoom5;
-                currentMapName = "classRoom5";
-                player.x = 5; player.y = 5;
-            }
-            inMenu = false;
-            // Update map dimensions
-            mapWidth = currentMap[0].Length;
-            mapHeight = currentMap.Length;
-        }
-        else if (currentMenu.Type == Menus.MenuType.Settings)
-        {
-            // Enter does nothing in settings
+            case MenuType.Main:
+                switch (selected)
+                {
+                    case "Start": CurrentMenu = Start_menu; break;
+                    case "Settings":CurrentMenu = Settings_menu; break;
+                    case "Exit": Game.Stop(); break;
+                }
+                break;
+
+            case MenuType.Start:
+                switch (selected)
+                {
+                    //case "Hétfő":
+                    //    currentMap = Maps.Aula;
+                    //    currentMapName = "Aula";
+                    //    player.x = 5; player.y = 5;
+                    //    break;
+                    //case "Kedd":
+                    //    currentMap = Maps.classRoom5;
+                    //    currentMapName = "classRoom5";
+                    //    player.x = 5; player.y = 5;
+                    //    break;
+                }
+                break;
         }
     }
+
     if (Input.IsPressed(ConsoleKey.Escape))
     {
-        if (currentMenu.Type == Menus.MenuType.Main)
-            Game.Stop();
-        else
-            currentMenu = Menus.GetMainMenu(colorsOn);
+        if (CurrentMenu.Type == MenuType.Main) Game.Stop();
+        else CurrentMenu = Main_menu;
     }
 }
 
-// --- Map Roaming ---
-void HandleMapInput()
-{
-    // Interact with NPC
-    //char tile = currentMap[ny][nx];
-    //if ((tile == 'y' || tile == 'r' || tile == 'b' || tile == 'l') && Input.IsPressed(ConsoleKey.E))
-    //{
-    //    string day = currentMapName == "classRoom5" ? "Kedd" : "Hétfő";
-    //    currentDiscussion = GetNpcDiscussion(tile, day);
-    //    if (currentDiscussion != null)
-    //    {
-    //        inConversation = true;
-    //    }
-    //}
-    //if (Input.IsPressed(ConsoleKey.Escape))
-    //{
-    //    inMenu = true;
-    //    currentMenu = Menus.GetMainMenu(colorsOn);
-    //}
-}
-
-// --- Conversation Input ---
-void HandleConversationInput()
-{
-    var choices = currentDiscussion?.GetChoices();
-    if (choices == null || choices.Count == 0)
-    {
-        if (Input.IsPressed(ConsoleKey.Escape) || Input.IsPressed(ConsoleKey.Enter))
-        {
-            inConversation = false;
-            currentDiscussion = null;
-        }
-        return;
-    }
-    char[] keys = choices.Keys.ToArray();
-    foreach (char k in keys)
-    {
-        if (Input.IsPressed((ConsoleKey)char.ToUpper(k)))
-        {
-            currentDiscussion?.SelectChoice(k);
-            // For demo: just close after selection
-            inConversation = false;
-            currentDiscussion = null;
-        }
-    }
-    if (Input.IsPressed(ConsoleKey.Escape))
-    {
-        inConversation = false;
-        currentDiscussion = null;
-    }
-}
-
-// --- Main Update Loop ---
+// Game update
 Game.OnUpdate += (delta) =>
 {
-    // Global escape handling
-    if (Input.IsPressed(ConsoleKey.Escape) && !inMenu && !inConversation)
-        Game.Stop();
-
-    // Handle input based on current state
-    if (inMenu)
-    {
-        HandleMenuInput();
-    }
-    else if (inConversation && currentDiscussion != null)
-    {
-        HandleConversationInput();
-    }
-    else
-    {
-        HandleMapInput();
-        
-        // Handle smooth movement and animations when not in menu/conversation
-        double moveX = 0, moveY = 0;
-        if (Input.IsDown(ConsoleKey.W)) moveY -= 1;
-        if (Input.IsDown(ConsoleKey.S)) moveY += 1;
-        if (Input.IsDown(ConsoleKey.A)) moveX -= 1;
-        if (Input.IsDown(ConsoleKey.D)) moveX += 1;
-        
-        double length = Math.Sqrt(moveX * moveX + moveY * moveY);
-        if (length > 1)
-        {
-            moveX /= length;
-            moveY /= length;
-        }
-
-        if (moveX != 0 || moveY != 0) 
-            player.animation_name = "walk";
-        else if (player.animation_name == "walk") 
-            player.animation_name = "idle";
-        
-        if (Input.IsPressed(ConsoleKey.E)) 
-            player.animation_name = "wave";
-
-        player.x += moveX * player_speed * delta;
-        player.y += moveY * player_speed / 2 * delta;
-    }
+    if (CurrentMenu == null && Input.IsPressed(ConsoleKey.Escape)) CurrentMenu = Main_menu;
+    if (CurrentMenu != null) MenuUpdate();
+    else PlayerUpdate(delta);
 };
 
-// --- Main Render Loop ---
+// -- Game render --
 Game.OnRender += () =>
 {
-    if (inMenu)
+    if (CurrentMenu != null)
     {
+        Frame title = Draw.TextToFrame(CurrentMenu.Type.ToString(), Blue_color);
+        Render.PutFrame(Render.width / 2 - title.width / 2, (int)(Render.height * 0.1), title);
+
+        string[] options = CurrentMenu.Options.ToArray();
+        int longest = options.Max(item => item.Length) + 2;
+        int index = CurrentMenu.SelectedIndex;
+        (int horizontal, int vertical) padding = (0, 0);
+
         // Draw menu
-        var menu = currentMenu;
-        int w = 20, h = menu.Options.Count + 4;
-        Frame menuFrame = Draw.RectToFrame(w, h, colorsOn ? ((byte)100, (byte)200, (byte)255) : ((byte)100, (byte)100, (byte)100));
-        for (int i = 0; i < menu.Options.Count; i++)
+        padding.horizontal += 2;
+        padding.vertical += 1;
+        int w = longest + padding.horizontal * 2;
+        int h = options.Length + padding.vertical * 2;
+        Frame MenuFrame = Draw.RectToFrame(w, h, COLOR_ON ? Blue_color : Gray_color, Filled: true);
+        for (int i = 0, l = options.Length; i < l; i++)
         {
-            string opt = menu.Options[i];
-            Frame optFrame = Draw.TextToFrame((menu.SelectedIndex == i ? "> " : "  ") + opt, colorsOn && menu.SelectedIndex == i ? ((byte)255, (byte)255, (byte)0) : ((byte)255, (byte)255, (byte)255));
-            menuFrame.PutFrame(2, 2 + i, optFrame);
+            string opt = options[i];
+            (byte r, byte g, byte b) color = COLOR_ON && index == i ? Blue_color : Gray_color;
+            Frame OptFrame = Draw.TextToFrame((index == i ? "> " : "  ") + opt, color);
+            MenuFrame.PutFrame(padding.horizontal, padding.vertical + i, OptFrame, true);
         }
-        Render.PutFrame(Render.width / 2 - w / 2, Render.height / 2 - h / 2, menuFrame);
+        Render.PutFrame(Render.width / 2 - w / 2, Render.height / 2 - h / 2, MenuFrame, true);
     }
-    else if (inConversation && currentDiscussion != null)
+    else if (false)
     {
-        // Draw NPC face and dialogue
-        int w = 60, h = 20;
-        Frame box = Draw.RectToFrame(w, h, ((byte)200, (byte)200, (byte)200));
-        Frame face = Draw.TextToFrame(currentDiscussion.AsciiFace, ((byte)100, (byte)100, (byte)255));
-        box.PutFrame(2, 2, face);
-        Frame name = Draw.TextToFrame(currentDiscussion.NpcName, ((byte)255, (byte)255, (byte)0));
-        box.PutFrame(2, 1, name);
-        Frame dialogue = Draw.TextToFrame(currentDiscussion.Dialogue, ((byte)0, (byte)0, (byte)0));
-        box.PutFrame(20, 2, dialogue);
-        int y = 8;
-        foreach (var kv in currentDiscussion.GetChoices())
-        {
-            Frame choice = Draw.TextToFrame($"{kv.Key}. {kv.Value}", ((byte)0, (byte)0, (byte)0));
-            box.PutFrame(20, y++, choice);
-        }
-        Render.PutFrame(Render.width / 2 - w / 2, Render.height / 2 - h / 2, box);
+        //// Draw NPC face and dialogue
+        //int w = 60, h = 20;
+        //Frame box = Draw.RectToFrame(w, h, ((byte)200, (byte)200, (byte)200));
+        //Frame face = Draw.TextToFrame(currentDiscussion.AsciiFace, ((byte)100, (byte)100, (byte)255));
+        //box.PutFrame(2, 2, face);
+        //Frame name = Draw.TextToFrame(currentDiscussion.NpcName, ((byte)255, (byte)255, (byte)0));
+        //box.PutFrame(2, 1, name);
+        //Frame dialogue = Draw.TextToFrame(currentDiscussion.Dialogue, ((byte)0, (byte)0, (byte)0));
+        //box.PutFrame(20, 2, dialogue);
+        //int y = 8;
+        //foreach (var kv in currentDiscussion.GetChoices())
+        //{
+        //    Frame choice = Draw.TextToFrame($"{kv.Key}. {kv.Value}", ((byte)0, (byte)0, (byte)0));
+        //    box.PutFrame(20, y++, choice);
+        //}
+        //Render.PutFrame(Render.width / 2 - w / 2, Render.height / 2 - h / 2, box);
     }
     else
     {
-        // Draw map and player
-        for (int j = 0; j < mapHeight; j++)
-        {
-            for (int i = 0; i < mapWidth; i++)
-            {
-                string tileSprite = Maps.GetMapTileRender(currentMap, i, j);
-                Frame tileFrame = Draw.TextToFrame(tileSprite, ((byte)150, (byte)150, (byte)150));
-                Render.PutFrame(i, j, tileFrame);
-            }
-        }
         player.PlayAnimation();
-        if (player.Output != null)
-            Render.PutFrame(player.int_x, player.int_y, player.Output);
     }
 };
 

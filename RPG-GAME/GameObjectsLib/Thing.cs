@@ -1,31 +1,40 @@
 ﻿using System.Diagnostics;
 using RenderLib;
+using GameObjectsLib;
+using GameLogicLib;
+using System.Numerics;
 
 namespace GameObjectsLib
 {
     public class Thing
     {
-        public double x;
-        public double y;
+        public double double_x;
+        public double double_y;
 
-        public int int_x
+        public int x
         {
-            get => (int)Math.Round(x);
-            set => x = value;
+            get => (int)Math.Round(double_x);
+            set => double_x = value;
         }
-        public int int_y
+        public int y
         {
-            get => (int)(Math.Round(y));
-            set => y = value;
+            get => (int)(Math.Round(double_y));
+            set => double_y = value;
         }
+
+        public List<Thing> Collisions = new();
 
         public int width { get => Output == null ? 0 : Output.width; }
         public int height { get => Output == null ? 0 : Output.height; }
 
         public Thing(double x, double y)
         {
-            this.x = x;
-            this.y = y;
+            double_x = x;
+            double_y = y;
+            Game.OnRender += () =>
+            {
+                if (Output != null) Render.PutFrame(this.x, this.y, Output);
+            };
         }
 
         public int animation_fps = 24;
@@ -37,11 +46,15 @@ namespace GameObjectsLib
             get => _animation_name;
             set
             {
-                if (_animation_name != value)
+                if (animations.ContainsKey(value))
                 {
-                    _animation_name = value;
-                    animation_index = 0;
-                }
+                    if (_animation_name != value)
+                    {
+                        _animation_name = value;
+                        animation_index = 0;
+                    }
+                } else throw new Exception($"{value} animation not found. " +
+                    $"Available animtions are: [{string.Join(", ", animations.Keys)}]");
             }
         }
         private Stopwatch timer = new();
@@ -54,38 +67,33 @@ namespace GameObjectsLib
             if (animation_name != null)
             {
                 double frame_time = 1000f / animation_fps;
+                if (!timer.IsRunning) timer.Start();
 
-                if (animations.ContainsKey(animation_name))
+                if (timer.ElapsedMilliseconds >= frame_time)
                 {
-                    if (!timer.IsRunning) timer.Start();
-
-                    if (timer.ElapsedMilliseconds >= frame_time)
-                    {
-                        int frames_passed = (int)(timer.ElapsedMilliseconds / frame_time);
-                        animation_index = (animation_index + frames_passed) % animations[animation_name].Length;
-                        timer.Restart();
-                    }
+                    int frames_passed = (int)(timer.ElapsedMilliseconds / frame_time);
+                    animation_index = (animation_index + frames_passed) % animations[animation_name].Length;
+                    timer.Restart();
                 }
-                else throw new Exception($"{animation_name} animation not found.");
 
                 Output = animations[animation_name][animation_index];
             }
         }
 
-        public bool IsColliding(Thing obj)
+        public void Move(double x, double y)
         {
-            return !(this.int_x + this.width < obj.int_x ||
-            this.int_x > obj.int_x + obj.width ||
-            this.int_y + this.height < obj.int_y ||
-            this.int_y > obj.int_y + obj.height);
-        }
-
-        public bool IsColliding(int x, int y, int w, int h)
-        {
-            return !(this.int_x + this.width - 1 < x ||
-            this.int_x > x + w - 1 ||
-            this.int_y + this.height - 1 < y ||
-            this.int_y > y + h - 1);
+            double new_x = x + double_x;
+            double new_y = y + double_y;
+            for (int i = 0, l = Collisions.Count; i < l; i++)
+            {
+                Thing thing = Collisions[i];
+                if (
+                    new_x < thing.x + thing.width && new_x + width > thing.x &&
+                    new_y < thing.y + thing.height && new_y + height > thing.y
+                    ) return;
+            }
+            double_x += x;
+            double_y += y;
         }
     }
 }
