@@ -22,12 +22,13 @@ namespace GameObjectsLib
             set => double_y = value;
         }
 
-        public List<Thing> Collisions = new();
+        public List<Thing> CheckCollisions = new();
 
         public int width { get => Output == null ? 0 : Output.width; }
         public int height { get => Output == null ? 0 : Output.height; }
 
-        public Thing(double x, double y, bool IgnoreLayer = false)
+        public Thing(double x, double y, bool IgnoreLayer = false, 
+            Rect? Hitbox = null)
         {
             double_x = x;
             double_y = y;
@@ -36,6 +37,7 @@ namespace GameObjectsLib
                 if (Output != null && !hide)
                     Render.PutFrame(this.x, this.y, Output, IgnoreLayer);
             };
+            if (Hitbox != null) _Hitbox = Hitbox;
         }
 
         public int animation_fps = 24;
@@ -62,6 +64,15 @@ namespace GameObjectsLib
         private int animation_index = 0;
 
         public Frame? Output;
+        public Rect _Hitbox = new();
+        public Rect Hitbox
+        {
+            get => new(
+                    _Hitbox.x ?? x, _Hitbox.y ?? y, _Hitbox.width ?? width,
+                    _Hitbox.height ?? height
+                    );
+            set => _Hitbox = value;
+        }
 
         public void PlayAnimation()
         {
@@ -81,17 +92,18 @@ namespace GameObjectsLib
             }
         }
 
-        public void Move(double x, double y)
+        public bool Move(double x, double y)
         {
             double new_x = double_x + x;
             double new_y = double_y + y;
 
-            foreach (Thing thing in Collisions)
+            foreach (Thing thing in CheckCollisions)
             {
-                bool newXOverlap = new_x < thing.x + thing.width && new_x + width > thing.x;
-                bool newYOverlap = new_y < thing.y + thing.height && new_y + height > thing.y;
-                bool oldXOverlap = double_x < thing.x + thing.width && double_x + width > thing.x;
-                bool oldYOverlap = double_y < thing.y + thing.height && double_y + height > thing.y;
+                Rect hitbox = thing.Hitbox;
+                bool newXOverlap = new_x < hitbox.x + hitbox.width && new_x + width > hitbox.x;
+                bool newYOverlap = new_y < hitbox.y + hitbox.height && new_y + height > hitbox.y;
+                bool oldXOverlap = double_x < hitbox.x + hitbox.width && double_x + width > hitbox.x;
+                bool oldYOverlap = double_y < hitbox.y + hitbox.height && double_y + height > hitbox.y;
 
                 if (newXOverlap && newYOverlap)
                 {
@@ -100,8 +112,10 @@ namespace GameObjectsLib
                 }
             }
 
+            if (x == 0 && y == 0) return false;
             double_x += x;
             double_y += y;
+            return true;
         }
 
     }

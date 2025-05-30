@@ -8,10 +8,10 @@ Textures TextureLoader = new();
                          Blue_color = (150, 150, 255);
 
 // -- Game border barriers
-Thing LeftBarrier = new(-1, -1, true);
-Thing TopBarrier = new(-1 , -1, true);
-Thing RightBarrier = new(0, 0, true);
-Thing BottomBarrier = new(0, 0, true);
+Thing LeftBarrier = new(-1, -1, Hitbox: new());
+Thing TopBarrier = new(-1 , -1, Hitbox: new());
+Thing RightBarrier = new(0, 0, Hitbox: new());
+Thing BottomBarrier = new(0, 0, Hitbox: new());
 Game.OnResized += (w, h) => 
 {
     Frame horizontal = new(w, 1);
@@ -38,6 +38,9 @@ player.animations.Add("wave",
 player.animation_name = "idle";
 player.animation_fps = 10;
 double player_speed = 0.05;
+player.CheckCollisions.AddRange([
+    LeftBarrier, TopBarrier, RightBarrier, BottomBarrier
+]);
 void PlayerUpdate(double delta)
 {
     double moveX = 0, moveY = 0;
@@ -53,28 +56,27 @@ void PlayerUpdate(double delta)
         moveY /= length;
     }
 
-    if (moveX != 0 || moveY != 0)
-        player.animation_name = "walk";
-    else if (player.animation_name == "walk")
-        player.animation_name = "idle";
+    bool IsMoving = player.Move(
+        moveX * player_speed * delta,
+        moveY * player_speed / 2 * delta
+        );
 
-    if (Input.IsPressed(ConsoleKey.E))
-        player.animation_name = "wave";
-
-    player.Move(moveX * player_speed * delta, moveY * player_speed / 2 * delta);
+    if (IsMoving) player.animation_name = "walk";
+    else if (player.animation_name == "walk") player.animation_name = "idle";
+    if (Input.IsPressed(ConsoleKey.E)) player.animation_name = "wave";
 }
-player.Collisions.Add(LeftBarrier);
-player.Collisions.Add(RightBarrier);
-player.Collisions.Add(TopBarrier);
-player.Collisions.Add(BottomBarrier);
 
-// -- Shool --
+// -- School --
 Thing School = new(0, 0);
+School.hide = false;
 School.Output = TextureLoader.Load("school_front");
 void SchoolUpdate()
 {
-    School.double_x = Render.width / 2 - School.width / 2;
-    School.double_y = Render.height - School.height;
+    if (!School.hide)
+    {
+        School.double_x = Render.width / 2 - School.width / 2;
+        School.double_y = Render.height - School.height;
+    }
 }
 
 // -- Menus --
