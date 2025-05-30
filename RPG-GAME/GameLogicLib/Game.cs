@@ -28,7 +28,6 @@ namespace GameLogicLib
         public static void Stop()
         {
             RUN = false;
-            RenderLib.Render.ResetStyle();
             OnStop?.Invoke();
         }
 

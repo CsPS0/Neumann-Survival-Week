@@ -6,10 +6,14 @@ namespace GameObjectsLib
 {
     public class Thing
     {
+        public string? name = null;
+
         public double double_x;
         public double double_y;
 
-        public bool hide = false;
+        public bool Hide = false;
+        public bool IgnoreLayer = false;
+        public bool ReverseHitbox = false;
 
         public int x
         {
@@ -27,15 +31,17 @@ namespace GameObjectsLib
         public int width { get => Output == null ? 0 : Output.width; }
         public int height { get => Output == null ? 0 : Output.height; }
 
-        public Thing(double x, double y, bool IgnoreLayer = false, 
+        public Thing(string? name, double x, double y, bool IgnoreLayer = false,
             Rect? Hitbox = null)
         {
+            this.name = name;
             double_x = x;
             double_y = y;
+            this.IgnoreLayer = IgnoreLayer;
             Game.OnRender += () =>
             {
-                if (Output != null && !hide)
-                    Render.PutFrame(this.x, this.y, Output, IgnoreLayer);
+                if (Output != null && !Hide)
+                    Render.PutFrame(this.x, this.y, Output, this.IgnoreLayer);
             };
             if (Hitbox != null) _Hitbox = Hitbox;
         }
@@ -44,19 +50,20 @@ namespace GameObjectsLib
         public Dictionary<string, Frame[]> animations = new();
 
         private string? _animation_name;
-        public string? animation_name 
-        { 
+        public string? animation_name
+        {
             get => _animation_name;
             set
             {
-                if (animations.ContainsKey(value))
+                if (animations.ContainsKey(value!))
                 {
                     if (_animation_name != value)
                     {
                         _animation_name = value;
                         animation_index = 0;
                     }
-                } else throw new Exception($"{value} animation not found. " +
+                }
+                else throw new Exception($"{value} animation not found. " +
                     $"Available animtions are: [{string.Join(", ", animations.Keys)}]");
             }
         }
@@ -94,6 +101,8 @@ namespace GameObjectsLib
 
         public bool Move(double x, double y)
         {
+            if (x == 0 && y == 0) return false;
+
             double new_x = double_x + x;
             double new_y = double_y + y;
 
@@ -107,16 +116,17 @@ namespace GameObjectsLib
 
                 if (newXOverlap && newYOverlap)
                 {
+                    OnCollision?.Invoke(thing);
                     if (!oldXOverlap) x = 0;
                     if (!oldYOverlap) y = 0;
+                    if (x == 0 && y == 0) return false;
                 }
             }
-
-            if (x == 0 && y == 0) return false;
             double_x += x;
             double_y += y;
             return true;
         }
 
+        public event Action<Thing> OnCollision = null!;
     }
 }
