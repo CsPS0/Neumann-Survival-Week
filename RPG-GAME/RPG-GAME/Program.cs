@@ -2,9 +2,6 @@
 using GameObjectsLib;
 using InputLib;
 using RenderLib;
-using System.Diagnostics;
-using System.Drawing;
-using System.Transactions;
 
 Textures TextureLoader = new();
 (byte r, byte g, byte b) Gray_color = (100, 100, 100),
@@ -12,29 +9,7 @@ Textures TextureLoader = new();
 bool COLOR_ON = true;
 bool HINTS_ON = false;
 Menu? CurrentMenu = null;
-
-
-// -- Game border barriers
-Thing LeftBarrier = new("LeftBarrier", -1, -1, Hitbox: new());
-Thing TopBarrier = new("TopBarrier", -1 , -1, Hitbox: new());
-Thing RightBarrier = new("RightBarrier", 0, 0, Hitbox: new());
-Thing BottomBarrier = new("BottomBarrier", 0, 0, Hitbox: new());
-Game.OnResized += (w, h) => 
-{
-    Frame horizontal = new(w, 1);
-    horizontal.Fill(new('#'));
-
-    Frame vertical = new(1, h);
-    vertical.Fill(new('#'));
-
-    RightBarrier.x = w;
-    BottomBarrier.y = h;
-
-    LeftBarrier.Output = vertical;
-    TopBarrier.Output = horizontal;
-    RightBarrier.Output = vertical;
-    BottomBarrier.Output = horizontal;
-};
+string? CurrentScene = null;
 
 
 // -- Player --
@@ -48,9 +23,7 @@ player.animations.Add("falling", TextureLoader.Load(["player_falling"]));
 player.animation_name = "idle";
 player.animation_fps = 10;
 double player_speed = 0.05;
-player.CheckCollisions.AddRange([
-    LeftBarrier, TopBarrier, RightBarrier, BottomBarrier
-]);
+double old_x = player.double_x, old_y = player.double_y;
 void PlayerUpdate(double delta)
 {
     if (!player.Hide)
@@ -68,35 +41,74 @@ void PlayerUpdate(double delta)
             moveY /= length;
         }
 
-        bool IsMoving = player.Move(
+        player.Move(
             moveX * player_speed * delta,
             moveY * player_speed / 2 * delta
             );
 
-        if (IsMoving) player.animation_name = "walk";
+        double r_player_x = Math.Round(player.double_x, 5);
+        double r_player_y = Math.Round(player.double_y, 5);
+
+        if (old_x != r_player_x || old_y != r_player_y)
+        {
+            player.animation_name = "walk";
+            old_x = r_player_x;
+            old_y = r_player_y;
+        }
         else if (player.animation_name == "walk") player.animation_name = "idle";
         if (Input.IsPressed(ConsoleKey.E)) player.animation_name = "wave";
     }
 }
 
-// Test
-Thing test = new("Test", 20, 10, IgnoreLayer: true);
-test.ReverseHitbox = true;
-test.Output = new(20, 10);
-test.Output.Fill(new('#'));
-player.CheckCollisions.Add(test);
+
+// -- Game border barriers
+Thing LeftBarrier = new("LeftBarrier", -1, -1, Hitbox: new());
+Thing TopBarrier = new("TopBarrier", -1, -1, Hitbox: new());
+Thing RightBarrier = new("RightBarrier", 0, 0, Hitbox: new());
+Thing BottomBarrier = new("BottomBarrier", 0, 0, Hitbox: new());
+player.CheckCollisions.AddRange([
+    LeftBarrier, TopBarrier, RightBarrier, BottomBarrier
+]);
+Game.OnResized += (w, h) =>
+{
+    Frame horizontal = new(w, 1);
+    horizontal.Fill(new('#'));
+
+    Frame vertical = new(1, h);
+    vertical.Fill(new('#'));
+
+    RightBarrier.x = w;
+    BottomBarrier.y = h;
+
+    LeftBarrier.Output = vertical;
+    TopBarrier.Output = horizontal;
+    RightBarrier.Output = vertical;
+    BottomBarrier.Output = horizontal;
+};
+player.OnCollision += (thing, resolve) =>
+{
+    if (new Thing[] { LeftBarrier, TopBarrier, RightBarrier, BottomBarrier }.Contains(thing))
+        resolve();
+};
 
 
 // -- School --
 Thing School = new("School", 0, 0);
 School.Hide = true;
 School.Output = TextureLoader.Load("school_front");
+Thing SchoolDoor = new("Doors", 0, 0);
+SchoolDoor.Output = new Frame(21, 1);
+SchoolDoor.Hide = true;
+SchoolDoor.Output.Fill(new('#', (255, 0, 0)));
+player.CheckCollisions.Add(SchoolDoor);
 void SchoolUpdate()
 {
-    if (!School.Hide)
+    if (!School.Hide && CurrentScene == "Outside")
     {
         School.double_x = Render.width / 2 - School.width / 2;
         School.double_y = Render.height - School.height;
+        SchoolDoor.x = School.x + 37;
+        SchoolDoor.y = School.y + School.height - 3;
     }
 }
 
@@ -112,7 +124,7 @@ Leibi.Hide = true;
 
 
 // -- Scenes --
-string? CurrentScene = null;
+string[] Scenens = ["Outside"];
 
 
 // -- Menus --

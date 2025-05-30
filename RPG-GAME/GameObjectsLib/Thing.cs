@@ -1,6 +1,7 @@
-﻿using System.Diagnostics;
+﻿using GameLogicLib;
 using RenderLib;
-using GameLogicLib;
+using System;
+using System.Diagnostics;
 
 namespace GameObjectsLib
 {
@@ -13,7 +14,8 @@ namespace GameObjectsLib
 
         public bool Hide = false;
         public bool IgnoreLayer = false;
-        public bool ReverseHitbox = false;
+        public bool ReverseHitbox = true;
+        // this is not being used yet
 
         public int x
         {
@@ -99,34 +101,61 @@ namespace GameObjectsLib
             }
         }
 
-        public bool Move(double x, double y)
+        public void Move(double x, double y)
         {
-            if (x == 0 && y == 0) return false;
-
-            double new_x = double_x + x;
-            double new_y = double_y + y;
+            double_x += x;
+            double_y += y;
 
             foreach (Thing thing in CheckCollisions)
             {
                 Rect hitbox = thing.Hitbox;
-                bool newXOverlap = new_x < hitbox.x + hitbox.width && new_x + width > hitbox.x;
-                bool newYOverlap = new_y < hitbox.y + hitbox.height && new_y + height > hitbox.y;
-                bool oldXOverlap = double_x < hitbox.x + hitbox.width && double_x + width > hitbox.x;
-                bool oldYOverlap = double_y < hitbox.y + hitbox.height && double_y + height > hitbox.y;
 
-                if (newXOverlap && newYOverlap)
+                double l1 = double_x, r1 = l1 + width;
+                double l2 = (int)hitbox.x!, r2 = l2 + (int)hitbox.width!;
+                double t1 = double_y, b1 = t1 + height;
+                double t2 = (int)hitbox.y!, b2 = t2 + (int)hitbox.height!;
+
+                double distLeft = l1 - r2;
+                double distRight = l2 - r1;
+                double distTop = t1 - b2;
+                double distBottom = t2 - b1;
+
+                bool left = Math.Abs(distLeft) >= Math.Abs(distRight);
+                double signedXDist = left ? distRight : distLeft;
+
+                bool top = Math.Abs(distTop) >= Math.Abs(distBottom);
+                double signedYDist = top ? distBottom : distTop;
+
+                double? xAdjust = null, yAdjust = null;
+
+                if (signedXDist < 0 && signedYDist < 0)
                 {
-                    OnCollision?.Invoke(thing);
-                    if (!oldXOverlap) x = 0;
-                    if (!oldYOverlap) y = 0;
-                    if (x == 0 && y == 0) return false;
+                    if (Math.Abs(signedXDist) < Math.Abs(signedYDist))
+                    {
+                        xAdjust = left ? signedXDist : -signedXDist;
+                    }
+                    else if (Math.Abs(signedYDist) < Math.Abs(signedXDist))
+                    {
+                        yAdjust = top ? signedYDist : -signedYDist;
+                    }
+                    else
+                    {
+                        xAdjust = left ? signedXDist : -signedXDist;
+                        yAdjust = top ? signedYDist : -signedYDist;
+                    }
+
+                    void ResolveCollision()
+                    {
+                        if (xAdjust.HasValue) double_x += xAdjust.Value;
+                        if (yAdjust.HasValue) double_y += yAdjust.Value;
+                    }
+
+                    OnCollision?.Invoke(thing, ResolveCollision);
                 }
             }
-            double_x += x;
-            double_y += y;
-            return true;
         }
 
-        public event Action<Thing> OnCollision = null!;
+
+        public event Action<Thing, Action> OnCollision = null!;
     }
 }
