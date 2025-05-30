@@ -8,25 +8,24 @@ Textures TextureLoader = new();
                          Blue_color = (102, 153, 225);
 bool COLOR_ON = true;
 bool HINTS_ON = false;
-Menu? CurrentMenu = null;
-string? CurrentScene = null;
+Scene? CurrentScene = null;
 
 
 // -- Player --
-Thing player = new("Player", 5, 5);
-player.animations.Add("idle", TextureLoader.Load(["player_idle"]));
-player.animations.Add("walk", TextureLoader.Load(["player_walk1", "player_walk2"]));
-player.animations.Add("wave", TextureLoader.Load([
+Thing Player = new("Player", 5, 5);
+Player.animations.Add("idle", TextureLoader.Load(["player_idle"]));
+Player.animations.Add("walk", TextureLoader.Load(["player_walk1", "player_walk2"]));
+Player.animations.Add("wave", TextureLoader.Load([
     "player_wave1", "player_wave2", "player_wave3", "player_wave2"
     ]));
-player.animations.Add("falling", TextureLoader.Load(["player_falling"]));
-player.animation_name = "idle";
-player.animation_fps = 10;
+Player.animations.Add("falling", TextureLoader.Load(["player_falling"]));
+Player.animation_name = "idle";
+Player.animation_fps = 10;
 double player_speed = 0.05;
-double old_x = player.double_x, old_y = player.double_y;
+double old_x = Player.double_x, old_y = Player.double_y;
 void PlayerUpdate(double delta)
 {
-    if (!player.Hide)
+    if (!Player.Hide)
     {
         double moveX = 0, moveY = 0;
         if (Input.IsDown(ConsoleKey.W)) moveY -= 1;
@@ -41,22 +40,22 @@ void PlayerUpdate(double delta)
             moveY /= length;
         }
 
-        player.Move(
+        Player.Move(
             moveX * player_speed * delta,
             moveY * player_speed / 2 * delta
             );
 
-        double r_player_x = Math.Round(player.double_x, 5);
-        double r_player_y = Math.Round(player.double_y, 5);
+        double r_player_x = Math.Round(Player.double_x, 5);
+        double r_player_y = Math.Round(Player.double_y, 5);
 
         if (old_x != r_player_x || old_y != r_player_y)
         {
-            player.animation_name = "walk";
+            Player.animation_name = "walk";
             old_x = r_player_x;
             old_y = r_player_y;
         }
-        else if (player.animation_name == "walk") player.animation_name = "idle";
-        if (Input.IsPressed(ConsoleKey.E)) player.animation_name = "wave";
+        else if (Player.animation_name == "walk") Player.animation_name = "idle";
+        if (Input.IsPressed(ConsoleKey.E)) Player.animation_name = "wave";
     }
 }
 
@@ -66,7 +65,7 @@ Thing LeftBarrier = new("LeftBarrier", -1, -1, Hitbox: new());
 Thing TopBarrier = new("TopBarrier", -1, -1, Hitbox: new());
 Thing RightBarrier = new("RightBarrier", 0, 0, Hitbox: new());
 Thing BottomBarrier = new("BottomBarrier", 0, 0, Hitbox: new());
-player.CheckCollisions.AddRange([
+Player.CheckCollisions.AddRange([
     LeftBarrier, TopBarrier, RightBarrier, BottomBarrier
 ]);
 Game.OnResized += (w, h) =>
@@ -85,7 +84,7 @@ Game.OnResized += (w, h) =>
     RightBarrier.Output = vertical;
     BottomBarrier.Output = horizontal;
 };
-player.OnCollision += (thing, resolve) =>
+Player.OnCollision += (thing, resolve) =>
 {
     if (new Thing[] { LeftBarrier, TopBarrier, RightBarrier, BottomBarrier }.Contains(thing))
         resolve();
@@ -100,10 +99,10 @@ Thing SchoolDoor = new("Doors", 0, 0);
 SchoolDoor.Output = new Frame(21, 1);
 SchoolDoor.Hide = true;
 SchoolDoor.Output.Fill(new('#', (255, 0, 0)));
-player.CheckCollisions.Add(SchoolDoor);
+Player.CheckCollisions.Add(SchoolDoor);
 void SchoolUpdate()
 {
-    if (!School.Hide && CurrentScene == "Outside")
+    if (!School.Hide && Scene.Current.Type == SceneType.Outside)
     {
         School.double_x = Render.width / 2 - School.width / 2;
         School.double_y = Render.height - School.height;
@@ -124,8 +123,8 @@ Leibi.Hide = true;
 
 
 // -- Scenes --
-string[] Scenens = ["Outside"];
-
+Scene Outside_scene = new(SceneType.Outside, [ Player, School, SchoolDoor ]);
+Scene Aula_scene = new(SceneType.Aula, [ Player ]);
 
 // -- Menus --
 Menu Main_menu = new(MenuType.Main, [ "Start", "Settings", "Exit" ]);
@@ -133,12 +132,12 @@ Menu Start_menu = new(MenuType.Start, [ "Hétfő", "Kedd" ]);
 Menu Settings_menu = new(MenuType.Settings, [ "Colors ON" ]);
 void MenuUpdate()
 {
-    int i = CurrentMenu.SelectedIndex;
-    string selected = CurrentMenu.Options[i];
-    int l = CurrentMenu.Options.Count;
+    int i = Menu.Current.SelectedIndex;
+    string selected = Menu.Current.Options[i];
+    int l = Menu.Current.Options.Count;
 
     // if the current menu is not settings
-    if (CurrentMenu.Type == MenuType.Settings)
+    if (Menu.Current.Type == MenuType.Settings)
     {
         // AD for toggle (Settings ON/OFF)
         if (Input.IsPressed(ConsoleKey.A) || Input.IsPressed(ConsoleKey.D))
@@ -154,18 +153,18 @@ void MenuUpdate()
     }
 
     // WS for up/down
-    if (Input.IsPressed(ConsoleKey.W)) CurrentMenu.SelectedIndex = (i - 1 + l) % l;
-    if (Input.IsPressed(ConsoleKey.S)) CurrentMenu.SelectedIndex = (i + 1) % l;
+    if (Input.IsPressed(ConsoleKey.W)) Menu.Current.SelectedIndex = (i - 1 + l) % l;
+    if (Input.IsPressed(ConsoleKey.S)) Menu.Current.SelectedIndex = (i + 1) % l;
 
     if (Input.IsPressed(ConsoleKey.Enter))
     {
-        switch (CurrentMenu.Type)
+        switch (Menu.Current.Type)
         {
             case MenuType.Main:
                 switch (selected)
                 {
-                    case "Start": CurrentMenu = Start_menu; break;
-                    case "Settings":CurrentMenu = Settings_menu; break;
+                    case "Start": Menu.Current = Start_menu; break;
+                    case "Settings":Menu.Current = Settings_menu; break;
                     case "Exit": Game.Stop(); break;
                 }
                 break;
@@ -190,18 +189,18 @@ void MenuUpdate()
 
     if (Input.IsPressed(ConsoleKey.Escape))
     {
-        if (CurrentMenu.Type == MenuType.Main) CurrentMenu = null;
-        else CurrentMenu = Main_menu;
+        if (Menu.Current.Type == MenuType.Main) Menu.Current = null!;
+        else Menu.Current = Main_menu;
     }
 }
 void MenuDraw()
 {
-    Frame title = Draw.Text(CurrentMenu.Type.ToString(), COLOR_ON ? Blue_color : Gray_color);
+    Frame title = Draw.Text(Menu.Current.Type.ToString(), COLOR_ON ? Blue_color : Gray_color);
     Render.PutFrame(Render.width / 2 - title.width / 2, (int)(Render.height * 0.1), title);
 
-    string[] options = CurrentMenu.Options.ToArray();
+    string[] options = Menu.Current.Options.ToArray();
     int longest = options.Max(item => item.Length) + 2;
-    int index = CurrentMenu.SelectedIndex;
+    int index = Menu.Current.SelectedIndex;
     (int horizontal, int vertical) padding = (1, 1);
 
     // Draw menu
@@ -224,12 +223,12 @@ void MenuDraw()
 // Game update
 Game.OnUpdate += (delta) =>
 {
-    if (CurrentMenu == null && Input.IsPressed(ConsoleKey.Escape))
+    if (Menu.Current == null && Input.IsPressed(ConsoleKey.Escape))
     {
-        CurrentMenu = Main_menu;
-        CurrentMenu.SelectedIndex = 0;
+        Menu.Current = Main_menu;
+        Menu.Current.SelectedIndex = 0;
     }
-    if (CurrentMenu != null) MenuUpdate();
+    if (Menu.Current != null) MenuUpdate();
     else PlayerUpdate(delta);
 };
 
@@ -237,7 +236,7 @@ Game.OnUpdate += (delta) =>
 // -- Game render --
 Game.OnRender += () =>
 {
-    if (CurrentMenu != null) MenuDraw();
+    if (Menu.Current != null) MenuDraw();
     else if (false)
     {
         //// Draw NPC face and dialogue
@@ -259,7 +258,7 @@ Game.OnRender += () =>
     }
     else
     {
-        player.PlayAnimation();
+        Player.PlayAnimation();
         SchoolUpdate();
     }
 };

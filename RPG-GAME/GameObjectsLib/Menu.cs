@@ -18,5 +18,7 @@ namespace GameObjectsLib
             Options = options;
             SelectedIndex = 0;
         }
+
+        public static Menu Current = null!;
     }
 }
