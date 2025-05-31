@@ -7,31 +7,6 @@
             @"       " + "\n" +
             @"       " + "\n" +
             @"       ";
-        public const string Town =
-            @"╔══ ══╗" + "\n" +
-            @"║▀▀ ▀▀║" + "\n" +
-            @"║▄▄ ▄▄║" + "\n" +
-            @"╚══ ══╝";
-        public const string Castle =
-            @"╔══ ══╗" + "\n" +
-            @"║╔═══╗║" + "\n" +
-            @"║╚═══╝║" + "\n" +
-            @"╚══ ══╝";
-        public const string Building =
-            @" /---\ " + "\n" +
-            @"/-----\" + "\n" +
-            @"|     |" + "\n" +
-            @"|  █  |";
-        public const string Inn =
-            @" /---\ " + "\n" +
-            @"/-Inn-\" + "\n" +
-            @"|     |" + "\n" +
-            @"|  █  |";
-        public const string Store =
-            @" /---\ " + "\n" +
-            @"/Store\" + "\n" +
-            @"|     |" + "\n" +
-            @"|  █  |";
         public const string Chest =
             @"       " + "\n" +
             @"  _._  " + "\n" +
@@ -42,91 +17,6 @@
             @"       " + "\n" +
             @" |___| " + "\n" +
             @"       ";
-        public const string Water =
-            @"~~~~~~~" + "\n" +
-            @"~~~~~~~" + "\n" +
-            @"~~~~~~~" + "\n" +
-            @"~~~~~~~";
-        public const string Wall_0000 =
-            @"╔═════╗" + "\n" +
-            @"║█████║" + "\n" +
-            @"║█████║" + "\n" +
-            @"╚═════╝";
-        public const string Wall_0001 =
-            @"══════╗" + "\n" +
-            @"██████║" + "\n" +
-            @"██████║" + "\n" +
-            @"══════╝";
-        public const string Wall_0010 =
-            @"╔═════╗" + "\n" +
-            @"║█████║" + "\n" +
-            @"║█████║" + "\n" +
-            @"║█████║";
-        public const string Wall_0011 =
-            @"══════╗" + "\n" +
-            @"██████║" + "\n" +
-            @"██████║" + "\n" +
-            @"╗█████║";
-        public const string Wall_0100 =
-            @"╔══════" + "\n" +
-            @"║██████" + "\n" +
-            @"║██████" + "\n" +
-            @"╚══════";
-        public const string Wall_0101 =
-            @"═══════" + "\n" +
-            @"███████" + "\n" +
-            @"███████" + "\n" +
-            @"═══════";
-        public const string Wall_0110 =
-            @"╔══════" + "\n" +
-            @"║██████" + "\n" +
-            @"║██████" + "\n" +
-            @"║█████╔";
-        public const string Wall_0111 =
-            @"═══════" + "\n" +
-            @"███████" + "\n" +
-            @"███████" + "\n" +
-            @"╗█████╔";
-        public const string Wall_1000 =
-            @"║█████║" + "\n" +
-            @"║█████║" + "\n" +
-            @"║█████║" + "\n" +
-            @"╚═════╝";
-        public const string Wall_1001 =
-            @"╝█████║" + "\n" +
-            @"██████║" + "\n" +
-            @"██████║" + "\n" +
-            @"══════╝";
-        public const string Wall_1010 =
-            @"║█████║" + "\n" +
-            @"║█████║" + "\n" +
-            @"║█████║" + "\n" +
-            @"║█████║";
-        public const string Wall_1011 =
-            @"╝█████║" + "\n" +
-            @"██████║" + "\n" +
-            @"██████║" + "\n" +
-            @"╗█████║";
-        public const string Wall_1100 =
-            @"║█████╚" + "\n" +
-            @"║██████" + "\n" +
-            @"║██████" + "\n" +
-            @"╚══════";
-        public const string Wall_1101 =
-            @"╝█████╚" + "\n" +
-            @"███████" + "\n" +
-            @"███████" + "\n" +
-            @"═══════";
-        public const string Wall_1110 =
-            @"║█████╚" + "\n" +
-            @"║██████" + "\n" +
-            @"║██████" + "\n" +
-            @"║█████╔";
-        public const string Wall_1111 =
-            @"╝█████╚" + "\n" +
-            @"███████" + "\n" +
-            @"███████" + "\n" +
-            @"╗█████╔";
         public const string Gate =
             @"▀▄▀▄▀▄▀" + "\n" +
             @"▀▄▀▄▀▄▀" + "\n" +
@@ -142,21 +32,6 @@
             @" (@@@@)" + "\n" +
             @"   ||  " + "\n" +
             @"   ||  ";
-        public const string Barrels1 =
-            @"       " + "\n" +
-            @"  /---\ " + "\n" +
-            @"/-\/-\|" + "\n" +
-            @"\ /\ //";
-        public const string Barrels2 =
-            @"       " + "\n" +
-            @"/---\  " + "\n" +
-            @"|/-\/-\" + "\n" +
-            @"\\ /\ /";
-        public const string Barrels3 =
-            @"       " + "\n" +
-            @" /---\ " + "\n" +
-            @"/--\/-\" + "\n" +
-            @"\  /\ /";
         public const string Fence =
             @"       " + "\n" +
             @"       " + "\n" +
@@ -172,36 +47,6 @@
             @" /_ _\ " + "\n" +
             @"  | |  " + "\n" +
             @"  |_|  ";
-        public const string Mountains =
-            @" /_\   " + "\n" +
-            @"/   /_\" + "\n" +
-            @"/_\/   " + "\n" +
-            @"   \   ";
-        public const string Mountain =
-            @"   /\  " + "\n" +
-            @"  /--\ " + "\n" +
-            @" /    \" + "\n" +
-            @"/      ";
-        public const string Mountain2 =
-            @"   /\  " + "\n" +
-            @"  /\/\ " + "\n" +
-            @" /    \" + "\n" +
-            @"/      ";
-        public const string Mountain3 =
-            @"   /\  " + "\n" +
-            @"  /**\ " + "\n" +
-            @" /    \" + "\n" +
-            @"/      ";
-        public const string Guard =
-            @" ^  O  " + "\n" +
-            @" |--|> " + "\n" +
-            @" |  |  " + "\n" +
-            @" | | | ";
-        public const string King =
-            @"  'O'  " + "\n" +
-            @"  /|\  " + "\n" +
-            @"   |   " + "\n" +
-            @"  | |  ";
         public const string Error =
             @"╔═════╗" + "\n" +
             @"║error║" + "\n" +
@@ -424,8 +269,8 @@
             @" / \ ";
         public static readonly string[] RunRight =
         [
-            // 0
-            @"   O   " + '\n' +
+        // 0
+        @"   O   " + '\n' +
         @"   |_  " + '\n' +
         @"   |>  " + '\n' +
         @"  /|   ",
@@ -463,8 +308,8 @@
 
         public static readonly string[] RunLeft =
         [
-            // 0
-            @"   O   " + '\n' +
+        // 0
+        @"   O   " + '\n' +
         @"  _|   " + '\n' +
         @"  <|   " + '\n' +
         @"   |\  ",
