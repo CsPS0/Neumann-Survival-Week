@@ -1,20 +1,14 @@
 namespace GameObjectsLib
 {
-    public enum MenuType
-    {
-        Main,
-        Start,
-        Settings
-    }
     public class Menu
     {
-        public MenuType Type;
+        public string Name;
         public List<string> Options;
         public int SelectedIndex;
 
-        public Menu(MenuType type, List<string> options)
+        public Menu(string Name, List<string> options)
         {
-            Type = type;
+            this.Name = Name;
             Options = options;
             SelectedIndex = 0;
         }

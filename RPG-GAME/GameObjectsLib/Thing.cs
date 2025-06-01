@@ -14,8 +14,6 @@ namespace GameObjectsLib
 
         public bool Hide = false;
         public bool IgnoreLayer = false;
-        public bool ReverseHitbox = true;
-        // this is not being used yet
 
         public int x
         {
@@ -27,8 +25,6 @@ namespace GameObjectsLib
             get => (int)(Math.Round(double_y));
             set => double_y = value;
         }
-
-        public List<Thing> CheckCollisions = new();
 
         public int width { get => Output == null ? 0 : Output.width; }
         public int height { get => Output == null ? 0 : Output.height; }
@@ -76,10 +72,8 @@ namespace GameObjectsLib
         public Rect _Hitbox = new();
         public Rect Hitbox
         {
-            get => new(
-                    _Hitbox.x ?? x, _Hitbox.y ?? y, _Hitbox.width ?? width,
-                    _Hitbox.height ?? height
-                    );
+            get => 
+                new(_Hitbox.x + x, _Hitbox.y + y, _Hitbox.width, _Hitbox.height);
             set => _Hitbox = value;
         }
 
@@ -105,56 +99,56 @@ namespace GameObjectsLib
         {
             double_x += x;
             double_y += y;
-
-            foreach (Thing thing in CheckCollisions)
-            {
-                Rect hitbox = thing.Hitbox;
-
-                double l1 = double_x, r1 = l1 + width;
-                double l2 = (int)hitbox.x!, r2 = l2 + (int)hitbox.width!;
-                double t1 = double_y, b1 = t1 + height;
-                double t2 = (int)hitbox.y!, b2 = t2 + (int)hitbox.height!;
-
-                double distLeft = l1 - r2;
-                double distRight = l2 - r1;
-                double distTop = t1 - b2;
-                double distBottom = t2 - b1;
-
-                bool left = Math.Abs(distLeft) >= Math.Abs(distRight);
-                double signedXDist = left ? distRight : distLeft;
-
-                bool top = Math.Abs(distTop) >= Math.Abs(distBottom);
-                double signedYDist = top ? distBottom : distTop;
-
-                double? xAdjust = null, yAdjust = null;
-
-                if (signedXDist < 0 && signedYDist < 0)
-                {
-                    if (Math.Abs(signedXDist) < Math.Abs(signedYDist))
-                    {
-                        xAdjust = left ? signedXDist : -signedXDist;
-                    }
-                    else if (Math.Abs(signedYDist) < Math.Abs(signedXDist))
-                    {
-                        yAdjust = top ? signedYDist : -signedYDist;
-                    }
-                    else
-                    {
-                        xAdjust = left ? signedXDist : -signedXDist;
-                        yAdjust = top ? signedYDist : -signedYDist;
-                    }
-
-                    void ResolveCollision()
-                    {
-                        if (xAdjust.HasValue) double_x += xAdjust.Value;
-                        if (yAdjust.HasValue) double_y += yAdjust.Value;
-                    }
-
-                    OnCollision?.Invoke(thing, ResolveCollision);
-                }
-            }
         }
 
+        public Action? IsCollidingWith(Thing thing)
+        {
+            Rect hitbox = thing.Hitbox;
+
+            double l1 = double_x, r1 = l1 + width;
+            double l2 = (int)hitbox.x!, r2 = l2 + (int)hitbox.width!;
+            double t1 = double_y, b1 = t1 + height;
+            double t2 = (int)hitbox.y!, b2 = t2 + (int)hitbox.height!;
+
+            double distLeft = l1 - r2;
+            double distRight = l2 - r1;
+            double distTop = t1 - b2;
+            double distBottom = t2 - b1;
+
+            bool left = Math.Abs(distLeft) >= Math.Abs(distRight);
+            double signedXDist = left ? distRight : distLeft;
+
+            bool top = Math.Abs(distTop) >= Math.Abs(distBottom);
+            double signedYDist = top ? distBottom : distTop;
+
+            double? xAdjust = null, yAdjust = null;
+
+            if (signedXDist < 0 && signedYDist < 0)
+            {
+                if (Math.Abs(signedXDist) < Math.Abs(signedYDist))
+                {
+                    xAdjust = left ? signedXDist : -signedXDist;
+                }
+                else if (Math.Abs(signedYDist) < Math.Abs(signedXDist))
+                {
+                    yAdjust = top ? signedYDist : -signedYDist;
+                }
+                else
+                {
+                    xAdjust = left ? signedXDist : -signedXDist;
+                    yAdjust = top ? signedYDist : -signedYDist;
+                }
+
+                void ResolveCollision()
+                {
+                    if (xAdjust.HasValue) double_x += xAdjust.Value;
+                    if (yAdjust.HasValue) double_y += yAdjust.Value;
+                }
+
+                return ResolveCollision;
+            }
+            return null;
+        }
 
         public event Action<Thing, Action> OnCollision = null!;
     }

@@ -7,8 +7,33 @@ Textures TextureLoader = new();
 (byte r, byte g, byte b) Gray_color = (100, 100, 100),
                          Blue_color = (102, 153, 225);
 bool COLOR_ON = true;
-bool HINTS_ON = false;
-Scene? CurrentScene = null;
+bool HINTS_ON = true;
+Dictionary<string, string> Hints_Content = new()
+{
+    { "Hints", "" }
+};
+
+
+// -- Scenes --
+Scene Outside_scene = new("Outside");
+Scene Aula_scene = new("Aula");
+
+
+// -- Menus --
+Menu Main_menu = new("Main menu", ["Start", "Settings", "Exit"]);
+Menu Start_menu = new("Start menu", ["Hétfő", "Kedd"]);
+Menu Settings_menu = new("Settings", ["Colors ON", "Hints ON"]);
+
+
+// -- Hints --
+void DrawHints()
+{
+    (byte r, byte g, byte b) color = COLOR_ON ? Blue_color : Gray_color;
+    Frame Hints = 
+        Draw.TextBox(Hints_Content.Select(item => $"{item.Key}: {item.Value}").ToArray(), (1, 0),
+        color, border_fg: color, Filled: true);
+    Render.PutFrame(0, 0, Hints, true);
+}
 
 
 // -- Player --
@@ -28,8 +53,11 @@ void PlayerUpdate(double delta)
     if (!Player.Hide)
     {
         double moveX = 0, moveY = 0;
-        if (Input.IsDown(ConsoleKey.W)) moveY -= 1;
-        if (Input.IsDown(ConsoleKey.S)) moveY += 1;
+        if (Scene.Current != Outside_scene)
+        {
+            if (Input.IsDown(ConsoleKey.W)) moveY -= 1;
+            if (Input.IsDown(ConsoleKey.S)) moveY += 1;
+        } else Player.y = Render.height - Player.height;
         if (Input.IsDown(ConsoleKey.A)) moveX -= 1;
         if (Input.IsDown(ConsoleKey.D)) moveX += 1;
 
@@ -65,71 +93,70 @@ Thing LeftBarrier = new("LeftBarrier", -1, -1, Hitbox: new());
 Thing TopBarrier = new("TopBarrier", -1, -1, Hitbox: new());
 Thing RightBarrier = new("RightBarrier", 0, 0, Hitbox: new());
 Thing BottomBarrier = new("BottomBarrier", 0, 0, Hitbox: new());
-Player.CheckCollisions.AddRange([
-    LeftBarrier, TopBarrier, RightBarrier, BottomBarrier
-]);
 Game.OnResized += (w, h) =>
 {
     Frame horizontal = new(w, 1);
-    horizontal.Fill(new('#'));
-
     Frame vertical = new(1, h);
-    vertical.Fill(new('#'));
 
     RightBarrier.x = w;
     BottomBarrier.y = h;
-
-    LeftBarrier.Output = vertical;
-    TopBarrier.Output = horizontal;
-    RightBarrier.Output = vertical;
-    BottomBarrier.Output = horizontal;
 };
-Player.OnCollision += (thing, resolve) =>
+void BarriersUpdate()
 {
-    if (new Thing[] { LeftBarrier, TopBarrier, RightBarrier, BottomBarrier }.Contains(thing))
-        resolve();
-};
-
-
-// -- School --
-Thing School = new("School", 0, 0);
-School.Hide = true;
-School.Output = TextureLoader.Load("school_front");
-Thing SchoolDoor = new("Doors", 0, 0);
-SchoolDoor.Output = new Frame(21, 1);
-SchoolDoor.Hide = true;
-SchoolDoor.Output.Fill(new('#', (255, 0, 0)));
-Player.CheckCollisions.Add(SchoolDoor);
-void SchoolUpdate()
-{
-    if (!School.Hide && Scene.Current.Type == SceneType.Outside)
-    {
-        School.double_x = Render.width / 2 - School.width / 2;
-        School.double_y = Render.height - School.height;
-        SchoolDoor.x = School.x + 37;
-        SchoolDoor.y = School.y + School.height - 3;
-    }
+    Player.IsCollidingWith(LeftBarrier)?.Invoke();
+    Player.IsCollidingWith(TopBarrier)?.Invoke();
+    Player.IsCollidingWith(RightBarrier)?.Invoke();
+    Player.IsCollidingWith(BottomBarrier)?.Invoke();
 }
 
 
-// -- Corridor --
-Thing Corridor = new("Corridor", 0, 0);
-
-
-// -- Leibi --
-Thing Leibi = new("Leibi", 0, 0);
-Leibi.Output = TextureLoader.Load("leibi_face");
-Leibi.Hide = true;
+// -- School --
+Thing School = new("School", 0, 0, Hitbox: new(37, 14, 21, 1));
+School.Output = TextureLoader.Load("school_front");;
+void SchoolUpdate()
+{
+    if (!School.Hide)
+    {
+        if (Player.IsCollidingWith(School) != null)
+        {
+            Hints_Content["School interaction"] = "Go Inside[Enter]";
+            if (Input.IsDown(ConsoleKey.Enter)) Scene.Current = Aula_scene;
+        } else Hints_Content.Remove("School interaction");
+        School.double_x = Render.width / 2 - School.width / 2;
+        School.double_y = Render.height - School.height;
+    }   
+}
 
 
 // -- Scenes --
-Scene Outside_scene = new(SceneType.Outside, [ Player, School, SchoolDoor ]);
-Scene Aula_scene = new(SceneType.Aula, [ Player ]);
+Outside_scene.AddThings([School]);
+Scene.OnChange += (scene) =>
+{
+    if (scene == Outside_scene)
+    {
+        Player.double_x = 5;
+        Hints_Content["Movement"] = "Left[A] Right[D]";
+    } else
+    {
+        if (Hints_Content.ContainsKey("School interaction")) 
+            Hints_Content.Remove("School interaction");
+        Hints_Content["Movement"] = "Up[W] Left[A] Down[S] Right[D]";
+    }
+};
+void SceneUpdate(double delta)
+{
+    if (Scene.Current == Outside_scene) SchoolUpdate();
+    else if (Scene.Current == Aula_scene) { }
+
+    PlayerUpdate(delta);
+}
+void SceneDraw()
+{
+    Player.PlayAnimation();
+}
+
 
 // -- Menus --
-Menu Main_menu = new(MenuType.Main, [ "Start", "Settings", "Exit" ]);
-Menu Start_menu = new(MenuType.Start, [ "Hétfő", "Kedd" ]);
-Menu Settings_menu = new(MenuType.Settings, [ "Colors ON" ]);
 void MenuUpdate()
 {
     int i = Menu.Current.SelectedIndex;
@@ -137,7 +164,7 @@ void MenuUpdate()
     int l = Menu.Current.Options.Count;
 
     // if the current menu is not settings
-    if (Menu.Current.Type == MenuType.Settings)
+    if (Menu.Current == Settings_menu)
     {
         // AD for toggle (Settings ON/OFF)
         if (Input.IsPressed(ConsoleKey.A) || Input.IsPressed(ConsoleKey.D))
@@ -147,6 +174,10 @@ void MenuUpdate()
                 case 0:
                     COLOR_ON = !COLOR_ON;
                     Settings_menu.Options[i] = $"Colors {(COLOR_ON ? "ON" : "OFF")}";
+                    break;
+                case 1:
+                    HINTS_ON = !HINTS_ON;
+                    Settings_menu.Options[i] = $"Hints {(HINTS_ON ? "ON" : "OFF")}";
                     break;
             }
         }
@@ -158,44 +189,42 @@ void MenuUpdate()
 
     if (Input.IsPressed(ConsoleKey.Enter))
     {
-        switch (Menu.Current.Type)
+        if (Menu.Current == Main_menu)
         {
-            case MenuType.Main:
-                switch (selected)
-                {
-                    case "Start": Menu.Current = Start_menu; break;
-                    case "Settings":Menu.Current = Settings_menu; break;
-                    case "Exit": Game.Stop(); break;
-                }
-                break;
-
-            case MenuType.Start:
-                switch (selected)
-                {
-                    //case "Hétfő":
-                    //    currentMap = Maps.Aula;
-                    //    currentMapName = "Aula";
-                    //    player.x = 5; player.y = 5;
-                    //    break;
-                    //case "Kedd":
-                    //    currentMap = Maps.classRoom5;
-                    //    currentMapName = "classRoom5";
-                    //    player.x = 5; player.y = 5;
-                    //    break;
-                }
-                break;
+            switch (selected)
+            {
+                case "Start": Menu.Current = Start_menu; break;
+                case "Settings": Menu.Current = Settings_menu; break;
+                case "Exit": Game.Stop(); break;
+            }
+        }
+        else if (Menu.Current == Start_menu)
+        {
+            switch (selected)
+            {
+                //case "Hétfő":
+                //    currentMap = Maps.Aula;
+                //    currentMapName = "Aula";
+                //    player.x = 5; player.y = 5;
+                //    break;
+                //case "Kedd":
+                //    currentMap = Maps.classRoom5;
+                //    currentMapName = "classRoom5";
+                //    player.x = 5; player.y = 5;
+                //    break;
+            }
         }
     }
 
     if (Input.IsPressed(ConsoleKey.Escape))
     {
-        if (Menu.Current.Type == MenuType.Main) Menu.Current = null!;
+        if (Menu.Current == Main_menu) Menu.Current = null!;
         else Menu.Current = Main_menu;
     }
 }
 void MenuDraw()
 {
-    Frame title = Draw.Text(Menu.Current.Type.ToString(), COLOR_ON ? Blue_color : Gray_color);
+    Frame title = Draw.Text(Menu.Current.Name, COLOR_ON ? Blue_color : Gray_color);
     Render.PutFrame(Render.width / 2 - title.width / 2, (int)(Render.height * 0.1), title);
 
     string[] options = Menu.Current.Options.ToArray();
@@ -223,50 +252,30 @@ void MenuDraw()
 // Game update
 Game.OnUpdate += (delta) =>
 {
+    BarriersUpdate();
     if (Menu.Current == null && Input.IsPressed(ConsoleKey.Escape))
     {
         Menu.Current = Main_menu;
         Menu.Current.SelectedIndex = 0;
     }
     if (Menu.Current != null) MenuUpdate();
-    else PlayerUpdate(delta);
+    else SceneUpdate(delta);
 };
 
 
 // -- Game render --
 Game.OnRender += () =>
 {
+    if (HINTS_ON) DrawHints();
     if (Menu.Current != null) MenuDraw();
-    else if (false)
-    {
-        //// Draw NPC face and dialogue
-        //int w = 60, h = 20;
-        //Frame box = Draw.RectToFrame(w, h, ((byte)200, (byte)200, (byte)200));
-        //Frame face = Draw.TextToFrame(currentDiscussion.AsciiFace, ((byte)100, (byte)100, (byte)255));
-        //box.PutFrame(2, 2, face);
-        //Frame name = Draw.TextToFrame(currentDiscussion.NpcName, ((byte)255, (byte)255, (byte)0));
-        //box.PutFrame(2, 1, name);
-        //Frame dialogue = Draw.TextToFrame(currentDiscussion.Dialogue, ((byte)0, (byte)0, (byte)0));
-        //box.PutFrame(20, 2, dialogue);
-        //int y = 8;
-        //foreach (var kv in currentDiscussion.GetChoices())
-        //{
-        //    Frame choice = Draw.TextToFrame($"{kv.Key}. {kv.Value}", ((byte)0, (byte)0, (byte)0));
-        //    box.PutFrame(20, y++, choice);
-        //}
-        //Render.PutFrame(Render.width / 2 - w / 2, Render.height / 2 - h / 2, box);
-    }
-    else
-    {
-        Player.PlayAnimation();
-        SchoolUpdate();
-    }
+    else SceneDraw();
 };
 
 
 // Main initialization and startup
 Game.Fps = 100;
 Game.OnResized += (w, h) => Render.Fill(new(' '));
+Game.OnStart += () => Scene.Current = Outside_scene;
 Game.OnStop += () =>
 {
     Render.ResetStyle();

@@ -8,7 +8,7 @@
             int layer = 0,
             Modifiers? modifiers = null)
         {
-            int longest = text.Max(item => item.Length);
+            int longest = text.Length > 0 ? text.Max(item => item.Length) : 0;
 
             Frame result = new Frame(longest, text.Length);
             for (int i = 0, l = text.Length; i < l; i++)

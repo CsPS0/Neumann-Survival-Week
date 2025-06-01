@@ -1,23 +1,51 @@
 ﻿namespace GameObjectsLib
 {
-    public enum SceneType
-    {
-        Outside,
-        Aula
-    }
     public class Scene
     {
-        public SceneType Type;
-        public List<Thing> Things;
+        static Scene _Current = null!;
+        static List<Thing> AllThings = new();
+        public static void HideAllThings() { foreach (var thing in AllThings) thing.Hide = true; }
+        public static Scene Current
+        {
+            get => _Current;
+            set
+            {
+                if (_Current != value)
+                {
+                    HideAllThings();
+                    foreach (var thing in value._Things) thing.Hide = false;
+                    _Current = value;
+                    OnChange?.Invoke(_Current);
+                }
+            }
+        }
+
+
+        public static Action<Scene> OnChange = null!;
+
+        public string Name;
+        
+        List<Thing> _Things = new();
+        public void AddThing(Thing thing)
+        {
+            if (!AllThings.Contains(thing)) AllThings.Add(thing);
+            _Things.Add(thing);
+        }
+        public void AddThings(Thing[] things)
+        {
+            foreach (var thing in things)
+            {
+                if (!AllThings.Contains(thing)) AllThings.Add(thing);
+                _Things.Add(thing);
+            }
+        }
+
         public event Action<double> OnUpdate = null!;
         public event Action OnRender = null!;
 
-        public Scene(SceneType type, List<Thing> things)
+        public Scene(string Name)
         {
-            Type = type;
-            Things = things;
+            this.Name = Name;
         }
-
-        public static Scene Current = null!;
     }
 }

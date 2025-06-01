@@ -8,10 +8,9 @@ namespace GameObjectsLib
 {
     public class Rect
     {
-        public int? x, y, width, height;
+        public int x, y, width, height;
 
-        public Rect(int? x = null, int? y = null, int? width = null, 
-            int? height = null)
+        public Rect(int x = 0, int y = 0, int width = 0, int height = 0)
         {
             this.x = x;
             this.y = y;
