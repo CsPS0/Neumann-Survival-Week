@@ -73,7 +73,8 @@ namespace GameObjectsLib
         public Rect Hitbox
         {
             get => 
-                new(_Hitbox.x + x, _Hitbox.y + y, _Hitbox.width, _Hitbox.height);
+                new(_Hitbox.x + x, _Hitbox.y + y, 
+                    _Hitbox.width ?? width, _Hitbox.height ?? height);
             set => _Hitbox = value;
         }
 
@@ -139,13 +140,10 @@ namespace GameObjectsLib
                     yAdjust = top ? signedYDist : -signedYDist;
                 }
 
-                void ResolveCollision()
-                {
+                return () => {
                     if (xAdjust.HasValue) double_x += xAdjust.Value;
                     if (yAdjust.HasValue) double_y += yAdjust.Value;
-                }
-
-                return ResolveCollision;
+                };
             }
             return null;
         }

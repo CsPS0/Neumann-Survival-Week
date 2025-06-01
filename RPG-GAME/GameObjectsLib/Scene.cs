@@ -14,14 +14,14 @@
                 {
                     HideAllThings();
                     foreach (var thing in value._Things) thing.Hide = false;
+                    OnChange?.Invoke(_Current, value);
                     _Current = value;
-                    OnChange?.Invoke(_Current);
                 }
             }
         }
 
 
-        public static Action<Scene> OnChange = null!;
+        public static Action<Scene, Scene> OnChange = null!;
 
         public string Name;
         

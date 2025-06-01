@@ -78,7 +78,7 @@
             return null;
         }
 
-        public void RaplacePixels(Pixel? Old, Pixel? New, bool IgnoreLayer = false)
+        public Frame RaplacePixels(Pixel? Old, Pixel? New, bool IgnoreLayer = false)
         {
             for (int x = 0; x < width; x++)
             {
@@ -90,9 +90,10 @@
                     }
                 }
             }
+            return this;
         }
 
-        public void RaplacePixels(Func<int, int, Pixel?, Pixel?> Replace, bool IgnoreLayer = false)
+        public Frame RaplacePixels(Func<int, int, Pixel?, Pixel?> Replace, bool IgnoreLayer = false)
         {
             if (Replace != null)
             {
@@ -104,6 +105,7 @@
                     }
                 }
             }
+            return this;
         }
 
         public void Fill(Pixel pixel)

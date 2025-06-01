@@ -2,10 +2,12 @@
 using GameObjectsLib;
 using InputLib;
 using RenderLib;
+using System.Transactions;
 
 Textures TextureLoader = new();
 (byte r, byte g, byte b) Gray_color = (100, 100, 100),
-                         Blue_color = (102, 153, 225);
+                         Blue_color = (102, 153, 225),
+                         Black_color = (0, 0, 0);
 bool COLOR_ON = true;
 bool HINTS_ON = true;
 Dictionary<string, string> Hints_Content = new()
@@ -13,16 +15,16 @@ Dictionary<string, string> Hints_Content = new()
     { "Hints", "" }
 };
 
-
 // -- Scenes --
 Scene Outside_scene = new("Outside");
 Scene Aula_scene = new("Aula");
+Scene Cut_scene = new("Cutscene");
 
 
 // -- Menus --
 Menu Main_menu = new("Main menu", ["Start", "Settings", "Exit"]);
 Menu Start_menu = new("Start menu", ["Hétfő", "Kedd"]);
-Menu Settings_menu = new("Settings", ["Colors ON", "Hints ON"]);
+Menu Settings_menu = new("Settings", ["UI Colors ON", "Hints ON"]);
 
 
 // -- Hints --
@@ -31,13 +33,13 @@ void DrawHints()
     (byte r, byte g, byte b) color = COLOR_ON ? Blue_color : Gray_color;
     Frame Hints = 
         Draw.TextBox(Hints_Content.Select(item => $"{item.Key}: {item.Value}").ToArray(), (1, 0),
-        color, border_fg: color, Filled: true);
+        color, Black_color, color, Filled: true);
     Render.PutFrame(0, 0, Hints, true);
 }
 
 
 // -- Player --
-Thing Player = new("Player", 5, 5);
+Thing Player = new("Player", 0, 0);
 Player.animations.Add("idle", TextureLoader.Load(["player_idle"]));
 Player.animations.Add("walk", TextureLoader.Load(["player_walk1", "player_walk2"]));
 Player.animations.Add("wave", TextureLoader.Load([
@@ -52,12 +54,28 @@ void PlayerUpdate(double delta)
 {
     if (!Player.Hide)
     {
+        double r_player_x = Math.Round(Player.double_x, 5);
+        double r_player_y = Math.Round(Player.double_y, 5);
+        
+        bool x_change = r_player_x != old_x;
+        bool y_change = r_player_y != old_y;
+        if (x_change || y_change)
+        {
+            if (y_change && Scene.Current == Outside_scene)
+                Player.animation_name = "falling";
+            else Player.animation_name = "walk";
+        }
+        else if (Player.animation_name != "wave") Player.animation_name = "idle";
+        if (Input.IsPressed(ConsoleKey.E)) Player.animation_name = "wave";
+        old_x = r_player_x;
+        old_y = r_player_y;
+
         double moveX = 0, moveY = 0;
         if (Scene.Current != Outside_scene)
         {
             if (Input.IsDown(ConsoleKey.W)) moveY -= 1;
             if (Input.IsDown(ConsoleKey.S)) moveY += 1;
-        } else Player.y = Render.height - Player.height;
+        } else moveY += 1;
         if (Input.IsDown(ConsoleKey.A)) moveX -= 1;
         if (Input.IsDown(ConsoleKey.D)) moveX += 1;
 
@@ -72,31 +90,24 @@ void PlayerUpdate(double delta)
             moveX * player_speed * delta,
             moveY * player_speed / 2 * delta
             );
-
-        double r_player_x = Math.Round(Player.double_x, 5);
-        double r_player_y = Math.Round(Player.double_y, 5);
-
-        if (old_x != r_player_x || old_y != r_player_y)
-        {
-            Player.animation_name = "walk";
-            old_x = r_player_x;
-            old_y = r_player_y;
-        }
-        else if (Player.animation_name == "walk") Player.animation_name = "idle";
-        if (Input.IsPressed(ConsoleKey.E)) Player.animation_name = "wave";
     }
 }
 
 
 // -- Game border barriers
-Thing LeftBarrier = new("LeftBarrier", -1, -1, Hitbox: new());
-Thing TopBarrier = new("TopBarrier", -1, -1, Hitbox: new());
-Thing RightBarrier = new("RightBarrier", 0, 0, Hitbox: new());
-Thing BottomBarrier = new("BottomBarrier", 0, 0, Hitbox: new());
+Thing LeftBarrier = new("LeftBarrier", -1, -1);
+Thing TopBarrier = new("TopBarrier", -1, -1);
+Thing RightBarrier = new("RightBarrier", 0, 0);
+Thing BottomBarrier = new("BottomBarrier", 0, 0);
 Game.OnResized += (w, h) =>
 {
     Frame horizontal = new(w, 1);
     Frame vertical = new(1, h);
+
+    LeftBarrier.Output = vertical;
+    TopBarrier.Output = horizontal;
+    RightBarrier.Output = vertical;
+    BottomBarrier.Output = horizontal;
 
     RightBarrier.x = w;
     BottomBarrier.y = h;
@@ -112,7 +123,7 @@ void BarriersUpdate()
 
 // -- School --
 Thing School = new("School", 0, 0, Hitbox: new(37, 14, 21, 1));
-School.Output = TextureLoader.Load("school_front");;
+School.Output = TextureLoader.Load("school_front");
 void SchoolUpdate()
 {
     if (!School.Hide)
@@ -130,11 +141,16 @@ void SchoolUpdate()
 
 // -- Scenes --
 Outside_scene.AddThings([School]);
-Scene.OnChange += (scene) =>
+Scene.OnChange += (from, to) =>
 {
-    if (scene == Outside_scene)
+    if (from == null && to == Outside_scene)
     {
-        Player.double_x = 5;
+        Player.x = 10;
+        Player.y = 0;
+    }
+    
+    if (to == Outside_scene)
+    {
         Hints_Content["Movement"] = "Left[A] Right[D]";
     } else
     {
@@ -156,12 +172,21 @@ void SceneDraw()
 }
 
 
+// -- Cutscene --
+Thing Face = new("Anonymus", 0, 0);
+Thing Message = new("Message", 0, 0);
+
+
 // -- Menus --
 void MenuUpdate()
 {
     int i = Menu.Current.SelectedIndex;
     string selected = Menu.Current.Options[i];
     int l = Menu.Current.Options.Count;
+
+    // WS for up/down
+    if (Input.IsPressed(ConsoleKey.W)) Menu.Current.SelectedIndex = (i - 1 + l) % l;
+    if (Input.IsPressed(ConsoleKey.S)) Menu.Current.SelectedIndex = (i + 1) % l;
 
     // if the current menu is not settings
     if (Menu.Current == Settings_menu)
@@ -173,7 +198,7 @@ void MenuUpdate()
             {
                 case 0:
                     COLOR_ON = !COLOR_ON;
-                    Settings_menu.Options[i] = $"Colors {(COLOR_ON ? "ON" : "OFF")}";
+                    Settings_menu.Options[i] = $"UI Colors {(COLOR_ON ? "ON" : "OFF")}";
                     break;
                 case 1:
                     HINTS_ON = !HINTS_ON;
@@ -182,10 +207,6 @@ void MenuUpdate()
             }
         }
     }
-
-    // WS for up/down
-    if (Input.IsPressed(ConsoleKey.W)) Menu.Current.SelectedIndex = (i - 1 + l) % l;
-    if (Input.IsPressed(ConsoleKey.S)) Menu.Current.SelectedIndex = (i + 1) % l;
 
     if (Input.IsPressed(ConsoleKey.Enter))
     {
@@ -200,31 +221,20 @@ void MenuUpdate()
         }
         else if (Menu.Current == Start_menu)
         {
-            switch (selected)
-            {
-                //case "Hétfő":
-                //    currentMap = Maps.Aula;
-                //    currentMapName = "Aula";
-                //    player.x = 5; player.y = 5;
-                //    break;
-                //case "Kedd":
-                //    currentMap = Maps.classRoom5;
-                //    currentMapName = "classRoom5";
-                //    player.x = 5; player.y = 5;
-                //    break;
-            }
+            Menu.Current = null!;
+            Scene.Current = Outside_scene;
         }
     }
 
     if (Input.IsPressed(ConsoleKey.Escape))
     {
-        if (Menu.Current == Main_menu) Menu.Current = null!;
+        if (Menu.Current == Main_menu && Scene.Current != null) Menu.Current = null!;
         else Menu.Current = Main_menu;
     }
 }
 void MenuDraw()
 {
-    Frame title = Draw.Text(Menu.Current.Name, COLOR_ON ? Blue_color : Gray_color);
+    Frame title = Draw.Text(Menu.Current.Name, COLOR_ON ? Blue_color : Gray_color, Black_color);
     Render.PutFrame(Render.width / 2 - title.width / 2, (int)(Render.height * 0.1), title);
 
     string[] options = Menu.Current.Options.ToArray();
@@ -237,12 +247,12 @@ void MenuDraw()
     padding.vertical += 1;
     int w = longest + padding.horizontal * 2;
     int h = options.Length + padding.vertical * 2;
-    Frame MenuFrame = Draw.Box(w, h, COLOR_ON ? Blue_color : Gray_color, Filled: true);
+    Frame MenuFrame = Draw.Box(w, h, COLOR_ON ? Blue_color : Gray_color, Black_color, Filled: true);
     for (int i = 0, l = options.Length; i < l; i++)
     {
         string opt = options[i];
         (byte r, byte g, byte b) color = COLOR_ON && index == i ? Blue_color : Gray_color;
-        Frame OptFrame = Draw.Text((index == i ? "> " : "  ") + opt, color);
+        Frame OptFrame = Draw.Text((index == i ? "> " : "  ") + opt, color, Black_color);
         MenuFrame.PutFrame(padding.horizontal, padding.vertical + i, OptFrame, true);
     }
     Render.PutFrame(Render.width / 2 - w / 2, Render.height / 2 - h / 2, MenuFrame, true);
@@ -252,7 +262,6 @@ void MenuDraw()
 // Game update
 Game.OnUpdate += (delta) =>
 {
-    BarriersUpdate();
     if (Menu.Current == null && Input.IsPressed(ConsoleKey.Escape))
     {
         Menu.Current = Main_menu;
@@ -260,6 +269,7 @@ Game.OnUpdate += (delta) =>
     }
     if (Menu.Current != null) MenuUpdate();
     else SceneUpdate(delta);
+    BarriersUpdate();
 };
 
 
@@ -275,7 +285,11 @@ Game.OnRender += () =>
 // Main initialization and startup
 Game.Fps = 100;
 Game.OnResized += (w, h) => Render.Fill(new(' '));
-Game.OnStart += () => Scene.Current = Outside_scene;
+Game.OnStart += () =>
+{
+    Scene.HideAllThings();
+    Menu.Current = Main_menu;
+};
 Game.OnStop += () =>
 {
     Render.ResetStyle();
