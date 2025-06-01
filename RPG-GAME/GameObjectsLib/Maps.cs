@@ -52,12 +52,12 @@
             };
         }
 
-        public string[] frontNeu = {
-            ""
-        }
+        //public string[] frontNeu = {
+        //    ""
+        //}
 
         //        // Front
-        //        public static readonly char[][] frontNeu =
+        //        public static readonly string frontNeu =
         //        [
         //            "                    ┌─────────────────────────────────────────────────────┐
         //                    │ ┌─────┐ ┌─────┐ ┌─────┬─────┬─────┐ ┌─────┐ ┌─────┐ │
