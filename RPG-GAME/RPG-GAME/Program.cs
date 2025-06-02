@@ -2,7 +2,7 @@
 using GameObjectsLib;
 using InputLib;
 using RenderLib;
-using System.Transactions;
+using System.Diagnostics;
 
 Textures TextureLoader = new();
 (byte r, byte g, byte b) Gray_color = (100, 100, 100),
@@ -14,6 +14,8 @@ Dictionary<string, string> Hints_Content = new()
 {
     { "Hints", "" }
 };
+Stopwatch scenechange_cooldown = Stopwatch.StartNew();
+long sc_cooldown = 200;
 
 // -- Scenes --
 Scene Outside_scene = new("Outside");
@@ -128,41 +130,83 @@ void SchoolUpdate()
 {
     if (!School.Hide)
     {
-        if (Player.IsCollidingWith(School) != null)
-        {
-            Hints_Content["School interaction"] = "Go Inside[Enter]";
-            if (Input.IsDown(ConsoleKey.Enter)) Scene.Current = Aula_scene;
-        } else Hints_Content.Remove("School interaction");
         School.double_x = Render.width / 2 - School.width / 2;
         School.double_y = Render.height - School.height;
     }   
 }
 
 
+// -- Aula --
+Thing Aula = new("Aula", 0, 0, Hitbox: new(62, 30, 11, 1));
+Aula.Output = TextureLoader.Load("aula");
+void AulaUpdate()
+{
+    if (!Aula.Hide)
+    {
+        Aula.x = Render.width / 2 - Aula.width / 2;
+        Aula.y = Render.height - Aula.height;
+    }
+}
+
+
 // -- Scenes --
-Outside_scene.AddThings([School]);
+Outside_scene.AddThing(School);
+Aula_scene.AddThing(Aula);
 Scene.OnChange += (from, to) =>
 {
-    if (from == null && to == Outside_scene)
-    {
-        Player.x = 10;
-        Player.y = 0;
-    }
-    
     if (to == Outside_scene)
     {
         Hints_Content["Movement"] = "Left[A] Right[D]";
-    } else
+        if (from == null)
+        {
+            Player.x = 10;
+            Player.y = 0;
+        } else
+        {
+            Player.x = Render.width / 2 - Player.width / 2;
+            Player.y = Render.height - Player.height;
+        }
+    } else Hints_Content.Remove("School interaction");
+
+    if (to == Aula_scene)
     {
-        if (Hints_Content.ContainsKey("School interaction")) 
-            Hints_Content.Remove("School interaction");
+        Player.x = Render.width / 2 - Player.width / 2;
+        Player.y = Render.height - Player.height;
         Hints_Content["Movement"] = "Up[W] Left[A] Down[S] Right[D]";
-    }
+    } else Hints_Content.Remove("Aula interaction");
+    
+    scenechange_cooldown.Restart();
 };
 void SceneUpdate(double delta)
 {
-    if (Scene.Current == Outside_scene) SchoolUpdate();
-    else if (Scene.Current == Aula_scene) { }
+    long cooldown = scenechange_cooldown.ElapsedMilliseconds;
+
+    if (Scene.Current == Outside_scene)
+    {
+        if (Player.IsCollidingWith(School) != null)
+        {
+            if (cooldown >= sc_cooldown)
+            {
+                Hints_Content["School interaction"] = "Go Inside[Enter]";
+                if (Input.IsDown(ConsoleKey.Enter)) Scene.Current = Aula_scene;
+            }
+        } else Hints_Content.Remove("School interaction");
+        
+        SchoolUpdate();
+    }
+    else if (Scene.Current == Aula_scene)
+    {
+        if (Player.IsCollidingWith(Aula) != null)
+        {
+            if (cooldown >= sc_cooldown)
+            {
+                Hints_Content["Aula interaction"] = "Go Outside[Enter]";
+                if (Input.IsDown(ConsoleKey.Enter)) Scene.Current = Outside_scene;
+            }
+        } else Hints_Content.Remove("Aula interaction");
+
+        AulaUpdate();
+    }
 
     PlayerUpdate(delta);
 }
