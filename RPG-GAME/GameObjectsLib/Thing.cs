@@ -102,14 +102,14 @@ namespace GameObjectsLib
             double_y += y;
         }
 
-        public Action? IsCollidingWith(Thing thing)
+        public (double xDist, double yDist)? IsCollidingWith(Thing thing)
         {
             Rect hitbox = thing.Hitbox;
 
             double l1 = double_x, r1 = l1 + width;
-            double l2 = (int)hitbox.x!, r2 = l2 + (int)hitbox.width!;
+            double l2 = hitbox.x, r2 = l2 + (int)hitbox.width!;
             double t1 = double_y, b1 = t1 + height;
-            double t2 = (int)hitbox.y!, b2 = t2 + (int)hitbox.height!;
+            double t2 = hitbox.y, b2 = t2 + (int)hitbox.height!;
 
             double distLeft = l1 - r2;
             double distRight = l2 - r1;
@@ -122,7 +122,7 @@ namespace GameObjectsLib
             bool top = Math.Abs(distTop) >= Math.Abs(distBottom);
             double signedYDist = top ? distBottom : distTop;
 
-            double? xAdjust = null, yAdjust = null;
+            double xAdjust = 0, yAdjust = 0;
 
             if (signedXDist < 0 && signedYDist < 0)
             {
@@ -140,14 +140,9 @@ namespace GameObjectsLib
                     yAdjust = top ? signedYDist : -signedYDist;
                 }
 
-                return () => {
-                    if (xAdjust.HasValue) double_x += xAdjust.Value;
-                    if (yAdjust.HasValue) double_y += yAdjust.Value;
-                };
+                return (xAdjust, yAdjust);
             }
             return null;
         }
-
-        public event Action<Thing, Action> OnCollision = null!;
     }
 }

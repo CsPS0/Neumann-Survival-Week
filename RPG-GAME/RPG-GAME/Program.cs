@@ -71,6 +71,7 @@ void PlayerUpdate(double delta)
         if (Input.IsPressed(ConsoleKey.E)) Player.animation_name = "wave";
         old_x = r_player_x;
         old_y = r_player_y;
+        Player.PlayAnimation();
 
         double moveX = 0, moveY = 0;
         if (Scene.Current != Outside_scene)
@@ -116,22 +117,46 @@ Game.OnResized += (w, h) =>
 };
 void BarriersUpdate()
 {
-    Player.IsCollidingWith(LeftBarrier)?.Invoke();
-    Player.IsCollidingWith(TopBarrier)?.Invoke();
-    Player.IsCollidingWith(RightBarrier)?.Invoke();
-    Player.IsCollidingWith(BottomBarrier)?.Invoke();
+    foreach (Thing barrier in 
+        new Thing[] { LeftBarrier, TopBarrier, RightBarrier, BottomBarrier })
+    {
+        (double x, double y)? dist = Player.IsCollidingWith(barrier);
+        if (dist != null)
+        {
+            Player.double_x += dist.Value.x;
+            Player.double_y += dist.Value.y;
+        }
+    }
 }
 
 
 // -- School --
-Thing School = new("School", 0, 0, Hitbox: new(37, 14, 21, 1));
+Thing School = new("School", 0, 0, Hitbox: new(37, 9, 21, 5));
 School.Output = TextureLoader.Load("school_front");
+Thing stair1 = new(null, 0, 0); stair1.Output = new(23, 1);
+Thing stair2 = new(null, 0, 0); stair2.Output = new(27, 1);
+Thing stair3 = new(null, 0, 0); stair3.Output = new(31, 1);
 void SchoolUpdate()
 {
     if (!School.Hide)
     {
         School.double_x = Render.width / 2 - School.width / 2;
         School.double_y = Render.height - School.height;
+        
+        stair1.x = School.x + 36;
+        stair1.y = School.y + School.height - 3;
+
+        stair2.x = School.x + 34;
+        stair2.y = School.y + School.height - 2;
+
+        stair3.x = School.x + 32;
+        stair3.y = School.y + School.height - 1;
+
+        foreach (Thing stair in new Thing[] { stair1, stair2, stair3 })
+        {
+            (double x, double y)? dist = Player.IsCollidingWith(stair);
+            if (dist != null) Player.double_y += dist.Value.y;
+        }
     }   
 }
 
@@ -212,7 +237,6 @@ void SceneUpdate(double delta)
 }
 void SceneDraw()
 {
-    Player.PlayAnimation();
 }
 
 
