@@ -62,7 +62,7 @@ namespace GameObjectsLib
                     }
                 }
                 else throw new Exception($"{value} animation not found. " +
-                    $"Available animtions are: [{string.Join(", ", animations.Keys)}]");
+                    $"Available animations are: [{string.Join(", ", animations.Keys)}]");
             }
         }
         private Stopwatch timer = new();
