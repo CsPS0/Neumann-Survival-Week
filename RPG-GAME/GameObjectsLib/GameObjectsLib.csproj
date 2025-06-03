@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DataTypesLib\DataTypesLib.csproj" />
     <ProjectReference Include="..\GameLogicLib\GameLogicLib.csproj" />
     <ProjectReference Include="..\RenderLib\RenderLib.csproj" />
   </ItemGroup>

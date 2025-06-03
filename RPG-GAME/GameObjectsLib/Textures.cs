@@ -7,14 +7,8 @@ namespace GameObjectsLib
     public class Textures
     {
         public Dictionary<string, Func<Frame>> options = new();
-        public Frame Load(string texture_name)
-        {
-            if (options.ContainsKey(texture_name)) return options[texture_name]();
-            else throw new Exception($"{texture_name} option not found. " +
-                $"Available options are: [{string.Join(", ", options.Keys)}]");
-        }
 
-        public Frame[] Load(string[] texture_names)
+        public Frame[] Load(params string[] texture_names)
         {
             List<Frame> frames = new();
             foreach (string name in texture_names)

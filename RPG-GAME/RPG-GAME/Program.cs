@@ -1,8 +1,10 @@
-﻿using GameLogicLib;
+﻿using DataTypesLib;
+using GameLogicLib;
 using GameObjectsLib;
 using InputLib;
 using RenderLib;
 using System.Diagnostics;
+using static System.Net.Mime.MediaTypeNames;
 
 Textures TextureLoader = new();
 (byte r, byte g, byte b) Gray_color = (100, 100, 100),
@@ -10,17 +12,29 @@ Textures TextureLoader = new();
                          Black_color = (0, 0, 0);
 bool COLOR_ON = true;
 bool HINTS_ON = true;
+Stopwatch scenechange_cooldown = Stopwatch.StartNew();
+long sc_cooldown = 200;
+
+
+// -- Hints --
 Dictionary<string, string> Hints_Content = new()
 {
     { "Hints", "" }
 };
-Stopwatch scenechange_cooldown = Stopwatch.StartNew();
-long sc_cooldown = 200;
+void DrawHints()
+{
+    (byte r, byte g, byte b) color = COLOR_ON ? Blue_color : Gray_color;
+    Frame Hints =
+        Draw.TextBox(Hints_Content.Select(item => $"{item.Key}: {item.Value}").ToArray(), (1, 0),
+        color, Black_color, color, Filled: true);
+    Render.PutFrame(0, 0, Hints, true);
+}
+
 
 // -- Scenes --
+Scene Intro_scene = new("Intro Dialog");
 Scene Outside_scene = new("Outside");
 Scene Aula_scene = new("Aula");
-Scene Cut_scene = new("Cutscene");
 
 
 // -- Menus --
@@ -29,25 +43,12 @@ Menu Start_menu = new("Start menu", ["Hétfő", "Kedd"]);
 Menu Settings_menu = new("Settings", ["UI Colors ON", "Hints ON"]);
 
 
-// -- Hints --
-void DrawHints()
-{
-    (byte r, byte g, byte b) color = COLOR_ON ? Blue_color : Gray_color;
-    Frame Hints = 
-        Draw.TextBox(Hints_Content.Select(item => $"{item.Key}: {item.Value}").ToArray(), (1, 0),
-        color, Black_color, color, Filled: true);
-    Render.PutFrame(0, 0, Hints, true);
-}
-
-
 // -- Player --
 Thing Player = new("Player", 0, 0);
-Player.animations.Add("idle", TextureLoader.Load(["player_idle"]));
-Player.animations.Add("walk", TextureLoader.Load(["player_walk1", "player_walk2"]));
-Player.animations.Add("wave", TextureLoader.Load([
-    "player_wave1", "player_wave2", "player_wave3", "player_wave2"
-    ]));
-Player.animations.Add("falling", TextureLoader.Load(["player_falling"]));
+Player.animations.Add("idle", TextureLoader.Load("player_idle"));
+Player.animations.Add("walk", TextureLoader.Load("player_walk1", "player_walk2"));
+Player.animations.Add("wave", TextureLoader.Load("player_wave1", "player_wave2", "player_wave3", "player_wave2"));
+Player.animations.Add("falling", TextureLoader.Load("player_falling"));
 Player.animation_name = "idle";
 Player.animation_fps = 10;
 double player_speed = 0.05;
@@ -97,42 +98,9 @@ void PlayerUpdate(double delta)
 }
 
 
-// -- Game border barriers
-Thing LeftBarrier = new("LeftBarrier", -1, -1);
-Thing TopBarrier = new("TopBarrier", -1, -1);
-Thing RightBarrier = new("RightBarrier", 0, 0);
-Thing BottomBarrier = new("BottomBarrier", 0, 0);
-Game.OnResized += (w, h) =>
-{
-    Frame horizontal = new(w, 1);
-    Frame vertical = new(1, h);
-
-    LeftBarrier.Output = vertical;
-    TopBarrier.Output = horizontal;
-    RightBarrier.Output = vertical;
-    BottomBarrier.Output = horizontal;
-
-    RightBarrier.x = w;
-    BottomBarrier.y = h;
-};
-void BarriersUpdate()
-{
-    foreach (Thing barrier in 
-        new Thing[] { LeftBarrier, TopBarrier, RightBarrier, BottomBarrier })
-    {
-        (double x, double y)? dist = Player.IsCollidingWith(barrier);
-        if (dist != null)
-        {
-            Player.double_x += dist.Value.x;
-            Player.double_y += dist.Value.y;
-        }
-    }
-}
-
-
 // -- School --
 Thing School = new("School", 0, 0, Hitbox: new(37, 9, 21, 5));
-School.Output = TextureLoader.Load("school_front");
+School.Output = TextureLoader.Load("school_front")[0];
 Thing stair1 = new(null, 0, 0); stair1.Output = new(23, 1);
 Thing stair2 = new(null, 0, 0); stair2.Output = new(27, 1);
 Thing stair3 = new(null, 0, 0); stair3.Output = new(31, 1);
@@ -163,7 +131,7 @@ void SchoolUpdate()
 
 // -- Aula --
 Thing Aula = new("Aula", 0, 0, Hitbox: new(62, 30, 11, 1));
-Aula.Output = TextureLoader.Load("aula");
+Aula.Output = TextureLoader.Load("aula")[0];
 void AulaUpdate()
 {
     if (!Aula.Hide)
@@ -174,39 +142,119 @@ void AulaUpdate()
 }
 
 
+// -- Game border barriers
+Thing LeftBarrier = new("LeftBarrier", -1, -1);
+Thing TopBarrier = new("TopBarrier", -1, -1);
+Thing RightBarrier = new("RightBarrier", 0, 0);
+Thing BottomBarrier = new("BottomBarrier", 0, 0);
+Game.OnResized += (w, h) =>
+{
+    if (Scene.Current != Aula_scene)
+    {
+        Frame horizontal = new(w, 1);
+        Frame vertical = new(1, h);
+
+        LeftBarrier.Output = vertical;
+        TopBarrier.Output = horizontal;
+        RightBarrier.Output = vertical;
+        BottomBarrier.Output = horizontal;
+
+        RightBarrier.x = w;
+        BottomBarrier.y = h;
+    }
+};
+void BarriersUpdate()
+{
+    foreach (Thing barrier in
+        new Thing[] { LeftBarrier, TopBarrier, RightBarrier, BottomBarrier })
+    {
+        (double x, double y)? dist = Player.IsCollidingWith(barrier);
+        if (dist != null)
+        {
+            Player.double_x += dist.Value.x;
+            Player.double_y += dist.Value.y;
+        }
+    }
+}
+
+
+// -- Dialoges --
+Thing Dialog_SideArt = new("Dialog SideArt", 0, 0);
+Thing Dialog_TextBox = new("Dialog TextBox", 0, 0);
+Dialog Intro_dialog = new("Intro");
+Intro_dialog.AddDialogBranch(Intro_dialog.RootLine, TreeNode<string>.CreateBranch(
+    "Welcome to the Neuman!" +
+    "\nYou were kicked out of your previous school." +
+    "\nAnd now you have to survive here a whole week.",
+    "Good luck kid!"
+)!);
+Intro_dialog.ReStartDialog();
+void DialogUpdate()
+{
+    Dialog current = Dialog.Current!;
+    if (current.CurrentLine != null && Input.IsPressed(ConsoleKey.Enter))
+    {
+        if(!current.NextLine())
+        {
+            Dialog.Current = null;
+            Scene.Current = Outside_scene;
+        }
+    }
+}
+void DialogDraw()
+{
+    Dialog dialog = Dialog.Current!;
+    
+    (byte r, byte g, byte b) color = COLOR_ON ? Blue_color : Gray_color;
+    string[] line = dialog.CurrentLine!.Value.Split("\n");
+    Dialog_TextBox.Output = Draw.TextBox(line, (2, 1), color,
+            Black_color, color);
+    Dialog_TextBox.y = Render.height / 2 - Dialog_TextBox.height / 2;
+    Dialog_TextBox.x =
+        (int)(Render.width * 0.75 - Dialog_TextBox.width / 2);
+}
+
 // -- Scenes --
-Outside_scene.AddThing(School);
-Aula_scene.AddThing(Aula);
+Intro_scene.AddThings(Dialog_SideArt, Dialog_TextBox);
+Outside_scene.AddThings(Player, School);
+Aula_scene.AddThings(Player, Aula);
 Scene.OnChange += (from, to) =>
 {
     if (to == Outside_scene)
     {
         Hints_Content["Movement"] = "Left[A] Right[D]";
-        if (from == null)
+        if (from == Intro_scene)
         {
             Player.x = 10;
             Player.y = 0;
         } else
         {
             Player.x = Render.width / 2 - Player.width / 2;
-            Player.y = Render.height - Player.height;
+            Player.y = Render.height - Player.height - 3;
         }
     } else Hints_Content.Remove("School interaction");
-
+    
     if (to == Aula_scene)
     {
         Player.x = Render.width / 2 - Player.width / 2;
         Player.y = Render.height - Player.height;
         Hints_Content["Movement"] = "Up[W] Left[A] Down[S] Right[D]";
     } else Hints_Content.Remove("Aula interaction");
-    
+
+    if (to == Intro_scene)
+    {
+        Dialog.Current = Intro_dialog;
+        Hints_Content["Dialog interaction"] = "Next dialog[Enter]";
+    } else Hints_Content.Remove("Dialog interaction");
+
     scenechange_cooldown.Restart();
 };
 void SceneUpdate(double delta)
 {
+    Scene? current = Scene.Current;
     long cooldown = scenechange_cooldown.ElapsedMilliseconds;
 
-    if (Scene.Current == Outside_scene)
+    if (current == Outside_scene)
     {
         if (Player.IsCollidingWith(School) != null)
         {
@@ -219,7 +267,7 @@ void SceneUpdate(double delta)
         
         SchoolUpdate();
     }
-    else if (Scene.Current == Aula_scene)
+    else if (current == Aula_scene)
     {
         if (Player.IsCollidingWith(Aula) != null)
         {
@@ -232,7 +280,7 @@ void SceneUpdate(double delta)
 
         AulaUpdate();
     }
-
+    else if (current != null && current.Name.Contains("Dialog")) DialogUpdate();
     PlayerUpdate(delta);
 }
 void SceneDraw()
@@ -240,15 +288,10 @@ void SceneDraw()
 }
 
 
-// -- Cutscene --
-Thing Face = new("Anonymus", 0, 0);
-Thing Message = new("Message", 0, 0);
-
-
 // -- Menus --
 void MenuUpdate()
 {
-    int i = Menu.Current.SelectedIndex;
+    int i = Menu.Current!.SelectedIndex;
     string selected = Menu.Current.Options[i];
     int l = Menu.Current.Options.Count;
 
@@ -282,7 +325,14 @@ void MenuUpdate()
         {
             switch (selected)
             {
-                case "Start": Menu.Current = Start_menu; break;
+                case "Start": 
+                    if (Intro_dialog.CurrentLine != null)
+                    {
+                        Scene.Current = Intro_scene;
+                        Menu.Current = null;
+                    }
+                    else Menu.Current = Start_menu;
+                    break;
                 case "Settings": Menu.Current = Settings_menu; break;
                 case "Exit": Game.Stop(); break;
             }
@@ -346,6 +396,7 @@ Game.OnRender += () =>
 {
     if (HINTS_ON) DrawHints();
     if (Menu.Current != null) MenuDraw();
+    if (Dialog.Current != null) DialogDraw();
     else SceneDraw();
 };
 

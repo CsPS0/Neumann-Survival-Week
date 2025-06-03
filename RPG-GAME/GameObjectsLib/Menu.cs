@@ -13,6 +13,6 @@ namespace GameObjectsLib
             SelectedIndex = 0;
         }
 
-        public static Menu Current = null!;
+        public static Menu? Current = null;
     }
 }
