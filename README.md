@@ -45,7 +45,7 @@
 - **ENTER**: Statisztikák (későbbi verzió)
 
 ## 🧑‍💻 Kód dokumentáció
-- [AssetHanle](RPG-GAME/AssetHandleLib/README.md)
+- [AssetHanler](RPG-GAME/AssetHandleLib/README.md)
 - [Assets](RPG-GAME/AssetsLib/README.md)
 - [GameLogic](RPG-GAME/GameLogicLib/README.md)
 - [GameObjects](RPG-GAME/GameObjectsLib/README.md)
