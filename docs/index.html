@@ -12,25 +12,31 @@
         <div class="container">
             <div class="header-content">
                 <h1>IKT RPG Game – IKT: Survival Week</h1>
-                <div class="header-controls">
-                    <div class="theme-toggle">
-                        <button id="theme-toggle-btn">
-                            <i class="fas fa-moon"></i>
-                        </button>
-                    </div>
-                    <div class="mobile-menu-toggle">
-                        <button id="mobile-menu-btn">
-                            <i class="fas fa-bars"></i>
-                        </button>
-                    </div>
-                </div>
             </div>
             <nav id="main-nav">
                 <ul>
                     <li><a href="#story">Történet</a></li>
                     <li><a href="#features">Játékmenet</a></li>
                     <li><a href="#download">Letöltés</a></li>
-                </ul>
+                    <li class="dropdown">
+                        <a href="#nyelv" data-i18n="nav.language"><i class="fas fa-globe"></i> <span>Nyelv</span></a>
+                        <div class="dropdown-content">
+                            <a href="#" data-lang="hu">Magyar</a>
+                            <a href="#" data-lang="en">English</a>
+                            <a href="#" data-lang="de">Deutsch</a>
+                        </div>
+                    </li>
+                    <li class="theme-toggle">
+                        <button id="theme-toggle-btn">
+                            <i class="fas fa-moon"></i>
+                        </button>
+                    </li>
+                    <li class="mobile-menu-toggle">
+                        <button id="mobile-menu-btn">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </li>
+                </ul>theme-toggle
             </nav>
         </div>
     </header>
@@ -118,6 +124,7 @@
             </div>
         </div>
     </footer>
+    <script src="JS/translations.js"></script>
     <script src="JS/script.js"></script>
 </body>
 </html>

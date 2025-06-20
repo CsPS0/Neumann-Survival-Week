@@ -39,7 +39,7 @@ Scene Aula_scene = new("Aula");
 
 // -- Menus --
 Menu Main_menu = new("Main menu", ["Start", "Settings", "Exit"]);
-Menu Start_menu = new("Start menu", ["Hétfő", "Kedd"]);
+Menu Start_menu = new("Start menu", ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek"]);
 Menu Settings_menu = new("Settings", ["UI Colors ON", "Hints ON"]);
 
 
