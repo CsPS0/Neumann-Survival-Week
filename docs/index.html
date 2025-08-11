@@ -1,129 +1,159 @@
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IKT RPG Game – IKT: Survival Week</title>
+    <title>NJSZKI IKT RPG Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="CSS/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 1s ease-in-out;
+        }
+    </style>
 </head>
-<body class="light-mode">
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <h1>IKT RPG Game – IKT: Survival Week</h1>
+<body class="bg-gray-900 text-white font-sans">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-gray-800 p-4 sticky top-0 z-10">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold">NJSZKI IKT RPG</a>
+            <!-- Hamburger Menu Button (visible on small screens) -->
+            <button id="hamburger-button" class="md:hidden text-white focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <!-- Navigation Links (hidden on small screens, visible on medium and larger) -->
+            <div id="navigation-links" class="hidden md:flex flex-col md:flex-row items-center w-full md:w-auto">
+                <a href="#features" class="mx-2 hover:text-gray-400 py-2 md:py-0">Features</a>
+                <a href="#story" class="mx-2 hover:text-gray-400 py-2 md:py-0">Story</a>
+                <a href="#documentation" class="mx-2 hover:text-gray-400 py-2 md:py-0">Documentation</a>
+                <a href="#team" class="mx-2 hover:text-gray-400 py-2 md:py-0">Team</a>
+                <div class="ml-0 md:ml-4 mt-2 md:mt-0">
+                    <select id="language-selector" class="bg-gray-700 text-white rounded p-2">
+                        <option value="en">English</option>
+                        <option value="hu">Hungarian</option>
+                    </select>
+                </div>
             </div>
-            <nav id="main-nav">
-                <ul>
-                    <li><a href="#story">Történet</a></li>
-                    <li><a href="#features">Játékmenet</a></li>
-                    <li><a href="#download">Letöltés</a></li>
-                    <li class="dropdown">
-                        <a href="#nyelv" data-i18n="nav.language"><i class="fas fa-globe"></i> <span>Nyelv</span></a>
-                        <div class="dropdown-content">
-                            <a href="#" data-lang="hu">Magyar</a>
-                            <a href="#" data-lang="en">English</a>
-                            <a href="#" data-lang="de">Deutsch</a>
-                        </div>
-                    </li>
-                    <li class="theme-toggle">
-                        <button id="theme-toggle-btn">
-                            <i class="fas fa-moon"></i>
-                        </button>
-                    </li>
-                    <li class="mobile-menu-toggle">
-                        <button id="mobile-menu-btn">
-                            <i class="fas fa-bars"></i>
-                        </button>
-                    </li>
-                </ul>theme-toggle
-            </nav>
         </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="bg-gray-800 text-center py-20">
+        <pre class="text-white text-xs mx-auto mb-8">
+                    ┌─────────────────────────────────────────────────────┐
+                    │ ┌─────┐ ┌─────┐ ┌─────┬─────┬─────┐ ┌─────┐ ┌─────┐ │
+                    │ │     │ │     │ │     │ │     │ │     │ │                   │
+                    │ └─────┘ └─────┘ └─────┴─────┴─────┘ └─────┘ └─────┘ │
+┌───────────────────┤ ┌─────┐ ┌─────┐ ┌─────┬─────┬─────┐ ┌─────┐ ┌─────┐ ├───────────────────┐
+│                   │ │     │ │     │ │     │ │     │ │     │ │                   │
+│ ┌─────┐ ┌─────┐   │ └─────┘ └─────┘ └─────┴─────┴─────┘ └─────┘ └─────┘ │  ┌─────┐ ┌─────┐  │
+│ │     │ │     │   │  ┌───────────────────────────────────────────────┐  │  │     │ │     │  │
+│ │     │ │     │   │  │NEUMANN JÁNOS SZÁMITÁSTECHNIKAI SZAKKÖZÉPISKOLA│  │  │     │ │     │  │
+│ │     │ │     │   │  └─────────────┬───╥───╥───╥───╥───┬─────────────┘  │  │     │ │     │  │
+│ │     │ │     │   │┌─────┐ ┌─────┐ │   ║   ║   ║   ║   │ ┌─────┐ ┌─────┐│  │     │ │     │  │
+│ │     │ │     │   ││     │ │     │ │ --║---║---║---║-- │ │     │ │     ││  │     │ │     │  │
+│ └─────┘ └─────┘   │└─────┘ └─────┘ │   ║   ║   ║   ║   │ └─────┘ └─────┘│  └─────┘ └─────┘  │
+│                   │              _/┴───╨───╨───╨───╨───┴\_              │                   │
+│                   │            _/─────────────────────────\_            │                   │
+│                   │           /─────────────────────────────\           │                   │
+        </pre>
+        <h1 class="text-5xl font-bold mb-4" data-translate="title">NJSZKI IKT RPG Game - IKT: Survival Week</h1>
+        <p class="text-xl" data-translate="subtitle">An ASCII art RPG adventure.</p>
     </header>
-    <div class="container">
-        <div class="ascii-art-container">
-            <div class="ascii-art"> <!--! Turn off this in VScode: vscode://settings/editor.formatOnSave -->
-                           ┌─────────────────────────────────────────────────────┐
-                           │ ┌─────┐ ┌─────┐ ┌─────┬─────┬─────┐ ┌─────┐ ┌─────┐ │
-                           │ │     │ │     │ │     │     │     │ │     │ │     │ │
-                           │ └─────┘ └─────┘ └─────┴─────┴─────┘ └─────┘ └─────┘ │
-┌──────────────────────────┤ ┌─────┐ ┌─────┐ ┌─────┬─────┬─────┐ ┌─────┐ ┌─────┐ ├──────────────────────────┐
-│                          │ │     │ │     │ │     │     │     │ │     │ │     │ │                          │
-│ ┌─────┐ ┌─────┐ ┌─────┐  │ └─────┘ └─────┘ └─────┴─────┴─────┘ └─────┘ └─────┘ │  ┌─────┐ ┌─────┐ ┌─────┐ │
-│ │     │ │     │ │     │  │  ┌───────────────────────────────────────────────┐  │  │     │ │     │ │     │ │
-│ │     │ │     │ │     │  │  │NEUMANN JÁNOS SZÁMITÁSTECHNIKAI SZAKKÖZÉPISKOLA│  │  │     │ │     │ │     │ │
-│ │     │ │     │ │     │  │  └─────────────┬───╥───╥───╥───╥───┬─────────────┘  │  │     │ │     │ │     │ │
-│ │     │ │     │ │     │  │┌─────┐ ┌─────┐ │   ║   ║   ║   ║   │ ┌─────┐ ┌─────┐│  │     │ │     │ │     │ │
-│ │     │ │     │ │     │  ││     │ │     │ │ --║---║---║---║-- │ │     │ │     ││  │     │ │     │ │     │ │
-│ └─────┘ └─────┘ └─────┘  │└─────┘ └─────┘ │   ║   ║   ║   ║   │ └─────┘ └─────┘│  └─────┘ └─────┘ └─────┘ │
-│                          │              _/┴───╨───╨───╨───╨───┴\_              │                          │
-│                          │            _/─────────────────────────\_            │                          │
-│                          │           /─────────────────────────────\           │                          │
-            </div>
-        </div>
-        <section id="story">
-            <h2>Történet</h2>
-            <div class="story-box">
-                <p>A Neu egy új diákja vagy, aki találkozik egy csomó diákkal és tanárral a pályán. 2 napot kell túlélni, a feladatok viccesek és szarkasztikusak lehetnek.</p>
-            </div>
-        </section>
-        <section id="features">
-            <h2>Játékmenet és Jellemzők</h2>
-            <div class="game-features">
-                <div class="feature-card">
-                    <h3>Top-Down nézet</h3>
-                    <p>A játék az OG DOT NET RPG Játékára alapul, klassszikus szerepjáték élménnyel.</p>
+
+    <main class="container mx-auto p-8">
+
+        <!-- Features Section -->
+        <section id="features" class="my-16 animate-fadeIn">
+            <h2 class="text-4xl font-bold text-center mb-8" data-translate="features_title">Features</h2>
+            <div class="grid md:grid-cols-3 gap-8 text-center">
+                <div class="bg-gray-800 p-6 rounded-lg">
+                    <h3 class="text-2xl font-bold mb-2" data-translate="features_1_title">Quest-based Gameplay</h3>
+                    <p data-translate="features_1_text">Engage in a variety of quests and make choices that matter.</p>
                 </div>
-                <div class="feature-card">
-                    <h3>Irányítás</h3>
-                    <p>W, A, S, D mozgás, inventory (TAB) és statisztikák (ENTER) megjelenítése.</p>
+                <div class="bg-gray-800 p-6 rounded-lg">
+                    <h3 class="text-2xl font-bold mb-2" data-translate="features_2_title">ASCII Art Graphics</h3>
+                    <p data-translate="features_2_text">A unique retro aesthetic made entirely of text characters.</p>
                 </div>
-                <div class="feature-card">
-                    <h3>Karakterek</h3>
-                    <p>A személyek ASCII-ben jelennek meg, és akik engedélyezik, a hangjukat is hallhatod.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>Döntések</h3>
-                    <p>Döntésektől függő random események, és a történet különböző kimenetelei.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>Színes játékvilág</h3>
-                    <p>Színes játék, hogy ne legyen annyira komoly az élmény.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>Animációk</h3>
-                    <p>Futás, beszéd, időjárási effektek és egyéb animációk teszik élethűbbé a játékot.</p>
+                <div class="bg-gray-800 p-6 rounded-lg">
+                    <h3 class="text-2xl font-bold mb-2" data-translate="features_3_title">Interactive Dialog</h3>
+                    <p data-translate="features_3_text">Talk to NPCs and uncover the secrets of the school.</p>
                 </div>
             </div>
         </section>
-        <section id="download">
-            <h2>Letöltés</h2>
-            <p>Töltsd le a játékot az alábbi gombra kattintva:</p>
-            <div id="download-container">
-                <a href="game-download-link" class="button" id="download-button">Letöltés (.exe)</a>
-                <p id="download-status" class="download-status"></p>
-            </div>
-            <p>A játék elérhető portable (.exe) és telepíthető (.msi) változatban is.</p>
+
+        <!-- Story Section -->
+        <section id="story" class="my-16 animate-fadeIn">
+            <h2 class="text-4xl font-bold text-center mb-8" data-translate="story_title">Story</h2>
+            <p class="text-lg text-center max-w-3xl mx-auto" data-translate="story_text">You are a new student at the Neumann János Vocational School of Informatics, and you have to survive for a week. You will meet different NPCs, and you can get different quests from them.</p>
         </section>
-    </div>
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <p>&copy; 2025 Nonchalant Team. Minden jog fenntartva.</p>
-                <div class="footer-social">
-                    <a href="https://trello.com/b/pYIODyvt/ikt-rpg-game" target="_blank" class="social-link">
-                        <i class="fab fa-trello"></i>
-                    </a>
-                    <a href="https://www.figma.com/design/lNtPjEEdTLhZOYomnx8tIa/Design?node-id=0-1&p=f&t=7tYf1Csgtw3F3AEx-0" target="_blank" class="social-link">
-                        <i class="fab fa-figma"></i>
-                    </a>
-                    <a href="https://gitlab.neumann-bp.edu.hu/72613289398/njszki_ikt-rpg-game" target="_blank" class="social-link">
-                        <i class="fab fa-gitlab"></i>
-                    </a>
+
+        <!-- About the game Section -->
+        <section id="about" class="my-16 animate-fadeIn">
+            <h2 class="text-4xl font-bold text-center mb-8" data-translate="about_title">About the Game</h2>
+            <ul class="list-disc list-inside max-w-3xl mx-auto">
+                <li data-translate="about_1">The game is based on different quests where the player can choose between options.</li>
+                <li data-translate="about_2">Easter eggs reacting to certain steps will also be hidden.</li>
+                <li data-translate="about_3">Animations enhance the experience.</li>
+                <li data-translate="about_4">Detailed main menu and submenus for easier navigation.</li>
+                <li data-translate="about_5">The player's answers are stored until the game is closed.</li>
+            </ul>
+        </section>
+
+        <!-- Controls Section -->
+        <section id="controls" class="my-16 animate-fadeIn">
+            <h2 class="text-4xl font-bold text-center mb-8" data-translate="controls_title">Controls</h2>
+            <div class="max-w-3xl mx-auto grid grid-cols-2 gap-4">
+                <div><kbd class="bg-gray-700 p-2 rounded">W, A, S, D</kbd></div><div data-translate="controls_1">Movement on the map, selection in the menu (W/S: up/down, A/D: switch)</div>
+                <div><kbd class="bg-gray-700 p-2 rounded">ENTER</kbd></div><div data-translate="controls_2">Select in menu</div>
+                <div><kbd class="bg-gray-700 p-2 rounded">ESC</kbd></div><div data-translate="controls_3">Back to menu or exit</div>
+                <div><kbd class="bg-gray-700 p-2 rounded">E</kbd></div><div data-translate="controls_4">Interact with NPCs</div>
+                <div><kbd class="bg-gray-700 p-2 rounded">TAB</kbd></div><div data-translate="controls_5">Inventory</div>
+            </div>
+        </section>
+
+        <!-- Code Documentation Section -->
+        <section id="documentation" class="my-16 animate-fadeIn">
+            <h2 class="text-4xl font-bold text-center mb-8" data-translate="documentation_title">Code Documentation</h2>
+            <p class="text-lg text-center max-w-3xl mx-auto" data-translate="documentation_text">The project's documentation is available in the main <a href="../README.md" class="text-blue-400 hover:underline">README.md</a> file.</p>
+        </section>
+
+        <!-- Team Section -->
+        <section id="team" class="my-16 animate-fadeIn">
+            <h2 class="text-4xl font-bold text-center mb-8" data-translate="team_title">The Team</h2>
+            <div class="flex justify-center space-x-8">
+                <div class="text-center">
+                    <p class="text-xl font-bold">Fehér Marcell</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-xl font-bold">Polyák Dávid</p>
+                }
+                <div class="text-center">
+                    <p class="text-xl font-bold">Solti Csongor Péter</p>
                 </div>
             </div>
-        </div>
+        </section>
+
+        <!-- Documents Section -->
+        <section id="documents" class="my-16 animate-fadeIn">
+            <h2 class="text-4xl font-bold text-center mb-8" data-translate="documents_title">Documents</h2>
+            <div class="text-center">
+                <a href="../LICENSE" class="text-blue-400 hover:underline" data-translate="documents_license">License</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-center py-4">
+        <p>&copy; 2025 NJSZKI IKT RPG Game. All rights reserved.</p>
     </footer>
+
     <script src="JS/translations.js"></script>
     <script src="JS/script.js"></script>
 </body>

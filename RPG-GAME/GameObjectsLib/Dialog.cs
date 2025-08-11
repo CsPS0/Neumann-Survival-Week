@@ -10,7 +10,7 @@ namespace GameObjectsLib
         public static Dialog? Current = null;
 
         public string Name;
-        public TreeNode<string> RootLine;
+        public TreeNode<string>? RootLine;
         public TreeNode<string>? CurrentLine;
 
         public void ReStartDialog() => CurrentLine = RootLine;
@@ -25,7 +25,7 @@ namespace GameObjectsLib
 
         public string[]? ReadLines()
         {
-            if (CurrentLine == RootLine) return new string[] { RootLine.Value };
+            if (CurrentLine == RootLine) return new string[] { RootLine?.Value! };
 
             if (CurrentLine?.Children.Count > 0)
                 return CurrentLine.Children.Select(c => c.Value).ToArray();
@@ -47,20 +47,26 @@ namespace GameObjectsLib
         public static Dialog LoadDialog(string path)
         {
             string json = File.ReadAllText(path);
-            DialogData data = JsonConvert.DeserializeObject<DialogData>(json);
+            DialogData data = JsonConvert.DeserializeObject<DialogData>(json)!;
 
-            Dialog dialog = new Dialog(data.Name);
-            dialog.RootLine = CreateTreeNode(data.Root);
+            Dialog dialog = new Dialog(data.Name!);
+            dialog.RootLine = CreateTreeNode(data.Root)!;
             dialog.ReStartDialog();
             return dialog;
         }
 
-        private static TreeNode<string> CreateTreeNode(DialogNodeData data)
+        private static TreeNode<string>? CreateTreeNode(DialogNodeData? data)
         {
-            TreeNode<string> node = new TreeNode<string>(data.Text);
+            if (data == null) return null;
+
+            TreeNode<string> node = new TreeNode<string>(data.Text!);
             foreach (var childData in data.Children)
             {
-                node.Children.Add(CreateTreeNode(childData));
+                TreeNode<string>? childNode = CreateTreeNode(childData);
+                if (childNode != null)
+                {
+                    node.Children.Add(childNode);
+                }
             }
             return node;
         }

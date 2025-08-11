@@ -2,12 +2,12 @@
 {
     public class Render
     {
-        private static Frame current;
-        private static Frame next;
+        private static Frame? current;
+        private static Frame? next;
         private static (byte r, byte g, byte b)? _fg, _bg;
         private static Modifiers _modifiers = new();
-        public static int width => current.width;
-        public static int height => current.height;
+        public static int width => current!.width;
+        public static int height => current!.height;
 
         public static void Init(int w, int h)
         {
@@ -24,25 +24,25 @@
         }
         public static void PutPixel(int x, int y, Pixel? pixel, bool IgnoreLayer = false) {
             CheckBuffers();
-            next.PutPixel(x, y, pixel, IgnoreLayer);
+            next!.PutPixel(x, y, pixel, IgnoreLayer);
         }
 
         public static void PutFrame(int x, int y, Frame frame, bool IgnoreLayer = false)
         {
             CheckBuffers();
-            next.PutFrame(x, y, frame, IgnoreLayer);
+            next!.PutFrame(x, y, frame, IgnoreLayer);
         }
 
         public static void Fill(Pixel pixel)
         {
             CheckBuffers();
-            next.Fill(pixel);
+            next!.Fill(pixel);
         }
 
         public static void Clear()
         {
             CheckBuffers();
-            next = new Frame(current.width, current.height);
+            next = new Frame(current!.width, current!.height);
         }
 
         public static void UpdateScreen()
@@ -51,13 +51,13 @@
             int WindowWidth = Console.WindowWidth;
             int WindowHeight = Console.WindowHeight;
 
-            for (int x = 0, endx = Math.Min(next.width, WindowWidth); x < endx; x++)
+            for (int x = 0, endx = Math.Min(next!.width, WindowWidth); x < endx; x++)
             {
-                for (int y = 0, endy = Math.Min(next.height, WindowHeight); y < endy; y++)
+                for (int y = 0, endy = Math.Min(next!.height, WindowHeight); y < endy; y++)
                 {
-                    if (!Pixel.Equals(next.pixels[y, x], current.pixels[y, x]))
+                    if (!Pixel.Equals(next!.pixels[y, x], current!.pixels[y, x]))
                     {
-                        Pixel pixel = next.pixels[y, x] ?? new(' ');
+                        Pixel pixel = next!.pixels[y, x] ?? new(' ');
                         string output = "";
 
                         if (pixel.fg != _fg && pixel.character != ' ')

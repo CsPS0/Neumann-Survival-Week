@@ -72,10 +72,10 @@ namespace GameLogicLib
             }
         }
 
-        public static event Action OnRender = null;
-        public static event Action<double> OnUpdate = null;
-        public static event Action OnStart = null;
-        public static event Action OnStop = null;
-        public static event Action<int, int> OnResized = null;
+        public static event Action OnRender = delegate { };
+        public static event Action<double> OnUpdate = delegate { };
+        public static event Action OnStart = delegate { };
+        public static event Action OnStop = delegate { };
+        public static event Action<int, int> OnResized = delegate { };
     }
 }

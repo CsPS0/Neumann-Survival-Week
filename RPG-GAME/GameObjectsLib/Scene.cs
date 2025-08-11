@@ -37,8 +37,7 @@
             }
         }
 
-        public event Action<double> OnUpdate = null!;
-        public event Action OnRender = null!;
+        
 
         public Scene(string Name)
         {
