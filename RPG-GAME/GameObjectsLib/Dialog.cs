@@ -1,5 +1,7 @@
-﻿using DataTypesLib;
-using RenderLib;
+using DataTypesLib;
+using Newtonsoft.Json;
+using System.IO;
+using System.Linq;
 
 namespace GameObjectsLib
 {
@@ -23,7 +25,7 @@ namespace GameObjectsLib
 
         public string[]? ReadLines()
         {
-            if (CurrentLine == RootLine) return [ RootLine.Value ];
+            if (CurrentLine == RootLine) return new string[] { RootLine.Value };
 
             if (CurrentLine?.Children.Count > 0)
                 return CurrentLine.Children.Select(c => c.Value).ToArray();
@@ -40,6 +42,27 @@ namespace GameObjectsLib
         public Dialog(string name)
         {
             Name = name;
+        }
+
+        public static Dialog LoadDialog(string path)
+        {
+            string json = File.ReadAllText(path);
+            DialogData data = JsonConvert.DeserializeObject<DialogData>(json);
+
+            Dialog dialog = new Dialog(data.Name);
+            dialog.RootLine = CreateTreeNode(data.Root);
+            dialog.ReStartDialog();
+            return dialog;
+        }
+
+        private static TreeNode<string> CreateTreeNode(DialogNodeData data)
+        {
+            TreeNode<string> node = new TreeNode<string>(data.Text);
+            foreach (var childData in data.Children)
+            {
+                node.Children.Add(CreateTreeNode(childData));
+            }
+            return node;
         }
     }
 }

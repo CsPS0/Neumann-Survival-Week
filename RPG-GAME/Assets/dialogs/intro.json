@@ -1,0 +1,12 @@
+{
+  "Name": "Intro",
+  "Root": {
+    "Text": "Welcome to the Neuman!\nYou were kicked out of your previous school.\nAnd now you have to survive here a whole week.",
+    "Children": [
+      {
+        "Text": "Good luck kid!",
+        "Children": []
+      }
+    ]
+  }
+}

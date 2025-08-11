@@ -15,6 +15,9 @@ namespace GameObjectsLib
         public bool Hide = false;
         public bool IgnoreLayer = false;
 
+        public Inventory Inventory { get; set; } = new Inventory();
+        public Statistics Statistics { get; set; } = new Statistics();
+
         public int x
         {
             get => (int)Math.Round(double_x);

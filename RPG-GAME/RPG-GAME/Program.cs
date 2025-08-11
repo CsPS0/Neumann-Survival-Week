@@ -14,6 +14,10 @@ bool COLOR_ON = true;
 bool HINTS_ON = true;
 Stopwatch scenechange_cooldown = Stopwatch.StartNew();
 long sc_cooldown = 200;
+bool INVENTORY_OPEN = false;
+bool STATISTICS_OPEN = false;
+bool FULLSCREEN_ON = false;
+int old_w = Console.WindowWidth, old_h = Console.WindowHeight;
 
 
 // -- Hints --
@@ -38,9 +42,9 @@ Scene Aula_scene = new("Aula");
 
 
 // -- Menus --
-Menu Main_menu = new("Main menu", ["Start", "Settings", "Exit"]);
+Menu Main_menu = new("Main menu", ["Start", "Settings", "Statistics", "Exit"]);
 Menu Start_menu = new("Start menu", ["Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek"]);
-Menu Settings_menu = new("Settings", ["UI Colors ON", "Hints ON"]);
+Menu Settings_menu = new("Settings", ["UI Colors ON", "Hints ON", "Fullscreen ON"]);
 
 
 // -- Player --
@@ -51,6 +55,7 @@ Player.animations.Add("wave", TextureLoader.Load("player_wave1", "player_wave2",
 Player.animations.Add("falling", TextureLoader.Load("player_falling"));
 Player.animation_name = "idle";
 Player.animation_fps = 10;
+Player.Inventory.AddItem(new Item("Rusty Key", "An old rusty key. I wonder what it opens?"));
 double player_speed = 0.05;
 double old_x = Player.double_x, old_y = Player.double_y;
 void PlayerUpdate(double delta)
@@ -149,6 +154,7 @@ Thing RightBarrier = new("RightBarrier", 0, 0);
 Thing BottomBarrier = new("BottomBarrier", 0, 0);
 Game.OnResized += (w, h) =>
 {
+    Render.Fill(new(' '));
     if (Scene.Current != Aula_scene)
     {
         Frame horizontal = new(w, 1);
@@ -162,6 +168,8 @@ Game.OnResized += (w, h) =>
         RightBarrier.x = w;
         BottomBarrier.y = h;
     }
+    SchoolUpdate();
+    AulaUpdate();
 };
 void BarriersUpdate()
 {
@@ -181,14 +189,7 @@ void BarriersUpdate()
 // -- Dialoges --
 Thing Dialog_SideArt = new("Dialog SideArt", 0, 0);
 Thing Dialog_TextBox = new("Dialog TextBox", 0, 0);
-Dialog Intro_dialog = new("Intro");
-Intro_dialog.AddDialogBranch(Intro_dialog.RootLine, TreeNode<string>.CreateBranch(
-    "Welcome to the Neuman!" +
-    "\nYou were kicked out of your previous school." +
-    "\nAnd now you have to survive here a whole week.",
-    "Good luck kid!"
-)!);
-Intro_dialog.ReStartDialog();
+Dialog Intro_dialog = Dialog.LoadDialog("Assets/dialogs/intro.json");
 void DialogUpdate()
 {
     Dialog current = Dialog.Current!;
@@ -315,6 +316,20 @@ void MenuUpdate()
                     HINTS_ON = !HINTS_ON;
                     Settings_menu.Options[i] = $"Hints {(HINTS_ON ? "ON" : "OFF")}";
                     break;
+                case 2:
+                    FULLSCREEN_ON = !FULLSCREEN_ON;
+                    Settings_menu.Options[i] = $"Fullscreen {(FULLSCREEN_ON ? "ON" : "OFF")}";
+                    if (FULLSCREEN_ON)
+                    {
+                        old_w = Console.WindowWidth;
+                        old_h = Console.WindowHeight;
+                        Console.SetWindowSize(Console.LargestWindowWidth, Console.LargestWindowHeight);
+                    }
+                    else
+                    {
+                        Console.SetWindowSize(old_w, old_h);
+                    }
+                    break;
             }
         }
     }
@@ -334,6 +349,7 @@ void MenuUpdate()
                     else Menu.Current = Start_menu;
                     break;
                 case "Settings": Menu.Current = Settings_menu; break;
+                case "Statistics": STATISTICS_OPEN = true; break;
                 case "Exit": Game.Stop(); break;
             }
         }
@@ -352,7 +368,7 @@ void MenuUpdate()
 }
 void MenuDraw()
 {
-    Frame title = Draw.Text(Menu.Current.Name, COLOR_ON ? Blue_color : Gray_color, Black_color);
+    Frame title = Draw.Text(Menu.Current!.Name, COLOR_ON ? Blue_color : Gray_color, Black_color);
     Render.PutFrame(Render.width / 2 - title.width / 2, (int)(Render.height * 0.1), title);
 
     string[] options = Menu.Current.Options.ToArray();
@@ -376,10 +392,82 @@ void MenuDraw()
     Render.PutFrame(Render.width / 2 - w / 2, Render.height / 2 - h / 2, MenuFrame, true);
 }
 
+void UpdateInventory()
+{
+    if (Input.IsPressed(ConsoleKey.Tab) || Input.IsPressed(ConsoleKey.Escape))
+    {
+        INVENTORY_OPEN = false;
+    }
+}
+
+void DrawInventory()
+{
+    Frame inventoryFrame = Draw.Box(40, 20, (100, 100, 100), (0, 0, 0), Filled: true);
+    Render.PutFrame(Render.width / 2 - 20, Render.height / 2 - 10, inventoryFrame);
+
+    Frame title = Draw.Text("Inventory", (102, 153, 225), (0, 0, 0));
+    Render.PutFrame(Render.width / 2 - title.width / 2, Render.height / 2 - 9, title);
+
+    if (Player.Inventory.Items.Count == 0)
+    {
+        Frame emptyText = Draw.Text("Your inventory is empty.", (100, 100, 100), (0, 0, 0));
+        Render.PutFrame(Render.width / 2 - emptyText.width / 2, Render.height / 2 - 5, emptyText);
+    }
+    else
+    {
+        for (int i = 0; i < Player.Inventory.Items.Count; i++)
+        {
+            Item item = Player.Inventory.Items[i];
+            Frame itemFrame = Draw.Text(item.Name, (102, 153, 225), (0, 0, 0));
+            Render.PutFrame(Render.width / 2 - 18, Render.height / 2 - 7 + i, itemFrame);
+        }
+    }
+}
+
+void UpdateStatistics()
+{
+    if (Input.IsPressed(ConsoleKey.Escape))
+    {
+        STATISTICS_OPEN = false;
+    }
+}
+
+void DrawStatistics()
+{
+    Frame statisticsFrame = Draw.Box(40, 20, (100, 100, 100), (0, 0, 0), Filled: true);
+    Render.PutFrame(Render.width / 2 - 20, Render.height / 2 - 10, statisticsFrame);
+
+    Frame title = Draw.Text("Statistics", (102, 153, 225), (0, 0, 0));
+    Render.PutFrame(Render.width / 2 - title.width / 2, Render.height / 2 - 9, title);
+
+    Frame questsCompleted = Draw.Text($"Quests Completed: {Player.Statistics.QuestsCompleted}", (102, 153, 225), (0, 0, 0));
+    Render.PutFrame(Render.width / 2 - 18, Render.height / 2 - 7, questsCompleted);
+
+    Frame enemiesDefeated = Draw.Text($"Enemies Defeated: {Player.Statistics.EnemiesDefeated}", (102, 153, 225), (0, 0, 0));
+    Render.PutFrame(Render.width / 2 - 18, Render.height / 2 - 6, enemiesDefeated);
+}
+
 
 // Game update
 Game.OnUpdate += (delta) =>
 {
+    if (Input.IsPressed(ConsoleKey.Tab))
+    {
+        INVENTORY_OPEN = !INVENTORY_OPEN;
+    }
+
+    if (INVENTORY_OPEN)
+    {
+        UpdateInventory();
+        return;
+    }
+
+    if (STATISTICS_OPEN)
+    {
+        UpdateStatistics();
+        return;
+    }
+
     if (Menu.Current == null && Input.IsPressed(ConsoleKey.Escape))
     {
         Menu.Current = Main_menu;
@@ -394,10 +482,21 @@ Game.OnUpdate += (delta) =>
 // -- Game render --
 Game.OnRender += () =>
 {
-    if (HINTS_ON) DrawHints();
-    if (Menu.Current != null) MenuDraw();
-    if (Dialog.Current != null) DialogDraw();
-    else SceneDraw();
+    if (INVENTORY_OPEN)
+    {
+        DrawInventory();
+    }
+    else if (STATISTICS_OPEN)
+    {
+        DrawStatistics();
+    }
+    else
+    {
+        if (HINTS_ON) DrawHints();
+        if (Menu.Current != null) MenuDraw();
+        if (Dialog.Current != null) DialogDraw();
+        else SceneDraw();
+    }
 };
 
 
