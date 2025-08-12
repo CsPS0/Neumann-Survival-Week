@@ -1,3 +1,5 @@
+"use strict"
+
 const translations = {
     en: {
         title: "NJSZKI IKT RPG Game - IKT: Survival Week",
