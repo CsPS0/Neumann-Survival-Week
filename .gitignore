@@ -36,3 +36,31 @@ ICON.webp
 *.jpg
 
 *.vs
+
+# AI assistant files, memory and tool state (never committed)
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+HANDOFF.md
+.claude/
+.claude-mem/
+.serena/
+.gemini/
+.agents/
+.agent/
+.superpowers/
+.cursor/
+.windsurf/
+.codex/
+.mcp.json
+graphify-out/
+memory/
+MEMORY.md
+
+# Build output and large binaries
+build/
+*.exe
+*.pck
+*.zip
+*.7z
+*.rar
