@@ -2,168 +2,168 @@
 using System.Xml;
 using RenderLib;
 
-namespace GameObjectsLib
+namespace GameObjectsLib;
+
+public class Textures
 {
-    public class Textures
+    public Dictionary<string, Func<Frame>> options = new();
+
+    public Frame[] Load(params string[] texture_names)
     {
-        public Dictionary<string, Func<Frame>> options = new();
-
-        public Frame[] Load(params string[] texture_names)
+        List<Frame> frames = new();
+        foreach (string name in texture_names)
         {
-            List<Frame> frames = new();
-            foreach (string name in texture_names)
-            {
-                if (options.ContainsKey(name)) frames.Add(options[name]());
-                else throw new Exception($"{name} option not found. " +
-                    $"Available options are: [{string.Join(", ", options.Keys)}]");
-            }
-            return frames.ToArray();
+            if (options.ContainsKey(name)) frames.Add(options[name]());
+            else throw new Exception($"{name} option not found. " +
+                $"Available options are: [{string.Join(", ", options.Keys)}]");
         }
+        return frames.ToArray();
+    }
 
-        public Textures()
+    public Textures()
+    {
+        // --- Player ---
+        int player_layer = 1;
+        (byte r, byte g, byte b) skin_color = (255, 181, 145);
+        (byte r, byte g, byte b) pants_color = (19, 119, 214);
+        (byte r, byte g, byte b) shirt_color = pants_color;
+
+        Pixel template = new(' ', layer: player_layer);
+
+        Pixel head = template.Clone('O', skin_color);
+        Pixel shirt = template.Clone('#', shirt_color);
+
+        // idle
+        options.Add("player_idle", () =>
         {
-            // --- Player ---
-            int player_layer = 1;
-            (byte r, byte g, byte b) skin_color = (255, 181, 145);
-            (byte r, byte g, byte b) pants_color = (19, 119, 214);
-            (byte r, byte g, byte b) shirt_color = pants_color;
+            Pixel arm = template.Clone('|', skin_color);
+            Pixel leg = template.Clone('║', pants_color);
 
-            Pixel template = new(' ', layer: player_layer);
-
-            Pixel head = template.Clone('O', skin_color);
-            Pixel shirt = template.Clone('#', shirt_color);
-
-            // idle
-            options.Add("player_idle", () =>
+            return new Frame(0, 0)
             {
-                Pixel arm = template.Clone('|', skin_color);
-                Pixel leg = template.Clone('║', pants_color);
-
-                return new Frame(0, 0)
+                pixels = new Pixel?[,]
                 {
-                    pixels = new Pixel?[,]
-                    {
-                        { null, head, null },
-                        { arm, shirt, arm },
-                        { null, leg, null },
-                    }
-                };
-            });
+                    { null, head, null },
+                    { arm, shirt, arm },
+                    { null, leg, null },
+                }
+            };
+        });
 
-            // walk1
-            options.Add("player_walk1", () =>
+        // walk1
+        options.Add("player_walk1", () =>
+        {
+            Pixel l_arm = template.Clone('/', skin_color);
+            Pixel r_arm = template.Clone('\\', skin_color);
+            Pixel l_leg = template.Clone('/', pants_color);
+            Pixel r_leg = template.Clone('\\', pants_color);
+
+            return new Frame(0, 0)
             {
-                Pixel l_arm = template.Clone('/', skin_color);
-                Pixel r_arm = template.Clone('\\', skin_color);
-                Pixel l_leg = template.Clone('/', pants_color);
-                Pixel r_leg = template.Clone('\\', pants_color);
-
-                return new Frame(0, 0)
+                pixels = new Pixel?[,]
                 {
-                    pixels = new Pixel?[,]
-                    {
-                        { null, head, null },
-                        { l_arm, shirt, r_arm },
-                        { l_leg, null, r_leg },
-                    }
-                };
-            });
+                    { null, head, null },
+                    { l_arm, shirt, r_arm },
+                    { l_leg, null, r_leg },
+                }
+            };
+        });
 
-            // walk2
-            options.Add("player_walk2", () =>
+        // walk2
+        options.Add("player_walk2", () =>
+        {
+            Pixel arm = template.Clone('|', skin_color);
+            Pixel leg = template.Clone('|', pants_color);
+
+            return new Frame(0, 0)
             {
-                Pixel arm = template.Clone('|', skin_color);
-                Pixel leg = template.Clone('|', pants_color);
-
-                return new Frame(0, 0)
+                pixels = new Pixel?[,]
                 {
-                    pixels = new Pixel?[,]
-                    {
-                        { null, head, null },
-                        { null, arm, null },
-                        { null, leg, null },
-                    }
-                };
-            });
+                    { null, head, null },
+                    { null, arm, null },
+                    { null, leg, null },
+                }
+            };
+        });
 
-            // wave1
-            options.Add("player_wave1", () =>
+        // wave1
+        options.Add("player_wave1", () =>
+        {
+            Pixel l_arm = template.Clone('|', skin_color);
+            Pixel r_arm = template.Clone('_', skin_color);
+            Pixel leg = template.Clone('║', pants_color);
+
+            return new Frame(0, 0)
             {
-                Pixel l_arm = template.Clone('|', skin_color);
-                Pixel r_arm = template.Clone('_', skin_color);
-                Pixel leg = template.Clone('║', pants_color);
-
-                return new Frame(0, 0)
+                pixels = new Pixel?[,]
                 {
-                    pixels = new Pixel?[,]
-                    {
-                        { null, head, null, r_arm, r_arm },
-                        { l_arm, shirt, null, null, null },
-                        { null, leg, null, null, null },
-                    }
-                };
-            });
+                    { null, head, null, r_arm, r_arm },
+                    { l_arm, shirt, null, null, null },
+                    { null, leg, null, null, null },
+                }
+            };
+        });
 
-            // wave2
-            options.Add("player_wave2", () =>
+        // wave2
+        options.Add("player_wave2", () =>
+        {
+            Pixel l_arm = template.Clone('|', skin_color);
+            Pixel r_arm = template.Clone('/', skin_color);
+            Pixel leg = template.Clone('║', pants_color);
+
+            return new Frame(0, 0)
             {
-                Pixel l_arm = template.Clone('|', skin_color);
-                Pixel r_arm = template.Clone('/', skin_color);
-                Pixel leg = template.Clone('║', pants_color);
-
-                return new Frame(0, 0)
+                pixels = new Pixel?[,]
                 {
-                    pixels = new Pixel?[,]
-                    {
-                        { null, head, null, r_arm },
-                        { l_arm, shirt, null, null },
-                        { null, leg, null, null },
-                    }
-                };
-            });
+                    { null, head, null, r_arm },
+                    { l_arm, shirt, null, null },
+                    { null, leg, null, null },
+                }
+            };
+        });
 
-            // wave3
-            options.Add("player_wave3", () =>
+        // wave3
+        options.Add("player_wave3", () =>
+        {
+            Pixel arm = template.Clone('|', skin_color);
+            Pixel leg = template.Clone('║', pants_color);
+
+            return new Frame(0, 0)
             {
-                Pixel arm = template.Clone('|', skin_color);
-                Pixel leg = template.Clone('║', pants_color);
-
-                return new Frame(0, 0)
+                pixels = new Pixel?[,]
                 {
-                    pixels = new Pixel?[,]
-                    {
-                        { null, head, arm },
-                        { arm, shirt, null },
-                        { null, leg, null },
-                    }
-                };
-            });
+                    { null, head, arm },
+                    { arm, shirt, null },
+                    { null, leg, null },
+                }
+            };
+        });
 
-            // falling
-            options.Add("player_falling", () =>
+        // falling
+        options.Add("player_falling", () =>
+        {
+            Pixel shoulder = template.Clone('_', shirt_color);
+            Pixel l_arm = template.Clone('/', skin_color);
+            Pixel r_arm = template.Clone('\\', skin_color);
+            Pixel leg = template.Clone('>', pants_color);
+            Pixel feet = template.Clone(',', pants_color);
+
+            return new Frame(0, 0)
             {
-                Pixel shoulder = template.Clone('_', shirt_color);
-                Pixel l_arm = template.Clone('/', skin_color);
-                Pixel r_arm = template.Clone('\\', skin_color);
-                Pixel leg = template.Clone('>', pants_color);
-                Pixel feet = template.Clone(',', pants_color);
-
-                return new Frame(0, 0)
+                pixels = new Pixel?[,]
                 {
-                    pixels = new Pixel?[,]
-                    {
-                        { null, shoulder, head, shoulder, null },
-                        { l_arm, null, shirt, null, r_arm },
-                        { feet, leg, feet, leg, null },
-                    }
-                };
-            });
-            // --- Player ---
+                    { null, shoulder, head, shoulder, null },
+                    { l_arm, null, shirt, null, r_arm },
+                    { feet, leg, feet, leg, null },
+                }
+            };
+        });
+        // --- Player ---
 
-            // --- School ---
-            options.Add("school_front", () =>
-            {
-                string[] school = [
+        // --- School ---
+        options.Add("school_front", () =>
+        {
+            string[] school = [
 "                    ┌─────────────────────────────────────────────────────┐",
 "                    │ ┌─────┐ ┌─────┐ ┌─────┬─────┬─────┐ ┌─────┐ ┌─────┐ │",
 "                    │ │     │ │     │ │     │     │     │ │     │ │     │ │",
@@ -180,16 +180,16 @@ namespace GameObjectsLib
 "│                   │              _/┴───╨───╨───╨───╨───┴\\_              │                   │",
 "│                   │            _/─────────────────────────\\_            │                   │",
 "│                   │           /─────────────────────────────\\           │                   │"
-                ];
-                return Frame.FromStrings(school);
-            });
-            // --- School ---
+            ];
+            return Frame.FromStrings(school);
+        });
+        // --- School ---
 
-            // -- Aula
-            options.Add("aula", () =>
+        // -- Aula
+        options.Add("aula", () =>
+        {
+            string[] aula =
             {
-                string[] aula =
-                {
 
 "                          ___________________________________________________________________________________",
 "                          │          ║          ║          ║               ║          ║          ║          │",
@@ -222,15 +222,15 @@ namespace GameObjectsLib
 "                                                                                                                                     ",
 "                                                                                                                                     ",
 "─────────────────────────────────────────────────────────────┐           ┌─────────────────────────────────────────────────────────────"
-                };
-                return Frame.FromStrings(aula);
-            });
-            // -- Aula
+            };
+            return Frame.FromStrings(aula);
+        });
+        // -- Aula
 
-            // -- Leibi --
-            options.Add("leibi_face", () =>
-            {
-                string[] face = [
+        // -- Leibi --
+        options.Add("leibi_face", () =>
+        {
+            string[] face = [
 "%#--+*----::::-======-:--++++=-::+=+-::::--=-----#",
 "%%%#:::--==*######***++*++##+=-=++**+=::--:=-::-+=",
 "###*--#%#%%%%%%#%*+=+======+#%%#+*###%=::-++----==",
@@ -265,10 +265,9 @@ namespace GameObjectsLib
 "@@@@@#*****#######*#***********#%#**#%@##%@@%@%%%#",
 "@@@@@%******####%###########%%@@%%%**%@%#%%@@@#%@%",
 "@@@@@@#*******########%%%######%%****%@%#%%@@@@@@@"
-                ];
-                return Frame.FromStrings(face);
-            });
-            // -- Leibi --
-        }
+            ];
+            return Frame.FromStrings(face);
+        });
+        // -- Leibi --
     }
 }

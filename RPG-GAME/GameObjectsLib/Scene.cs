@@ -1,47 +1,46 @@
-﻿namespace GameObjectsLib
+namespace GameObjectsLib;
+
+public class Scene
 {
-    public class Scene
+    static Scene? _Current = null;
+    static List<Thing> AllThings = new();
+    public static void HideAllThings() 
+    { foreach (var thing in AllThings) thing.Hide = true; }
+    public static Scene? Current
     {
-        static Scene? _Current = null;
-        static List<Thing> AllThings = new();
-        public static void HideAllThings() 
-        { foreach (var thing in AllThings) thing.Hide = true; }
-        public static Scene? Current
+        get => _Current;
+        set
         {
-            get => _Current;
-            set
+            if (_Current != value)
             {
-                if (_Current != value)
-                {
-                    HideAllThings();
-                    if (value != null) 
-                        foreach (var thing in value._Things) thing.Hide = false;
-                    OnChange?.Invoke(_Current, value);
-                    _Current = value;
-                }
+                HideAllThings();
+                if (value != null) 
+                    foreach (var thing in value.Things) thing.Hide = false;
+                OnChange?.Invoke(_Current, value);
+                _Current = value;
             }
         }
+    }
 
 
-        public static Action<Scene?, Scene?> OnChange = null!;
+    public static Action<Scene?, Scene?> OnChange = null!;
 
-        public string Name;
-        
-        List<Thing> _Things = new();
-        public void AddThings(params Thing[] things)
+    public string Name;
+    
+    public List<Thing> Things = new();
+    public void AddThings(params Thing[] things)
+    {
+        foreach (var thing in things)
         {
-            foreach (var thing in things)
-            {
-                if (!AllThings.Contains(thing)) AllThings.Add(thing);
-                _Things.Add(thing);
-            }
+            if (!AllThings.Contains(thing)) AllThings.Add(thing);
+            Things.Add(thing);
         }
+    }
 
-        
+    
 
-        public Scene(string Name)
-        {
-            this.Name = Name;
-        }
+    public Scene(string Name)
+    {
+        this.Name = Name;
     }
 }

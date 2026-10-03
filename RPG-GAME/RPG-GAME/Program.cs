@@ -1,10 +1,12 @@
-﻿using DataTypesLib;
+using DataTypesLib;
 using GameLogicLib;
 using GameObjectsLib;
 using InputLib;
 using RenderLib;
 using System.Diagnostics;
 using static System.Net.Mime.MediaTypeNames;
+
+Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
 
 Textures TextureLoader = new();
 (byte r, byte g, byte b) Gray_color = (100, 100, 100),
@@ -39,6 +41,7 @@ void DrawHints()
 Scene Intro_scene = new("Intro Dialog");
 Scene Outside_scene = new("Outside");
 Scene Aula_scene = new("Aula");
+Scene Classroom_scene = new("Classroom");
 
 
 // -- Menus --
@@ -99,12 +102,28 @@ void PlayerUpdate(double delta)
             moveX * player_speed * delta,
             moveY * player_speed / 2 * delta
             );
+
+        foreach (Thing thing in Scene.Current?.Things ?? new List<Thing>())
+        {
+            if (thing == Player || !thing.IsSolid || thing.Hide) continue;
+            (double x, double y)? dist = Player.IsCollidingWith(thing);
+            if (dist != null)
+            {
+                Player.double_x += dist.Value.x;
+                Player.double_y += dist.Value.y;
+            }
+        }
     }
 }
 
 
 // -- School --
-Thing School = new("School", 0, 0, Hitbox: new(37, 9, 21, 5));
+Thing School = new("School", 0, 0, Hitbox: new(37, 9, 21, 5)) 
+{ 
+    IsSolid = false,
+    InteractHint = "Go Inside[Enter]",
+    OnInteract = () => { Scene.Current = Aula_scene; }
+};
 School.Output = TextureLoader.Load("school_front")[0];
 Thing stair1 = new(null, 0, 0); stair1.Output = new(23, 1);
 Thing stair2 = new(null, 0, 0); stair2.Output = new(27, 1);
@@ -135,23 +154,133 @@ void SchoolUpdate()
 
 
 // -- Aula --
-Thing Aula = new("Aula", 0, 0, Hitbox: new(62, 30, 11, 1));
+Thing Aula = new("Aula", 0, 0, Hitbox: new(62, 30, 11, 1))
+{
+    IsSolid = true,
+    InteractHint = "Go Outside[Enter]",
+    OnInteract = () => { Scene.Current = Outside_scene; }
+};
 Aula.Output = TextureLoader.Load("aula")[0];
+
+Thing AulaTopWall = new(null, 0, 0, Hitbox: new(26, 0, 85, 5)) { IsSolid = true };
+Thing AulaLeftDesks = new(null, 0, 0, Hitbox: new(0, 5, 40, 26)) { IsSolid = true };
+Thing AulaRightDesks = new(null, 0, 0, Hitbox: new(80, 5, 45, 26)) { IsSolid = true };
+Thing AulaBottomLeftWall = new(null, 0, 0, Hitbox: new(0, 31, 61, 1)) { IsSolid = true };
+Thing AulaBottomRightWall = new(null, 0, 0, Hitbox: new(73, 31, 60, 1)) { IsSolid = true };
+
+Discussion? CurrentDiscussion = null;
+
+Thing BranyoNPC = new("Branyo", 0, 0, Hitbox: new(0, 0, 5, 4));
+BranyoNPC.Output = Draw.Text(Sprites.NpcA.Split('\n'), (200, 200, 200), (0, 0, 0));
+BranyoNPC.IsSolid = true;
+BranyoNPC.OnInteract = () => { CurrentDiscussion = Conversations.BranyoMonday; };
+BranyoNPC.InteractHint = "Talk to Branyó [Enter]";
+
+Thing BarbieNPC = new("Barbie", 0, 0, Hitbox: new(0, 0, 5, 4));
+BarbieNPC.Output = Draw.Text(Sprites.NpcB.Split('\n'), (200, 200, 200), (0, 0, 0));
+BarbieNPC.IsSolid = true;
+BarbieNPC.OnInteract = () => { CurrentDiscussion = Conversations.BarbieMonday; };
+BarbieNPC.InteractHint = "Talk to Barbie [Enter]";
+
+Thing CsPSNPC = new("CsPS", 0, 0, Hitbox: new(0, 0, 5, 4));
+CsPSNPC.Output = Draw.Text(Sprites.NpcC.Split('\n'), (200, 200, 200), (0, 0, 0));
+CsPSNPC.IsSolid = true;
+CsPSNPC.OnInteract = () => { CurrentDiscussion = Conversations.CsPSMonday; };
+CsPSNPC.InteractHint = "Talk to CsPS [Enter]";
+
+Thing LockedDoor = new("LockedDoor", 0, 0, Hitbox: new(10, 10, 3, 1)) 
+{ 
+    IsSolid = true, 
+    InteractHint = "Unlock Door[Enter]"
+};
+LockedDoor.Output = Draw.Box(3, 1, (200, 100, 0), (0, 0, 0));
+LockedDoor.OnInteract = () => {
+    if (Player.Inventory.Items.Any(i => i.Name == "Rusty Key")) {
+        LockedDoor.InteractHint = "Enter Classroom[Enter]";
+        LockedDoor.OnInteract = () => { Scene.Current = Classroom_scene; };
+        Hints_Content["System"] = "Unlocked the door!";
+    } else {
+        Hints_Content["System"] = "You need a Rusty Key!";
+    }
+};
+
 void AulaUpdate()
 {
     if (!Aula.Hide)
     {
         Aula.x = Render.width / 2 - Aula.width / 2;
         Aula.y = Render.height - Aula.height;
+        LockedDoor.x = Aula.x + 60;
+        LockedDoor.y = Aula.y + 5;
+
+        AulaTopWall.x = Aula.x; AulaTopWall.y = Aula.y;
+        AulaLeftDesks.x = Aula.x; AulaLeftDesks.y = Aula.y;
+        AulaRightDesks.x = Aula.x; AulaRightDesks.y = Aula.y;
+        AulaBottomLeftWall.x = Aula.x; AulaBottomLeftWall.y = Aula.y;
+        AulaBottomRightWall.x = Aula.x; AulaBottomRightWall.y = Aula.y;
+
+        BranyoNPC.x = Aula.x + 30; BranyoNPC.y = Aula.y + 15;
+        BarbieNPC.x = Aula.x + 80; BarbieNPC.y = Aula.y + 10;
+        CsPSNPC.x = Aula.x + 50; CsPSNPC.y = Aula.y + 22;
     }
 }
 
+// -- Classroom --
+Thing Classroom = new("Classroom", 0, 0, Hitbox: new(80, 25, 1, 1));
+Classroom.Output = Draw.Box(80, 25, (100, 100, 100), (0, 0, 0), Filled: true);
+Thing ClassroomDoor = new("ClassroomDoor", 0, 0, Hitbox: new(10, 24, 6, 1))
+{
+    IsSolid = true,
+    InteractHint = "Go to Aula[Enter]",
+    OnInteract = () => { Scene.Current = Aula_scene; }
+};
+ClassroomDoor.Output = Draw.Box(6, 1, (200, 100, 0), (0, 0, 0));
+
+Thing ClassroomTopWall = new(null, 0, 0, Hitbox: new(0, 0, 80, 1)) { IsSolid = true };
+Thing ClassroomBottomWall = new(null, 0, 0, Hitbox: new(0, 24, 80, 1)) { IsSolid = true };
+Thing ClassroomLeftDesks = new("Classroom Desks Left", 0, 0, Hitbox: new(0, 10, 20, 20));
+ClassroomLeftDesks.IsSolid = true;
+Thing ClassroomRightDesks = new("Classroom Desks Right", 0, 0, Hitbox: new(80, 10, 20, 20));
+ClassroomRightDesks.IsSolid = true;
+
+// -- NPCs --
+Thing LeibiNPC = new("Leibi", 0, 0, Hitbox: new(0, 0, 5, 4));
+LeibiNPC.Output = Draw.Text(Sprites.NpcA.Split('\n'), (200, 200, 200), (0, 0, 0));
+LeibiNPC.IsSolid = true;
+LeibiNPC.OnInteract = () => { CurrentDiscussion = Conversations.LeibiMonday; };
+LeibiNPC.InteractHint = "Talk to Leibi [Enter]";
+
+Thing RizzlerNPC = new("Rizzler", 0, 0, Hitbox: new(0, 0, 5, 4));
+RizzlerNPC.Output = Draw.Text(Sprites.NpcB.Split('\n'), (200, 200, 200), (0, 0, 0));
+RizzlerNPC.IsSolid = true;
+RizzlerNPC.OnInteract = () => { CurrentDiscussion = Conversations.RizzlerMonday; };
+RizzlerNPC.InteractHint = "Talk to Rizzler [Enter]";
+
+void ClassroomUpdate()
+{
+    if (!Classroom.Hide)
+    {
+        Classroom.x = Render.width / 2 - Classroom.width / 2;
+        Classroom.y = Render.height / 2 - Classroom.height / 2;
+        
+        ClassroomDoor.x = Classroom.x + 10;
+        ClassroomDoor.y = Classroom.y + 24;
+
+        ClassroomTopWall.x = Classroom.x; ClassroomTopWall.y = Classroom.y;
+        ClassroomBottomWall.x = Classroom.x; ClassroomBottomWall.y = Classroom.y;
+        ClassroomLeftDesks.x = Classroom.x; ClassroomLeftDesks.y = Classroom.y;
+        ClassroomRightDesks.x = Classroom.x; ClassroomRightDesks.y = Classroom.y;
+
+        LeibiNPC.x = Classroom.x + 25; LeibiNPC.y = Classroom.y + 5;
+        RizzlerNPC.x = Classroom.x + 60; RizzlerNPC.y = Classroom.y + 5;
+    }
+}
 
 // -- Game border barriers
-Thing LeftBarrier = new("LeftBarrier", -1, -1);
-Thing TopBarrier = new("TopBarrier", -1, -1);
-Thing RightBarrier = new("RightBarrier", 0, 0);
-Thing BottomBarrier = new("BottomBarrier", 0, 0);
+Thing LeftBarrier = new("LeftBarrier", -1, -1) { IsSolid = true };
+Thing TopBarrier = new("TopBarrier", -1, -1) { IsSolid = true };
+Thing RightBarrier = new("RightBarrier", 0, 0) { IsSolid = true };
+Thing BottomBarrier = new("BottomBarrier", 0, 0) { IsSolid = true };
 Game.OnResized += (w, h) =>
 {
     Render.Fill(new(' '));
@@ -171,19 +300,7 @@ Game.OnResized += (w, h) =>
     SchoolUpdate();
     AulaUpdate();
 };
-void BarriersUpdate()
-{
-    foreach (Thing barrier in
-        new Thing[] { LeftBarrier, TopBarrier, RightBarrier, BottomBarrier })
-    {
-        (double x, double y)? dist = Player.IsCollidingWith(barrier);
-        if (dist != null)
-        {
-            Player.double_x += dist.Value.x;
-            Player.double_y += dist.Value.y;
-        }
-    }
-}
+
 
 
 // -- Dialoges --
@@ -211,14 +328,87 @@ void DialogDraw()
     Dialog_TextBox.Output = Draw.TextBox(line, (2, 1), color,
             Black_color, color);
     Dialog_TextBox.y = Render.height / 2 - Dialog_TextBox.height / 2;
-    Dialog_TextBox.x =
-        (int)(Render.width * 0.75 - Dialog_TextBox.width / 2);
+    Dialog_TextBox.x = (int)(Render.width * 0.75 - Dialog_TextBox.width / 2);
+}
+
+// -- Discussions --
+
+void DiscussionUpdate()
+{
+    if (CurrentDiscussion == null) return;
+
+    if (Input.IsPressed(ConsoleKey.Escape))
+    {
+        CurrentDiscussion = null;
+        return;
+    }
+
+    if (CurrentDiscussion.Choices.Count == 0)
+    {
+        if (Input.IsPressed(ConsoleKey.Enter))
+            CurrentDiscussion = null;
+    }
+    else
+    {
+        if (Input.IsPressed(ConsoleKey.A) && CurrentDiscussion.Choices.ContainsKey('a'))
+        {
+            CurrentDiscussion.SelectChoice('a');
+            CurrentDiscussion = null;
+        }
+        else if (Input.IsPressed(ConsoleKey.B) && CurrentDiscussion.Choices.ContainsKey('b'))
+        {
+            CurrentDiscussion.SelectChoice('b');
+            CurrentDiscussion = null;
+        }
+        else if (Input.IsPressed(ConsoleKey.C) && CurrentDiscussion.Choices.ContainsKey('c'))
+        {
+            CurrentDiscussion.SelectChoice('c');
+            CurrentDiscussion = null;
+        }
+    }
+}
+
+void DiscussionDraw()
+{
+    if (CurrentDiscussion == null) return;
+    (byte r, byte g, byte b) color = COLOR_ON ? Blue_color : Gray_color;
+
+    // Draw Face
+    Dialog_SideArt.Output = Draw.Text(CurrentDiscussion.AsciiFace.Split('\n'), color, Black_color);
+    Dialog_SideArt.y = Render.height / 2 - Dialog_SideArt.height / 2;
+    Dialog_SideArt.x = (int)(Render.width * 0.25 - Dialog_SideArt.width / 2);
+    
+    // Draw Text
+    List<string> lines = new List<string>();
+    lines.Add($"[{CurrentDiscussion.NpcName}]");
+    lines.Add("");
+    lines.AddRange(CurrentDiscussion.Dialogue.Split('\n'));
+    lines.Add("");
+    
+    if (CurrentDiscussion.Choices.Count > 0)
+    {
+        foreach (var choice in CurrentDiscussion.Choices)
+            lines.Add($"[{char.ToUpper(choice.Key)}] {choice.Value}");
+    }
+    else
+    {
+        lines.Add("Press [Enter] to continue...");
+    }
+
+    Dialog_TextBox.Output = Draw.TextBox(lines.ToArray(), (2, 1), color, Black_color, color);
+    Dialog_TextBox.y = Render.height / 2 - Dialog_TextBox.height / 2;
+    Dialog_TextBox.x = (int)(Render.width * 0.75 - Dialog_TextBox.width / 2);
+
+    Render.PutFrame(Dialog_SideArt.x, Dialog_SideArt.y, Dialog_SideArt.Output, true);
+    Render.PutFrame(Dialog_TextBox.x, Dialog_TextBox.y, Dialog_TextBox.Output, true);
 }
 
 // -- Scenes --
 Intro_scene.AddThings(Dialog_SideArt, Dialog_TextBox);
-Outside_scene.AddThings(Player, School);
-Aula_scene.AddThings(Player, Aula);
+Outside_scene.AddThings(Player, School, LeftBarrier, TopBarrier, RightBarrier, BottomBarrier);
+Aula_scene.AddThings(Player, Aula, LockedDoor, AulaTopWall, AulaLeftDesks, AulaRightDesks, AulaBottomLeftWall, AulaBottomRightWall, BranyoNPC, BarbieNPC, CsPSNPC);
+Classroom_scene.AddThings(Player, Classroom, ClassroomDoor, ClassroomTopWall, ClassroomBottomWall, ClassroomLeftDesks, ClassroomRightDesks, LeibiNPC, RizzlerNPC);
+
 Scene.OnChange += (from, to) =>
 {
     if (to == Outside_scene)
@@ -227,7 +417,7 @@ Scene.OnChange += (from, to) =>
         if (from == Intro_scene)
         {
             Player.x = 10;
-            Player.y = 0;
+            Player.y = Render.height - Player.height - 2;
         } else
         {
             Player.x = Render.width / 2 - Player.width / 2;
@@ -255,33 +445,40 @@ void SceneUpdate(double delta)
     Scene? current = Scene.Current;
     long cooldown = scenechange_cooldown.ElapsedMilliseconds;
 
-    if (current == Outside_scene)
+    if (current != null && current.Name.Contains("Dialog")) 
     {
-        if (Player.IsCollidingWith(School) != null)
-        {
-            if (cooldown >= sc_cooldown)
-            {
-                Hints_Content["School interaction"] = "Go Inside[Enter]";
-                if (Input.IsDown(ConsoleKey.Enter)) Scene.Current = Aula_scene;
-            }
-        } else Hints_Content.Remove("School interaction");
-        
-        SchoolUpdate();
+        DialogUpdate();
     }
-    else if (current == Aula_scene)
+    else
     {
-        if (Player.IsCollidingWith(Aula) != null)
-        {
-            if (cooldown >= sc_cooldown)
-            {
-                Hints_Content["Aula interaction"] = "Go Outside[Enter]";
-                if (Input.IsDown(ConsoleKey.Enter)) Scene.Current = Outside_scene;
-            }
-        } else Hints_Content.Remove("Aula interaction");
+        Hints_Content.Remove("Interaction");
+        Rect originalHitbox = Player._Hitbox;
+        Player._Hitbox = new Rect(originalHitbox.x - 2, originalHitbox.y - 2, 
+            (originalHitbox.width ?? Player.width) + 4, 
+            (originalHitbox.height ?? Player.height) + 4);
 
-        AulaUpdate();
+        foreach (Thing thing in Scene.Current?.Things ?? new List<Thing>())
+        {
+            if (thing == Player || thing.Hide || thing.OnInteract == null) continue;
+            
+            if (Player.IsCollidingWith(thing) != null)
+            {
+                Hints_Content["Interaction"] = thing.InteractHint ?? "Interact[Enter]";
+                if (cooldown >= sc_cooldown && Input.IsDown(ConsoleKey.Enter))
+                {
+                    scenechange_cooldown.Restart();
+                    thing.OnInteract();
+                    break;
+                }
+            }
+        }
+        Player._Hitbox = originalHitbox;
+        
+        if (current == Outside_scene) SchoolUpdate();
+        else if (current == Aula_scene) AulaUpdate();
+        else if (current == Classroom_scene) ClassroomUpdate();
     }
-    else if (current != null && current.Name.Contains("Dialog")) DialogUpdate();
+    
     PlayerUpdate(delta);
 }
 void SceneDraw()
@@ -319,15 +516,18 @@ void MenuUpdate()
                 case 2:
                     FULLSCREEN_ON = !FULLSCREEN_ON;
                     Settings_menu.Options[i] = $"Fullscreen {(FULLSCREEN_ON ? "ON" : "OFF")}";
-                    if (FULLSCREEN_ON)
+                    if (OperatingSystem.IsWindows())
                     {
-                        old_w = Console.WindowWidth;
-                        old_h = Console.WindowHeight;
-                        Console.SetWindowSize(Console.LargestWindowWidth, Console.LargestWindowHeight);
-                    }
-                    else
-                    {
-                        Console.SetWindowSize(old_w, old_h);
+                        if (FULLSCREEN_ON)
+                        {
+                            old_w = Console.WindowWidth;
+                            old_h = Console.WindowHeight;
+                            Console.SetWindowSize(Console.LargestWindowWidth, Console.LargestWindowHeight);
+                        }
+                        else
+                        {
+                            Console.SetWindowSize(old_w, old_h);
+                        }
                     }
                     break;
             }
@@ -368,8 +568,36 @@ void MenuUpdate()
 }
 void MenuDraw()
 {
-    Frame title = Draw.Text(Menu.Current!.Name, COLOR_ON ? Blue_color : Gray_color, Black_color);
-    Render.PutFrame(Render.width / 2 - title.width / 2, (int)(Render.height * 0.1), title);
+    Frame title;
+    if (Menu.Current!.Name == "Main menu")
+    {
+        string[] logo = new string[] {
+            " _   _                                              ",
+            "| \\ | | ___ _   _ _ __ ___   __ _ _ __  _ __        ",
+            "|  \\| |/ _ \\ | | | '_ ` _ \\ / _` | '_ \\| '_ \\       ",
+            "| |\\  |  __/ |_| | | | | | | (_| | | | | | | |      ",
+            "|_| \\_|\\___|\\__,_|_| |_| |_|\\__,_|_| |_|_| |_|      ",
+            "                                                    ",
+            " ____                  _            _               ",
+            "/ ___| _   _ _ ____   _(_)_   ____ _| |             ",
+            "\\___ \\| | | | '__\\ \\ / / \\ \\ / / _` | |             ",
+            " ___) | |_| | |   \\ V /| |\\ V / (_| | |             ",
+            "|____/ \\__,_|_|    \\_/ |_| \\_/ \\__,_|_|             ",
+            "                                                    ",
+            "__AF__        _   __AF__        _   _               ",
+            "\\ \\      / /___| | __\\ \\      / /___| | __          ",
+            " \\ \\ /\\ / // _ \\ |/ / \\ \\ /\\ / // _ \\ |/ /          ",
+            "  \\ V  V /|  __/   <   \\ V  V /|  __/   <           ",
+            "   \\_/\\_/  \\___|_|\\_\\   \\_/\\_/  \\___|_|\\_\\          "
+        };
+        for (int i = 0; i < logo.Length; i++) logo[i] = logo[i].Replace("__AF__", " ");
+        title = Draw.Text(logo, COLOR_ON ? Blue_color : Gray_color, Black_color);
+    }
+    else
+    {
+        title = Draw.Text(Menu.Current!.Name, COLOR_ON ? Blue_color : Gray_color, Black_color);
+    }
+    Render.PutFrame(Render.width / 2 - title.width / 2, (int)(Render.height * 0.1), title, IgnoreLayer: true);
 
     string[] options = Menu.Current.Options.ToArray();
     int longest = options.Max(item => item.Length) + 2;
@@ -468,6 +696,12 @@ Game.OnUpdate += (delta) =>
         return;
     }
 
+    if (CurrentDiscussion != null)
+    {
+        DiscussionUpdate();
+        return;
+    }
+
     if (Menu.Current == null && Input.IsPressed(ConsoleKey.Escape))
     {
         Menu.Current = Main_menu;
@@ -475,7 +709,6 @@ Game.OnUpdate += (delta) =>
     }
     if (Menu.Current != null) MenuUpdate();
     else SceneUpdate(delta);
-    BarriersUpdate();
 };
 
 
@@ -492,10 +725,13 @@ Game.OnRender += () =>
     }
     else
     {
+        SceneDraw();
+        
         if (HINTS_ON) DrawHints();
-        if (Menu.Current != null) MenuDraw();
+        if (STATISTICS_OPEN) DrawStatistics();
         if (Dialog.Current != null) DialogDraw();
-        else SceneDraw();
+        if (CurrentDiscussion != null) DiscussionDraw();
+        if (Menu.Current != null) MenuDraw();
     }
 };
 
