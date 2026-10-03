@@ -1,0 +1,23 @@
+# Godot
+.godot/
+.import/
+*.translation
+export_presets.cfg
+.mono/
+
+# Real school data kept out of the repo for now: the floor plans (source data for scripts/floor_data.gd, not loaded
+# at runtime) and the generated staff roster (79 real names; a clone needs its own scripts/staff.gd to run).
+docs/floor-plans/
+scripts/staff.gd
+scripts/staff.gd.uid
+
+# Export output (the exe is about 109 MB); rebuild with the "Windows Desktop" preset.
+build/windows/
+*.zip
+
+# AI-generated plans, specs and handoff notes (process documents, not part of the game)
+docs/plans/
+docs/specs/
+docs/handoff/
+docs/data/
+build/
