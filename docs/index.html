@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NJSZKI IKT RPG Game</title>
+    <title>Neumann Survival Week</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="CSS/style.css">
     <style>
@@ -14,30 +14,35 @@
         .animate-fadeIn {
             animation: fadeIn 1s ease-in-out;
         }
+        code {
+            background: #374151;
+            padding: 0 0.3em;
+            border-radius: 0.25rem;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white font-sans">
 
     <!-- Navigation Bar -->
     <nav class="bg-gray-800 p-4 sticky top-0 z-10">
-        <div class="container mx-auto flex justify-between items-center">
-            <a href="#" class="text-2xl font-bold">NJSZKI IKT RPG</a>
+        <div class="container mx-auto flex flex-wrap justify-between items-center">
+            <a href="#" class="text-2xl font-bold">Neumann Survival Week</a>
             <!-- Hamburger Menu Button (visible on small screens) -->
-            <button id="hamburger-button" class="md:hidden text-white focus:outline-none">
+            <button id="hamburger-button" class="md:hidden text-white focus:outline-none" aria-label="Menu">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                 </svg>
             </button>
             <!-- Navigation Links (hidden on small screens, visible on medium and larger) -->
             <div id="navigation-links" class="hidden md:flex flex-col md:flex-row items-center w-full md:w-auto">
-                <a href="#features" class="mx-2 hover:text-gray-400 py-2 md:py-0">Features</a>
-                <a href="#story" class="mx-2 hover:text-gray-400 py-2 md:py-0">Story</a>
-                <a href="#documentation" class="mx-2 hover:text-gray-400 py-2 md:py-0">Documentation</a>
-                <a href="#team" class="mx-2 hover:text-gray-400 py-2 md:py-0">Team</a>
+                <a href="#horror" class="mx-2 hover:text-gray-400 py-2 md:py-0" data-translate="nav_horror">The Empty School</a>
+                <a href="#console" class="mx-2 hover:text-gray-400 py-2 md:py-0" data-translate="nav_console">Console Game</a>
+                <a href="#documentation" class="mx-2 hover:text-gray-400 py-2 md:py-0" data-translate="nav_docs">Documentation</a>
+                <a href="#team" class="mx-2 hover:text-gray-400 py-2 md:py-0" data-translate="nav_team">Team</a>
                 <div class="ml-0 md:ml-4 mt-2 md:mt-0">
                     <select id="language-selector" class="bg-gray-700 text-white rounded p-2">
                         <option value="en">English</option>
-                        <option value="hu">Hungarian</option>
+                        <option value="hu">Magyar</option>
                     </select>
                 </div>
             </div>
@@ -45,10 +50,15 @@
     </nav>
 
     <!-- Hero Section -->
-    <header class="bg-gray-800 text-center py-20">
-        <h1 class="text-5xl font-bold mb-4" data-translate="title">NJSZKI IKT RPG Game - IKT: Survival Week</h1>
-        <p class="text-xl mb-8" data-translate="subtitle">An ASCII art RPG adventure.</p>
-        <pre class="text-white text-xs mx-auto">
+    <header class="bg-gray-800 text-center py-20 px-4">
+        <h1 class="text-5xl font-bold mb-4" data-translate="title">Neumann Survival Week</h1>
+        <p class="text-xl mb-8 max-w-3xl mx-auto" data-translate="subtitle">A school survival game in two versions: a Godot 3D horror game and an unfinished C# console prototype.</p>
+        <div class="flex flex-wrap justify-center gap-4 mb-8">
+            <a href="#horror" class="bg-red-700 hover:bg-red-600 px-6 py-3 rounded-lg font-bold" data-translate="hero_horror">The Empty School</a>
+            <a href="#console" class="bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold" data-translate="hero_console">Console prototype</a>
+        </div>
+        <div class="overflow-x-auto">
+        <pre class="text-white text-xs inline-block text-left">
 ┌─────────────────────────────────────────────────────┐
 │ ┌─────┐ ┌─────┐ ┌─────┬─────┬─────┐ ┌─────┐ ┌─────┐ │
 │ │     │ │     │ │     │     │     │ │     │ │     │ │
@@ -66,74 +76,142 @@
 │                   │            _/─────────────────────────\_            │                   │
 │                   │           /─────────────────────────────\           │                   │
         </pre>
+        </div>
     </header>
 
     <main class="container mx-auto p-8">
 
-        <!-- Features Section -->
-        <section id="features" class="my-16 animate-fadeIn">
-            <h2 class="text-4xl font-bold text-center mb-8" data-translate="features_title">Features</h2>
-            <div class="grid md:grid-cols-3 gap-8 text-center">
+        <!-- The Empty School (Godot 3D horror game) -->
+        <section id="horror" class="my-16 animate-fadeIn">
+            <h2 class="text-4xl font-bold text-center mb-4" data-translate="horror_title">The Empty School</h2>
+            <p class="text-center mb-2">
+                <span class="bg-green-700 px-3 py-1 rounded-full text-sm font-bold" data-translate="horror_status">Playable demo</span>
+                <span class="text-gray-400 ml-2" data-translate="horror_engine">First-person 3D horror, Godot 4.7</span>
+            </p>
+            <p class="text-lg text-center max-w-3xl mx-auto mb-10" data-translate="horror_intro">Five days at the Neumann school. Something in the building is not what it seems. Attend your lessons, watch the teachers, and find out who it is before it finds you.</p>
+
+            <div class="grid md:grid-cols-3 gap-8 mb-12">
                 <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-2xl font-bold mb-2" data-translate="features_1_title">Quest-based Gameplay</h3>
-                    <p data-translate="features_1_text">Engage in a variety of quests and make choices that matter.</p>
+                    <h3 class="text-xl font-bold mb-2 text-red-400" data-translate="horror_f1_title">The whole school</h3>
+                    <p data-translate="horror_f1_text">Three floors built in code from the floor plans: corridors, stairwells, classrooms, computer rooms, the Aula and the Porta.</p>
                 </div>
                 <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-2xl font-bold mb-2" data-translate="features_2_title">ASCII Art Graphics</h3>
-                    <p data-translate="features_2_text">A unique retro aesthetic made entirely of text characters.</p>
+                    <h3 class="text-xl font-bold mb-2 text-red-400" data-translate="horror_f2_title">Five-day campaign</h3>
+                    <p data-translate="horror_f2_text">Three school days with bells, 7 lessons a day and quizzes, then two hunt days. Skip 6 lessons and you are expelled.</p>
                 </div>
                 <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-2xl font-bold mb-2" data-translate="features_3_title">Interactive Dialog</h3>
-                    <p data-translate="features_3_text">Talk to NPCs and uncover the secrets of the school.</p>
+                    <h3 class="text-xl font-bold mb-2 text-red-400" data-translate="horror_f3_title">Lessons and quizzes</h3>
+                    <p data-translate="horror_f3_text">Seven subjects, each with its own room, teacher and questions. Get to the right room on time and answer 3 questions.</p>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-2 text-red-400" data-translate="horror_f4_title">Find the entity</h3>
+                    <p data-translate="horror_f4_text">One of eight invented teachers is the entity. Collect clues, listen to what the teachers say, and name the right one on day 4.</p>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-2 text-red-400" data-translate="horror_f5_title">Exorcism quest</h3>
+                    <p data-translate="horror_f5_text">Salt, holy water and a silver bell: four chained tasks across the school end in a ritual at the Aula altar.</p>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-2 text-red-400" data-translate="horror_f6_title">The roaming demon</h3>
+                    <p data-translate="horror_f6_text">It wakes at night, patrols every floor, hears you sprint and chases on sight. Hide in a locker and hold your breath.</p>
                 </div>
             </div>
-        </section>
 
-        <!-- Story Section -->
-        <section id="story" class="my-16 animate-fadeIn">
-            <h2 class="text-4xl font-bold text-center mb-8" data-translate="story_title">Story</h2>
-            <p class="text-lg text-center max-w-3xl mx-auto" data-translate="story_text">You are a new student at the Neumann János Vocational School of Informatics, and you have to survive for a week. You will meet different NPCs, and you can get different quests from them.</p>
-        </section>
+            <h3 class="text-2xl font-bold text-center mb-4" data-translate="horror_people_title">Who you meet</h3>
+            <p class="text-lg text-center max-w-3xl mx-auto mb-12" data-translate="horror_people_text">Teachers with daily routines, the after-hours caretaker, his dog Csoki, the porter at the Porta desk and a crowd of students. All names in the game are invented.</p>
 
-        <!-- About the game Section -->
-        <section id="about" class="my-16 animate-fadeIn">
-            <h2 class="text-4xl font-bold text-center mb-8" data-translate="about_title">About the Game</h2>
-            <ul class="list-disc list-inside max-w-3xl mx-auto">
-                <li data-translate="about_1">The game is based on different quests where the player can choose between options.</li>
-                <li data-translate="about_2">Easter eggs reacting to certain steps will also be hidden.</li>
-                <li data-translate="about_3">Animations enhance the experience.</li>
-                <li data-translate="about_4">Detailed main menu and submenus for easier navigation.</li>
-                <li data-translate="about_5">The player's answers are stored until the game is closed.</li>
-            </ul>
-        </section>
-
-        <!-- Controls Section -->
-        <section id="controls" class="my-16 animate-fadeIn">
-            <h2 class="text-4xl font-bold text-center mb-8" data-translate="controls_title">Controls</h2>
-            <div class="max-w-3xl mx-auto grid grid-cols-2 gap-4">
-                <div><kbd class="bg-gray-700 p-2 rounded">W, A, S, D</kbd></div><div data-translate="controls_1">Movement on the map, selection in the menu (W/S: up/down, A/D: switch)</div>
-                <div><kbd class="bg-gray-700 p-2 rounded">ENTER</kbd></div><div data-translate="controls_2">Select in menu</div>
-                <div><kbd class="bg-gray-700 p-2 rounded">ESC</kbd></div><div data-translate="controls_3">Back to menu or exit</div>
-                <div><kbd class="bg-gray-700 p-2 rounded">E</kbd></div><div data-translate="controls_4">Interact with NPCs</div>
-                <div><kbd class="bg-gray-700 p-2 rounded">TAB</kbd></div><div data-translate="controls_5">Inventory</div>
+            <h3 class="text-2xl font-bold text-center mb-4" data-translate="horror_endings_title">Eight endings</h3>
+            <div class="max-w-3xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-12">
+                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">1.</span> <span data-translate="ending_1">Caught</span></div>
+                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">2.</span> <span data-translate="ending_2">Banished</span></div>
+                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">3.</span> <span data-translate="ending_3">Expelled</span></div>
+                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">4.</span> <span data-translate="ending_4">Top student</span></div>
+                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">5.</span> <span data-translate="ending_5">Ran away</span></div>
+                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">6.</span> <span data-translate="ending_6">Pact</span></div>
+                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">7.</span> <span data-translate="ending_7">Overtime</span></div>
+                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">8.</span> <span data-translate="ending_8">Wrong person</span></div>
             </div>
+
+            <h3 class="text-2xl font-bold text-center mb-4" data-translate="horror_controls_title">Controls</h3>
+            <div class="max-w-3xl mx-auto grid grid-cols-2 gap-4 mb-12">
+                <div><kbd class="bg-gray-700 p-2 rounded">W, A, S, D</kbd></div><div data-translate="hc_move">Move</div>
+                <div><kbd class="bg-gray-700 p-2 rounded">Shift</kbd></div><div data-translate="hc_sprint">Sprint (limited stamina)</div>
+                <div><kbd class="bg-gray-700 p-2 rounded">Mouse</kbd></div><div data-translate="hc_look">Look around</div>
+                <div><kbd class="bg-gray-700 p-2 rounded">F</kbd></div><div data-translate="hc_flashlight">Flashlight (battery-limited)</div>
+                <div><kbd class="bg-gray-700 p-2 rounded">Q</kbd></div><div data-translate="hc_phone">Phone: map, tasks, clues, finds, neu_mecha (Tab: next page)</div>
+                <div><kbd class="bg-gray-700 p-2 rounded">E</kbd></div><div data-translate="hc_interact">Interact: doors, items, teachers, lockers</div>
+                <div><kbd class="bg-gray-700 p-2 rounded">Space</kbd></div><div data-translate="hc_breath">Hold breath while hiding</div>
+                <div><kbd class="bg-gray-700 p-2 rounded">G</kbd></div><div data-translate="hc_accuse">Name the entity (from day 4)</div>
+                <div><kbd class="bg-gray-700 p-2 rounded">Esc</kbd></div><div data-translate="hc_pause">Pause menu</div>
+            </div>
+
+            <h3 class="text-2xl font-bold text-center mb-4" data-translate="horror_run_title">How to run</h3>
+            <ol class="list-decimal list-inside max-w-3xl mx-auto mb-6">
+                    <li data-translate="horror_run_1">Install Godot 4.7 (standard build).</li>
+                    <li data-translate="horror_run_2">Clone the repository.</li>
+                    <li data-translate="horror_run_3">In the Godot Project Manager, import <code>HORROR-GAME/project.godot</code>.</li>
+                    <li data-translate="horror_run_4">Press F5 to run the game.</li>
+            </ol>
+            <p class="text-gray-400 text-center max-w-3xl mx-auto" data-translate="horror_experimental">Experimental and untested on real hardware: touch controls for Android, local co-op for up to 4 players and VR through OpenXR.</p>
         </section>
 
-        <!-- Code Documentation Section -->
+        <!-- IKT: Survival Week (C# console game) -->
+        <section id="console" class="my-16 animate-fadeIn">
+            <h2 class="text-4xl font-bold text-center mb-4" data-translate="console_title">IKT: Survival Week (console game)</h2>
+            <p class="text-center mb-2">
+                <span class="bg-yellow-700 px-3 py-1 rounded-full text-sm font-bold" data-translate="console_status">Unfinished prototype</span>
+                <span class="text-gray-400 ml-2" data-translate="console_engine">ASCII art RPG, C# and .NET 10</span>
+            </p>
+            <p class="text-lg text-center max-w-3xl mx-auto mb-10" data-translate="console_intro">The first version of the project. Development stopped at an early stage: the game starts and a few scenes are playable, but the planned quests, scoring and day system were never built.</p>
+
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
+                <div class="bg-gray-800 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-2 text-green-400" data-translate="console_works_title">What works</h3>
+                    <ul class="list-disc list-inside">
+                    <li data-translate="console_works_1">Main menu, settings and an ASCII logo</li>
+                    <li data-translate="console_works_2">Intro dialog</li>
+                    <li data-translate="console_works_3">Three scenes: Outside, Aula and Classroom</li>
+                    <li data-translate="console_works_4">Five NPC conversations with A, B, C choices</li>
+                    <li data-translate="console_works_5">A locked door that opens with a key</li>
+                    <li data-translate="console_works_6">Inventory and statistics screens</li>
+                    </ul>
+                </div>
+                <div class="bg-gray-800 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-2 text-yellow-400" data-translate="console_missing_title">Not finished</h3>
+                    <ul class="list-disc list-inside">
+                    <li data-translate="console_missing_1">Windows only: the input code crashes on Linux and macOS</li>
+                    <li data-translate="console_missing_2">The day picker ignores the chosen day</li>
+                    <li data-translate="console_missing_3">Dialog choices have no effect: no quests, no scoring</li>
+                    <li data-translate="console_missing_4">Statistics never change</li>
+                    <li data-translate="console_missing_5">No random events, boss fights or sound effects</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-bold text-center mb-4" data-translate="console_run_title">How to run</h3>
+            <p class="text-lg text-center max-w-3xl mx-auto" data-translate="console_run_text">Windows and the .NET 10 SDK are required. Run <code>dotnet run</code> in <code>RPG-GAME/RPG-GAME</code>, or start <code>RPG-GAME/run.bat</code>.</p>
+        </section>
+
+        <!-- Documentation Section -->
         <section id="documentation" class="my-16 animate-fadeIn">
-            <h2 class="text-4xl font-bold text-center mb-8" data-translate="documentation_title">Code Documentation</h2>
-            <p class="text-lg text-center max-w-3xl mx-auto" data-translate="documentation_text">The project's documentation is available in the main <a href="../README.md" class="text-blue-400 hover:underline">README.md</a> file.</p>
+            <h2 class="text-4xl font-bold text-center mb-8" data-translate="documentation_title">Documentation</h2>
+            <p class="text-lg text-center max-w-3xl mx-auto mb-4" data-translate="documentation_text">Code documentation for both games is on GitHub.</p>
+            <div class="flex flex-wrap justify-center gap-6">
+                <a href="https://github.com/CsPS0/Neumann-Survival-Week/blob/main/README.md" class="text-blue-400 hover:underline" data-translate="doc_main">Project README</a>
+                <a href="https://github.com/CsPS0/Neumann-Survival-Week/blob/main/HORROR-GAME/README.md" class="text-blue-400 hover:underline" data-translate="doc_horror">The Empty School documentation</a>
+            </div>
         </section>
 
         <!-- Team Section -->
         <section id="team" class="my-16 animate-fadeIn">
             <h2 class="text-4xl font-bold text-center mb-8" data-translate="team_title">The Team</h2>
-            <div class="flex justify-center space-x-8">
+            <div class="flex flex-wrap justify-center gap-8">
                 <div class="text-center">
                     <p class="text-xl font-bold">Fehér Marcell</p>
                 </div>
                 <div class="text-center">
                     <p class="text-xl font-bold">Polyák Dávid</p>
+                </div>
                 <div class="text-center">
                     <p class="text-xl font-bold">Solti Csongor Péter</p>
                 </div>
@@ -144,13 +222,13 @@
         <section id="documents" class="my-16 animate-fadeIn">
             <h2 class="text-4xl font-bold text-center mb-8" data-translate="documents_title">Documents</h2>
             <div class="text-center">
-                <a href="../LICENSE" class="text-blue-400 hover:underline" data-translate="documents_license">License</a>
+                <a href="https://github.com/CsPS0/Neumann-Survival-Week/blob/main/LICENSE" class="text-blue-400 hover:underline" data-translate="documents_license">License</a>
             </div>
         </section>
     </main>
 
     <footer class="bg-gray-800 text-center py-4">
-        <p>&copy; 2025 NJSZKI IKT RPG Game. All rights reserved.</p>
+        <p>&copy; 2025-2026 Neumann Survival Week</p>
     </footer>
 
     <script src="JS/translations.js"></script>
