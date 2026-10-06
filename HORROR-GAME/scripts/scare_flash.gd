@@ -71,6 +71,10 @@ func _blocked() -> bool:
 			or main.campaign.ending_id != 0
 
 
+func restore() -> void:
+	_set_hidden(false)
+
+
 func _set_hidden(on: bool) -> void:
 	npcs_hidden = on
 	_apply_hidden(on)
@@ -81,7 +85,16 @@ func _apply_hidden(on: bool) -> void:
 	for group in ["teachers", "ambient_staff", "csoki", "porta"]:
 		for node in main.get_tree().get_nodes_in_group(group):
 			if node is Node3D:
-				node.visible = not on
+				if on:
+					if not node.has_meta("sf_prev_visible"):
+						node.set_meta("sf_prev_visible", node.visible)
+					node.visible = false
+				else:
+					if node.has_meta("sf_prev_visible"):
+						node.visible = node.get_meta("sf_prev_visible")
+						node.remove_meta("sf_prev_visible")
+					else:
+						node.visible = true
 			if node is CollisionObject3D:   # A hidden NPC must not be an invisible wall; restore its own layer after.
 				if on and not node.has_meta(&"flash_layer"):
 					node.set_meta(&"flash_layer", node.collision_layer)

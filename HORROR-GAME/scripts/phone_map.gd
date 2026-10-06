@@ -87,7 +87,13 @@ func _draw_full_map(player: Node3D, font: Font, ui: float) -> void:
 	var s: float = view["scale"]
 	var off: Vector2 = view["offset"]
 	var quest := get_tree().get_first_node_in_group("quest")
-	var show_red: bool = easy and quest != null and player.has_item("storage_key") and not quest.red_room_opened 			and quest.red_room_floor == floor_view
+	var show_red: bool = (
+		easy
+		and quest != null
+		and player.has_item("storage_key")
+		and not quest.red_room_opened
+		and quest.red_room_floor == floor_view
+	)
 
 	for room: Array in data["rooms"]:
 		var rect := Rect2(Vector2(room[1], room[2]) * s + off, Vector2(room[3] - room[1], room[4] - room[2]) * s)
@@ -149,8 +155,11 @@ func _draw_tasks(font: Font) -> void:
 			return
 		y0 += 8.0
 		for line: String in tasks.lines(campaign.day):
-			var colour := Color(0.45, 0.9, 0.55) if line.begins_with("[x]") else (Color(1.0, 0.5, 0.4) if line.begins_with("[!]") \
-					else (Color(0.6, 0.65, 0.75) if line.begins_with(" ") else Color(0.85, 0.9, 1.0)))
+			var colour := (
+				Color(0.45, 0.9, 0.55) if line.begins_with("[x]")
+				else (Color(1.0, 0.5, 0.4) if line.begins_with("[!]")
+				else (Color(0.6, 0.65, 0.75) if line.begins_with(" ") else Color(0.85, 0.9, 1.0)))
+			)
 			var width := LOGICAL_WIDTH - 24.0
 			draw_multiline_string(font, Vector2(14.0, y0), line, HORIZONTAL_ALIGNMENT_LEFT, width, 11, -1, colour)
 			y0 += font.get_multiline_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, width, 11).y + 3.0
@@ -183,6 +192,15 @@ func _draw_clues(font: Font) -> void:
 		y += 40.0
 
 
+func items_text() -> String:
+	var finds := get_tree().get_first_node_in_group("finds")
+	if finds == null:
+		return ""
+	if finds.items_total > 0:
+		return "Items  %d/%d" % [finds.items_found, finds.items_total]
+	return "Items  %d" % finds.items_found
+
+
 ## Page 3: per category a count, then the found titles in the order found and "???" for the rest, in two columns.
 func _draw_finds(font: Font) -> void:
 	var finds := get_tree().get_first_node_in_group("finds")
@@ -203,7 +221,7 @@ func _draw_finds(font: Font) -> void:
 			draw_string(font, Vector2(14.0 + (i % 2) * 140.0, y + floorf(i / 2.0) * 15.0), names[i] if known else "???",
 					HORIZONTAL_ALIGNMENT_LEFT, 134.0, 11, Color(0.85, 0.9, 1.0) if known else Color(0.45, 0.5, 0.6))
 		y += ceili(mini(cat[2], 12) / 2.0) * 15.0 + 12.0
-	draw_string(font, Vector2(14.0, y), "Items  %d" % finds.items_found, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.4, 0.9, 1.0))
+	draw_string(font, Vector2(14.0, y), items_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.4, 0.9, 1.0))
 	var feed := get_tree().get_first_node_in_group("neu_mecha")
 	if feed:
 		draw_string(font, Vector2(14.0, y + 20.0), "Chameleons  %d/%d" % [feed.found_count(), Finds.MECHA.size()],

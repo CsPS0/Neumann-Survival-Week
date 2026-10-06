@@ -28,6 +28,7 @@ const PorterScript := preload("res://scripts/porter.gd")
 const TasksScript := preload("res://scripts/tasks.gd")
 const MechaScript := preload("res://scripts/mecha.gd")
 const FurnitureScript := preload("res://scripts/furniture.gd")
+const HidingSpotScript := preload("res://scripts/hiding_spot.gd")
 
 const WS := FloorData.WORLD_SCALE   ## Shorthand: plan-tied metre values are multiplied by it, human-sized ones are not.
 const FLOOR_HEIGHT := 4.0       ## Floor-to-floor distance.
@@ -174,10 +175,32 @@ var _origin := Vector2.ZERO
 var _scale := 1.0
 var _y := 0.0
 var _floor_i := 0
+var _puppets := {}
+const PlayerPuppetScene = preload("res://scenes/player_puppet.tscn")
 
 
 func _ready() -> void:
 	set_process(false)
+	
+	var bridge := preload("res://scripts/input_bridge.gd").new()
+	bridge.name = "InputBridge"
+	add_child(bridge)
+	
+	if XRManager.is_xr_active():
+		var rig = preload("res://scenes/xr_player_rig.tscn").instantiate()
+		player.add_child(rig)
+		if player.has_node("Head/Camera3D/Torch"):
+			player.get_node("Head/Camera3D/Torch").visible = false
+		if player.has_node("Head/Camera3D/Phone"):
+			player.get_node("Head/Camera3D/Phone").visible = false
+	
+	var platform_config := preload("res://scripts/platform_config.gd").new()
+	platform_config.name = "PlatformConfig"
+	add_child(platform_config)
+	
+	var touch_controls := preload("res://scenes/touch_controls.tscn").instantiate()
+	add_child(touch_controls)
+	
 	add_child(profile)
 	achievements.profile = profile
 	add_child(achievements)
@@ -259,6 +282,7 @@ func _ready() -> void:
 	_place_finds()
 	_place_items()
 	_place_form()
+	_place_lockers()
 	_build_hud()
 	_connect_signals()
 	_apply_settings()
@@ -368,6 +392,25 @@ func _connect_signals() -> void:
 	menu.restart_requested.connect(func() -> void:
 		get_tree().paused = false
 		get_tree().reload_current_scene())
+	
+	NetSession.player_joined.connect(_on_peer_connected)
+	NetSession.player_left.connect(_on_peer_disconnected)
+	if NetSession.is_multiplayer_active():
+		for id in multiplayer.get_peers():
+			_on_peer_connected(id)
+
+func _on_peer_connected(id: int) -> void:
+	var puppet = PlayerPuppetScene.instantiate()
+	puppet.name = str(id)
+	add_child(puppet)
+	_puppets[id] = puppet
+	puppet.sync_name.rpc(str(id))
+
+func _on_peer_disconnected(id: int) -> void:
+	if _puppets.has(id):
+		var puppet = _puppets[id]
+		puppet.queue_free()
+		_puppets.erase(id)
 
 
 # --- Game flow --------------------------------------------------------------
@@ -422,6 +465,16 @@ func _on_player_caught() -> void:
 	if _game_over or campaign.ending_id != 0:
 		return
 	quest.on_player_caught()
+	
+	if NetSession.is_multiplayer_active():
+		player.is_downed = true
+		player.controls_enabled = false
+		player.set_flashlight(false)
+		NetSession.rpc("update_player_downed", true)
+		NetSession.rpc("notify_downed", multiplayer.get_unique_id())
+		_show_message("You are down! Wait for a revive.", 5.0)
+		return
+		
 	if campaign.lethal():
 		_flash.color.a = 0.85
 		create_tween().tween_property(_flash, "color:a", 0.25, 1.5)
@@ -434,7 +487,7 @@ func _on_player_caught() -> void:
 func _blackout() -> void:
 	entity.sleep()
 	scare.overlay.color.a = 0.0
-	scare._set_hidden(false)
+	scare.restore()
 	if choice_ui.visible or lesson_ui.visible:
 		return   # Mid-quiz the entity is asleep anyway; never yank the player out of it.
 	campaign.record_blackout()
@@ -456,7 +509,7 @@ func _on_ending(id: int) -> void:
 	_accusing = false
 	_porta_kind = ""
 	scare.overlay.color.a = 0.0
-	scare._set_hidden(false)
+	scare.restore()
 	if _code_open:
 		_close_code_lock()
 	choice_ui.close()
@@ -478,6 +531,9 @@ func _on_day_started(day: int) -> void:
 		old.queue_free()
 	var card_was_valid: bool = porta.card_valid
 	porta.on_day_started(day)
+	if day >= 2 and not porta.card_valid:
+		for form: Node in get_tree().get_nodes_in_group("form"):
+			form.queue_free()
 	porter.return_to_desk(true)   # Whatever happened yesterday, he starts the day at his desk.
 	_spawn_teachers()   # Yesterday's teachers are gone or still walking out; start the day with fresh ones.
 	staff_manager.sync_now()
@@ -944,14 +1000,30 @@ func _wall_with_door(a: Vector2, b: Vector2, side: String, centre: Vector2, labe
 
 	var outward: Vector2 = OUTWARD[side]
 	var sign_pos: Vector2 = Vector2(point.call(mid)) + outward * (WALL_THICKNESS * 0.5 + 0.02)
-	var sign_label := Label3D.new()
-	sign_label.text = label
-	sign_label.pixel_size = 0.006
-	sign_label.font_size = 96
-	sign_label.modulate = Color(0.55, 0.55, 0.6) if closed else (Color(0.75, 0.75, 0.65) if not locked else Color(0.9, 0.3, 0.3))
-	sign_label.position = Vector3(sign_pos.x, _y + 2.6, sign_pos.y)
-	sign_label.rotation.y = atan2(outward.x, outward.y)
-	add_child(sign_label)
+	if label != "":
+		var plaque := MeshInstance3D.new()
+		var plaque_box := BoxMesh.new()
+		plaque_box.size = Vector3(0.65, 0.24, 0.015)
+		var plaque_mat := StandardMaterial3D.new()
+		plaque_mat.albedo_color = Color(0.18, 0.16, 0.14)
+		plaque_mat.metallic = 0.3
+		plaque_mat.roughness = 0.6
+		plaque.mesh = plaque_box
+		plaque.material_override = plaque_mat
+		plaque.position = Vector3(sign_pos.x, _y + 2.6, sign_pos.y)
+		plaque.rotation.y = atan2(outward.x, outward.y)
+		add_child(plaque)
+
+		var sign_label := Label3D.new()
+		sign_label.text = label
+		sign_label.pixel_size = 0.0028
+		sign_label.font_size = 64
+		sign_label.outline_size = 4
+		sign_label.outline_modulate = Color(0.0, 0.0, 0.0, 0.8)
+		sign_label.modulate = Color(0.85, 0.85, 0.85) if closed else (Color(1.0, 0.95, 0.85) if not locked else Color(1.0, 0.4, 0.4))
+		sign_label.position = Vector3(sign_pos.x, _y + 2.6, sign_pos.y) + Vector3(outward.x, 0.0, outward.y) * 0.012
+		sign_label.rotation.y = atan2(outward.x, outward.y)
+		add_child(sign_label)
 
 
 ## Slab or ceiling covering `rect` (world XZ) minus the `holes`, split into boxes.
@@ -1260,6 +1332,9 @@ func _place_items() -> void:
 		var info: Array = ITEM_INFO[f["kind"]]
 		var item := _item(f["kind"], info[0], info[1], _item_spots[f["id"]], info[2], false)
 		item.add_to_group("item")
+	var item_nodes := get_tree().get_nodes_in_group("item")
+	finds.items_total = item_nodes.size()
+	for item: Node in item_nodes:
 		item.taken.connect(func(_id: String) -> void: finds.items_found += 1)
 
 
@@ -1274,6 +1349,25 @@ func _place_form() -> void:
 			"A blank student form. It needs a signature, but the porter just wants the paper.", false)
 	form.add_to_group("form")
 	form.taken.connect(func(_id: String) -> void: porta.on_form_taken())
+
+
+func _place_lockers() -> void:
+	var spots := [
+		[0, 107.0, 280.0, PI * 0.5],
+		[0, 735.0, 300.0, -PI * 0.5],
+		[0, 260.0, 150.0, 0.0],
+		[1, 107.0, 320.0, PI * 0.5],
+		[1, 735.0, 350.0, -PI * 0.5],
+		[2, 107.0, 300.0, PI * 0.5],
+		[2, 735.0, 280.0, -PI * 0.5],
+	]
+	for sp in spots:
+		_select_floor(sp[0])
+		var w := _to_world(sp[1], sp[2])
+		var locker := HidingSpotScript.new()
+		locker.position = Vector3(w.x, _y, w.y)
+		locker.rotation.y = sp[3]
+		add_child(locker)
 
 
 ## Stone altar in the Aula with proxies for the three ritual items and candles lit during the ritual.

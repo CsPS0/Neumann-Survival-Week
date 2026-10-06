@@ -255,6 +255,11 @@ func _pick_roam_target() -> Vector3:
 func _hears_player() -> bool:
 	if player == null:
 		return false
+	if player.get("is_hiding"):
+		if not player.get("is_holding_breath"):
+			var dist := global_position.distance_to(player.global_position)
+			return dist < 2.5
+		return false
 	var horizontal_speed := Vector2(player.velocity.x, player.velocity.z).length()
 	if horizontal_speed <= player.walk_speed + 0.5:
 		return false
@@ -265,10 +270,16 @@ func _hears_player() -> bool:
 func _can_see_player() -> bool:
 	if player == null:
 		return false
+	if player.get("is_hiding"):
+		return false
 	var target := player.global_position + Vector3.UP * SIGHT_TARGET_HEIGHT
 	var to_target := target - eyes.global_position
 	var distance := to_target.length()
-	if distance > sight_range:
+	var effective_sight := sight_range
+	var fl: Node = player.get_node_or_null("Head/Camera3D/Flashlight")
+	if fl and fl.visible:
+		effective_sight *= 1.35
+	if distance > effective_sight:
 		return false
 
 	# Cone check only applies while not already hunting, so turning doesn't drop the chase.

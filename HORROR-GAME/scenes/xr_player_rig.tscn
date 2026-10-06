@@ -1,0 +1,48 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/xr_player_rig.gd" id="1_rig"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_h1"]
+albedo_color = Color(0.8, 0.6, 0.4, 1.0)
+
+[sub_resource type="BoxMesh" id="BoxMesh_h2"]
+material = SubResource("StandardMaterial3D_h1")
+size = Vector3(0.08, 0.1, 0.15)
+
+[sub_resource type="QuadMesh" id="QuadMesh_vig"]
+size = Vector2(2, 2)
+
+[node name="XRPlayerRig" type="Node3D"]
+script = ExtResource("1_rig")
+
+[node name="XROrigin3D" type="XROrigin3D" parent="."]
+
+[node name="XRCamera3D" type="XRCamera3D" parent="XROrigin3D"]
+
+[node name="Vignette" type="MeshInstance3D" parent="XROrigin3D/XRCamera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.5)
+mesh = SubResource("QuadMesh_vig")
+visible = false
+
+[node name="LeftHand" type="XRController3D" parent="XROrigin3D"]
+tracker = &"left_hand"
+
+[node name="HandModel" type="MeshInstance3D" parent="XROrigin3D/LeftHand"]
+mesh = SubResource("BoxMesh_h2")
+
+[node name="RightHand" type="XRController3D" parent="XROrigin3D"]
+tracker = &"right_hand"
+
+[node name="HandModel" type="MeshInstance3D" parent="XROrigin3D/RightHand"]
+mesh = SubResource("BoxMesh_h2")
+
+[node name="Flashlight" type="SpotLight3D" parent="XROrigin3D/RightHand"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.1)
+light_energy = 3.5
+shadow_enabled = true
+spot_range = 16.0
+spot_angle = 28.0
+
+[node name="InteractRay" type="RayCast3D" parent="XROrigin3D/RightHand"]
+target_position = Vector3(0, -0.1, -2.5)
+collision_mask = 57

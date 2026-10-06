@@ -38,6 +38,7 @@ func _ready() -> void:
 	var how := Label.new()
 	how.text = CONTROLS
 	_build_page("how", "HOW TO PLAY", how)
+	_build_lobby_page()
 	show_title()
 
 
@@ -46,6 +47,8 @@ func _process(delta: float) -> void:
 	if _pages["title"].visible and _flicker <= 0.0:
 		_flicker = randf_range(0.05, 0.6)
 		_title_label.modulate.a = 1.0 if randf() > 0.15 else randf_range(0.3, 0.8)
+	if _pages.has("lobby") and _pages["lobby"].visible:
+		_refresh_lobby()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -89,6 +92,8 @@ func _open(page_name: String) -> void:
 func _refresh_lists() -> void:
 	_list_label.text = _endings_text()
 	_ach_label.text = _achievements_text()
+	if _pages.has("lobby") and _pages["lobby"].visible:
+		_refresh_lobby()
 
 
 func _endings_text() -> String:
@@ -142,6 +147,14 @@ func _build_title() -> void:
 	lore.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
 	box.add_child(lore)
 	box.add_child(_button("New game", func() -> void: start_requested.emit()))
+	box.add_child(_button("Host Co-op", func() -> void:
+		NetSession.host_session()
+		_open("lobby")
+	))
+	box.add_child(_button("Join Co-op", func() -> void:
+		NetSession.join_session("127.0.0.1")
+		_open("lobby")
+	))
 	box.add_child(_button("Achievements", func() -> void: _open("achievements")))
 	box.add_child(_button("Endings", func() -> void: _open("endings")))
 	box.add_child(_button("Settings", func() -> void: _open("settings")))
@@ -158,6 +171,33 @@ func _build_settings_page() -> void:
 			on_settings_changed.call())
 	box.add_child(ui)
 	box.add_child(_button("Back", _back))
+
+var _lobby_code_label := Label.new()
+var _lobby_players_label := Label.new()
+
+func _build_lobby_page() -> void:
+	var box := _new_page("lobby", 0.85)
+	box.add_child(_heading("CO-OP LOBBY"))
+	
+	_lobby_code_label.add_theme_font_size_override("font_size", 24)
+	box.add_child(_lobby_code_label)
+	
+	_lobby_players_label.add_theme_font_size_override("font_size", 18)
+	box.add_child(_lobby_players_label)
+	
+	box.add_child(_button("Start Co-op", func() -> void: start_requested.emit()))
+	box.add_child(_button("Back", func() -> void:
+		NetSession.leave_session()
+		_back()
+	))
+
+func _refresh_lobby() -> void:
+	if NetSession.is_multiplayer_active():
+		_lobby_code_label.text = "Room Code: " + NetSession.get_room_code() if multiplayer.is_server() else "Connected to server"
+		_lobby_players_label.text = "Connected Players: " + str(multiplayer.get_peers().size() + 1)
+	else:
+		_lobby_code_label.text = "Disconnected"
+		_lobby_players_label.text = ""
 
 
 func _build_pause() -> void:

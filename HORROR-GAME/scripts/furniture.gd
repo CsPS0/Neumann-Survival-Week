@@ -11,6 +11,7 @@ extends Node3D
 const FloorData := preload("res://scripts/floor_data.gd")
 const Rooms := preload("res://scripts/rooms.gd")
 const FindsScript := preload("res://scripts/finds.gd")
+const Textures := preload("res://scripts/textures.gd")
 
 const FLOOR_HEIGHT := 4.0
 const WALL := 0.125           ## Half the wall thickness: room rects run along the wall centre lines.
@@ -432,7 +433,7 @@ static func _meshes() -> Dictionary:
 				[_bx(0.52, 0.32, 0.04), Vector3(0.0, 1.09, -0.17)], [_bx(0.42, 0.02, 0.14), Vector3(0.0, 0.77, 0.1)],
 				[_bx(0.06, 0.025, 0.1), Vector3(0.3, 0.77, 0.1)]]],
 				[screen, [[_bx(0.48, 0.28, 0.005), Vector3(0.0, 1.09, -0.148)]]]]),
-		"board": _merge([[_mat(Color(0.08, 0.2, 0.14), 0.9), [[_bx(2.4, 1.1, 0.04), Vector3(0.0, 1.5, 0.0)]]],
+		"board": _merge([[Textures.chalkboard(), [[_bx(2.4, 1.1, 0.04), Vector3(0.0, 1.5, 0.0)]]],
 				[dark_wood, [[_bx(2.4, 0.04, 0.08), Vector3(0.0, 0.93, 0.02)]]]]),
 		"whiteboard": _merge([[_mat(Color(0.88, 0.9, 0.9), 0.2), [[_bx(2.4, 1.1, 0.04), Vector3(0.0, 1.5, 0.0)]]],
 				[metal, [[_bx(2.4, 0.04, 0.08), Vector3(0.0, 0.93, 0.02)]]]]),

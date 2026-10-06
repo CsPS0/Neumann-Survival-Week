@@ -75,10 +75,23 @@ func _apply_lighting(delta: float) -> void:
 		environment.ambient_light_color = Color(0.85, 0.88, 0.9).lerp(Color(0.35, 0.4, 0.6), _darkness)
 		environment.fog_density = lerpf(0.004, 0.045, _darkness)
 		environment.fog_light_color = Color(0.45, 0.5, 0.55).lerp(Color(0.015, 0.02, 0.03), _darkness)
+		
+		var is_mobile := OS.has_feature("mobile") or OS.has_feature("web") or OS.has_feature("android") or OS.has_feature("ios")
+		if not is_mobile:
+			if _darkness > 0.15:
+				environment.volumetric_fog_enabled = true
+				environment.volumetric_fog_density = lerpf(0.0, 0.032, _darkness)
+				environment.volumetric_fog_albedo = Color(0.22, 0.25, 0.32).lerp(Color(0.04, 0.04, 0.07), _darkness)
+				environment.volumetric_fog_emission = Color(0.01, 0.01, 0.02)
+			else:
+				environment.volumetric_fog_enabled = false
 	var flicker := _darkness > 0.05 and _darkness < 0.98
+	var night_flicker := _darkness >= 0.98
 	for lamp in _lamps:
 		var energy := LAMP_ENERGY * (1.0 - _darkness)
 		if flicker and randf() < 0.2:
 			energy *= randf_range(0.0, 0.8)
+		elif night_flicker and randf() < 0.01:
+			energy = randf_range(0.12, 0.45)
 		lamp.light_energy = energy
 		lamp.visible = energy > 0.01

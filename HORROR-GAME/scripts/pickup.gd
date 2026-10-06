@@ -57,6 +57,10 @@ func interact(by: Node = null) -> void:
 	elif kind != "mecha":   # The chameleon is no inventory item: mecha.gd shows the message and the reward.
 		by.give_item(item_id, display_name, message)
 	taken.emit(item_id)
+	
+	if NetSession.is_multiplayer_active():
+		NetSession.rpc("sync_pickup_taken", item_id, kind)
+		
 	var sound := AudioStreamPlayer3D.new()
 	sound.stream = SoundBank.chime()
 	get_parent().add_child(sound)
