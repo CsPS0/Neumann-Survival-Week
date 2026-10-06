@@ -8,9 +8,18 @@ const SIZE := 256
 static var _cache := {}
 
 
-## Cream plaster above a teal painted dado. Tile = 4 m, so the dado lines up on every floor.
+## Cream plaster above real school wall tiles. Tile = 4 m, so the dado lines up on every floor.
 static func wall() -> StandardMaterial3D:
 	return _cached("wall", func() -> StandardMaterial3D:
+		if ResourceLoader.exists("res://textures/wall_real.jpg"):
+			var mat := StandardMaterial3D.new()
+			mat.albedo_texture = load("res://textures/wall_real.jpg")
+			mat.uv1_triplanar = true
+			mat.uv1_world_triplanar = true
+			mat.uv1_scale = Vector3.ONE * 3.0
+			mat.roughness = 0.8
+			mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+			return mat
 		var noise := _noise(0.03, 11).get_seamless_image(SIZE, SIZE)
 		var fine := _noise(0.25, 12).get_seamless_image(SIZE, SIZE)
 		var img := Image.create(SIZE, SIZE, false, Image.FORMAT_RGB8)
@@ -35,6 +44,15 @@ static func wall() -> StandardMaterial3D:
 ## Square tiles with grout and per-tile variation. Tile = 2 m (4x4 tiles of 0.5 m).
 static func floor_tiles() -> StandardMaterial3D:
 	return _cached("floor", func() -> StandardMaterial3D:
+		if ResourceLoader.exists("res://textures/floor_real.jpg"):
+			var mat := StandardMaterial3D.new()
+			mat.albedo_texture = load("res://textures/floor_real.jpg")
+			mat.uv1_triplanar = true
+			mat.uv1_world_triplanar = true
+			mat.uv1_scale = Vector3.ONE * 3.0
+			mat.roughness = 0.38
+			mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+			return mat
 		var noise := _noise(0.08, 21).get_seamless_image(SIZE, SIZE)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 5
@@ -60,6 +78,15 @@ static func floor_tiles() -> StandardMaterial3D:
 ## Acoustic ceiling tiles, 0.6 m grid. Tile = 2.4 m.
 static func ceiling() -> StandardMaterial3D:
 	return _cached("ceiling", func() -> StandardMaterial3D:
+		if ResourceLoader.exists("res://textures/ceiling_real.jpg"):
+			var mat := StandardMaterial3D.new()
+			mat.albedo_texture = load("res://textures/ceiling_real.jpg")
+			mat.uv1_triplanar = true
+			mat.uv1_world_triplanar = true
+			mat.uv1_scale = Vector3.ONE * (1.0 / 2.4)
+			mat.roughness = 0.82
+			mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+			return mat
 		var noise := _noise(0.4, 31).get_seamless_image(SIZE, SIZE)
 		var img := Image.create(SIZE, SIZE, false, Image.FORMAT_RGB8)
 		for y in SIZE:
@@ -74,6 +101,13 @@ static func ceiling() -> StandardMaterial3D:
 ## Door wood with vertical grain. Tile = 1 m.
 static func wood(tint := Color.WHITE) -> StandardMaterial3D:
 	return _cached("wood_%s" % tint.to_html(), func() -> StandardMaterial3D:
+		if ResourceLoader.exists("res://textures/door_real.jpg"):
+			var mat := StandardMaterial3D.new()
+			mat.albedo_texture = load("res://textures/door_real.jpg")
+			mat.albedo_color = tint
+			mat.roughness = 0.65
+			mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+			return mat
 		var grain := _noise(0.02, 41)
 		grain.fractal_octaves = 3
 		var img := Image.create(SIZE, SIZE, false, Image.FORMAT_RGB8)
@@ -84,6 +118,19 @@ static func wood(tint := Color.WHITE) -> StandardMaterial3D:
 				var v := 0.55 + stripe * 0.6
 				img.set_pixel(x, y, Color(0.34 * v, 0.2 * v, 0.1 * v) * tint)
 		var mat := _material(img, null, 1.0, 0.0, 0.7)
+		return mat)
+
+
+## Authentic school chalkboard with real handwritten notes.
+static func chalkboard() -> StandardMaterial3D:
+	return _cached("chalkboard", func() -> StandardMaterial3D:
+		var mat := StandardMaterial3D.new()
+		if ResourceLoader.exists("res://textures/blackboard_real.jpg"):
+			mat.albedo_texture = load("res://textures/blackboard_real.jpg")
+		else:
+			mat.albedo_color = Color(0.08, 0.2, 0.14)
+		mat.roughness = 0.88
+		mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 		return mat)
 
 

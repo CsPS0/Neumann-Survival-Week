@@ -1,0 +1,52 @@
+[gd_scene load_steps=5 format=3 uid="uid://c83j1h4y7a"]
+
+[ext_resource type="Script" path="res://scripts/player_puppet.gd" id="1_puppet"]
+[ext_resource type="Script" path="res://scripts/proximity_voice.gd" id="2_voice"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+radius = 0.2
+height = 1.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+radius = 0.12
+height = 0.24
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_puppet"]
+radius = 0.3
+height = 1.8
+
+[node name="PlayerPuppet" type="StaticBody3D"]
+script = ExtResource("1_puppet")
+collision_layer = 17
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_puppet")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = SubResource("CapsuleMesh_body")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.62, 0)
+mesh = SubResource("SphereMesh_head")
+
+[node name="Flashlight" type="SpotLight3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+light_color = Color(0.9, 0.95, 1, 1)
+light_energy = 2.0
+spot_range = 15.0
+spot_angle = 35.0
+spot_angle_attenuation = 1.5
+
+[node name="Nametag" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+billboard = 1
+text = "Player"
+font_size = 24
+outline_size = 4
+
+[node name="Voice" type="AudioStreamPlayer3D" parent="."]
+script = ExtResource("2_voice")
+
