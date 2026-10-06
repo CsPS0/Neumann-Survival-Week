@@ -34,6 +34,8 @@ secret.txt
 
 ICON.webp
 *.jpg
+# HORROR-GAME loads its reference textures at runtime, so they have to be committed.
+!HORROR-GAME/textures/*.jpg
 
 *.vs
 

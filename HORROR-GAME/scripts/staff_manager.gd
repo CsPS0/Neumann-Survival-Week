@@ -3,7 +3,7 @@ extends Node
 ## school days (before school, in lessons, in breaks). Lessons: the teacher of each nearby class stands in that class's
 ## room (the class's homeroom teacher where it has one). Breaks: each walks one corridor polyline. They never talk.
 
-const Staff := preload("res://scripts/staff.gd")
+static var Staff: GDScript = preload("res://scripts/staff_source.gd").roster()
 const Classes := preload("res://scripts/classes.gd")
 const FloorData := preload("res://scripts/floor_data.gd")
 const Lessons := preload("res://scripts/lessons.gd")
@@ -146,7 +146,7 @@ static func label_of(role: String) -> String:
 
 ## The homeroom teacher of the class (or a random roster person) not used yet: [name, role label].
 func _person_for(class_id: String, used: Dictionary, rng: RandomNumberGenerator) -> Array:
-	var who := Staff.homeroom_teacher(class_id)
+	var who: String = Staff.homeroom_teacher(class_id)
 	if who == "" or used.has(who):
 		var pool: Array = []
 		for p: Array in Staff.ROSTER:

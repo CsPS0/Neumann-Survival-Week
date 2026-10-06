@@ -3,7 +3,7 @@ extends CharacterBody3D
 ## building at dusk. Navigates with the shared navmesh; passes through doors (layer 8) and opens them.
 
 const SoundBank := preload("res://scripts/sound_bank.gd")
-const Staff := preload("res://scripts/staff.gd")
+static var Staff: GDScript = preload("res://scripts/staff_source.gd").roster()
 
 var npc_name := "Teacher"
 var shirt_colour := Color(0.3, 0.3, 0.5)
