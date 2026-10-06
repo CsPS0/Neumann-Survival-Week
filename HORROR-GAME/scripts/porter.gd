@@ -42,7 +42,7 @@ func go_away(seconds: float, wc_point: Vector3) -> void:
 	var token := _token
 	_returning = false
 	set_station(wc_point)
-	await get_tree().create_timer(seconds).timeout
+	await get_tree().create_timer(seconds, false).timeout
 	if token == _token and is_inside_tree():
 		_come_back()
 

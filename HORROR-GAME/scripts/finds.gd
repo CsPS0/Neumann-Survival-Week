@@ -87,6 +87,7 @@ const MECHA := [
 var campaign: Node
 var found: Dictionary = {}   ## id -> true, in the order found.
 var items_found := 0         ## Useful items taken (main's ITEM_SPOTS); not finds, only the page's "Items" line.
+var items_total := 0
 
 
 func _ready() -> void:

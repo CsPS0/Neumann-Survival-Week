@@ -1,7 +1,7 @@
 extends "res://scripts/teacher_npc.gd"
 ## Csoki, the caretaker's dog. Wanders the ground-floor hall (the same agent as the teachers), barks when the entity is
-## visible or the caretaker is close, and can be petted. A dog biscuit makes it follow the player for 3 game hours. It cannot be hurt and never blocks the player: its collision
-## layer is 16 (the interact-only layer that nothing collides with).
+## visible or the caretaker is close, and can be petted. A dog biscuit makes it follow the player for 3 game hours.
+## It cannot be hurt and never blocks the player: collision layer 16 (interact-only, nothing collides with it).
 
 signal barked
 
@@ -9,7 +9,7 @@ const WARN_RANGE := 20.0
 const BARK_COOLDOWN := 6.0
 const FOLLOW_MINUTES := 180.0
 const FOLLOW_RANGE := 30.0   ## Entity bark range while following.
-const FOLLOW_NEAR := 2.5     ## Stops walking this close to the player.
+const FOLLOW_NEAR := 3.0     ## Stops walking this close to the player.
 const FOLLOW_BEHIND := 2.0
 
 var entity: Node3D
@@ -68,6 +68,8 @@ func follow(minutes: float) -> void:
 func _follow_valid() -> bool:
 	if player == null or daynight == null or campaign == null or campaign.day != _follow_day:
 		return false
+	if campaign.ending_id != 0:
+		return false
 	if daynight.minutes >= _follow_until:
 		return false
 	var bell: float = campaign.LAST_BELL
@@ -112,6 +114,9 @@ func interact(by: Node = null) -> void:
 	if by == null:
 		return
 	if by.has_item("biscuit"):
+		if is_following:
+			by.inspected.emit("Csoki is already with you.")
+			return
 		by.remove_item("biscuit")
 		follow(FOLLOW_MINUTES)
 		by.inspected.emit("Csoki gobbles the biscuit and trots after you.")

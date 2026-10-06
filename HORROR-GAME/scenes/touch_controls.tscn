@@ -1,0 +1,45 @@
+[gd_scene load_steps=2 format=3 uid="uid://djfkw92kx"]
+
+[ext_resource type="Script" path="res://scripts/touch_controls.gd" id="1_touch"]
+
+[node name="TouchControls" type="CanvasLayer"]
+script = ExtResource("1_touch")
+
+[node name="JoyArea" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="LookArea" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Stick" type="Control" parent="."]
+layout_mode = 3
+
+[node name="Knob" type="ColorRect" parent="Stick"]
+layout_mode = 0
+
+[node name="Buttons" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="BtnF" type="Button" parent="Buttons"]
+layout_mode = 0
+
+[node name="BtnQ" type="Button" parent="Buttons"]
+layout_mode = 0
+
+[node name="BtnE" type="Button" parent="Buttons"]
+layout_mode = 0
+
+[node name="BtnTab" type="Button" parent="Buttons"]
+layout_mode = 0
+
+[node name="BtnEsc" type="Button" parent="Buttons"]
+layout_mode = 0

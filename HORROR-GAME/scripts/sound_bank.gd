@@ -194,6 +194,41 @@ static func flash_sting(seconds: float) -> AudioStreamWAV:
 		return _make(out))
 
 
+## Low double-thud heartbeat pulse when terrified or hiding.
+static func heartbeat() -> AudioStreamWAV:
+	return _cached("heartbeat", func() -> AudioStreamWAV:
+		var duration := 0.7
+		var length := int(RATE * duration)
+		var out := PackedFloat32Array()
+		out.resize(length)
+		for i in length:
+			var t := float(i) / RATE
+			var lub := sin(TAU * 52.0 * t) * exp(-t * 22.0) if t < 0.25 else 0.0
+			var t2 := t - 0.24
+			var dub := sin(TAU * 44.0 * t2) * exp(-t2 * 24.0) * 0.85 if t2 >= 0.0 and t2 < 0.28 else 0.0
+			out[i] = clampf((lub + dub) * 0.95, -1.0, 1.0)
+		return _make(out))
+
+
+## Metallic locker door opening or closing.
+static func locker_door() -> AudioStreamWAV:
+	return _cached("locker_door", func() -> AudioStreamWAV:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 44
+		var duration := 0.4
+		var length := int(RATE * duration)
+		var out := PackedFloat32Array()
+		out.resize(length)
+		var smooth := 0.0
+		for i in length:
+			var t := float(i) / RATE
+			smooth += (rng.randf_range(-1.0, 1.0) - smooth) * 0.15
+			var metal := (sin(TAU * 380.0 * t) + 0.5 * sin(TAU * 720.0 * t) + 0.3 * sin(TAU * 1150.0 * t)) * exp(-t * 12.0)
+			var scrape := smooth * exp(-t * 18.0) * 0.6
+			out[i] = clampf((metal * 0.6 + scrape * 0.4) * 0.8, -1.0, 1.0)
+		return _make(out))
+
+
 static func _cached(key: String, builder: Callable) -> AudioStreamWAV:
 	if not _cache.has(key):
 		_cache[key] = builder.call()

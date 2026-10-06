@@ -70,6 +70,9 @@ func _reward(kind: String) -> void:
 		for p: Dictionary in Finds.PAGES:
 			if not main.finds.found.has(p["id"]):
 				main.finds.mark(p["id"])
+				for f: Node in get_tree().get_nodes_in_group("find"):
+					if f.get("item_id") == p["id"]:
+						f.queue_free()
 				player.inspected.emit(text + "A page was folded under it. %s\n%s" % [p["title"], p["text"]])
 				return
 	# Battery, and the fallback for a biscuit already in the pocket or no page left to find.

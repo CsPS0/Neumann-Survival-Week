@@ -8,6 +8,12 @@
 
 config_version=5
 
+[autoload]
+
+NetSession="*res://scripts/net_session.gd"
+PingSystem="*res://scripts/ping_wheel.gd"
+XRManager="*res://scripts/xr_manager.gd"
+
 [application]
 
 config/name="neu-horror"
@@ -27,3 +33,6 @@ window/stretch/aspect="expand"
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+
+rendering/renderer/rendering_method.mobile="mobile"
+textures/vram_compression/import_etc2_astc=true

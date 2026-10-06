@@ -30,6 +30,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _sees_player() -> bool:
+	if player == null or player.get("is_hiding"):
+		return false
 	var to_player := player.global_position - global_position
 	if to_player.length() > SIGHT:
 		return false

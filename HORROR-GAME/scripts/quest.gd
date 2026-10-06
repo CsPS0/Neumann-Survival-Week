@@ -87,8 +87,7 @@ func altar_interact(by: Node) -> void:
 	var placed := []
 	for item: String in RITUAL_ITEMS:
 		if by.has_item(item) and not altar_items[item]:
-			by.remove_item(item)
-			altar_items[item] = true
+			place_ritual_item(item)
 			placed.append(RITUAL_ITEMS[item])
 	if not placed.is_empty():
 		changed.emit()
@@ -114,6 +113,14 @@ func altar_interact(by: Node) -> void:
 		daynight.skip_to_dusk()
 		by.inspected.emit("The ritual needs darkness. You wait for the sun to set...")
 
+func place_ritual_item(item: String, is_remote: bool = false) -> void:
+	if not altar_items[item]:
+		altar_items[item] = true
+		if not is_remote and player.has_item(item):
+			player.remove_item(item)
+			if NetSession.is_multiplayer_active():
+				NetSession.rpc("sync_ritual_placement", item)
+		changed.emit()
 
 func begin_ritual(by: Node) -> void:
 	ritual_active = true

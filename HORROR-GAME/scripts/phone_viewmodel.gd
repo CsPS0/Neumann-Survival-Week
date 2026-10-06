@@ -7,8 +7,9 @@ const SoundBank := preload("res://scripts/sound_bank.gd")
 
 const LOWERED_POSITION := Vector3(-0.14, -0.62, -0.33)
 const LOWERED_ROTATION := Vector3(-70.0, 8.0, 0.0)
-const RAISED_POSITION := Vector3(-0.07, -0.11, -0.33)
-const RAISED_ROTATION := Vector3(-14.0, 14.0, 0.0)
+const RAISED_POSITION := Vector3(-0.05, -0.08, -0.27)
+const RAISED_ROTATION := Vector3(-11.0, 9.0, 0.0)
+
 const SKIN := Color(0.72, 0.55, 0.47)
 
 var raised := false
@@ -33,14 +34,15 @@ func _ready() -> void:
 
 	_add_box(Vector3.ZERO, Vector3(0.076, 0.156, 0.009), body_material)
 	# Hand gripping the back of the phone, forearm running down and away.
-	_add_box(Vector3(0.0, -0.045, 0.03), Vector3(0.07, 0.07, 0.04), skin)
-	_add_box(Vector3(-0.045, -0.02, 0.02), Vector3(0.02, 0.07, 0.02), skin)  # Thumb.
+	_add_box(Vector3(0.0, -0.045, -0.02), Vector3(0.07, 0.07, 0.03), skin)
+	_add_box(Vector3(-0.041, -0.04, -0.006), Vector3(0.01, 0.05, 0.014), skin)  # Thumb resting along the side from behind.
 	var forearm := CylinderMesh.new()
 	forearm.top_radius = 0.035
 	forearm.bottom_radius = 0.035
 	forearm.height = 0.45
-	var forearm_node := _add(forearm, Vector3(0.0, -0.27, 0.12), skin)
-	forearm_node.rotation_degrees = Vector3(-60.0, 0.0, 0.0)
+	var forearm_node := _add(forearm, Vector3(0.0, -0.27, -0.12), skin)
+	forearm_node.rotation_degrees = Vector3(60.0, 0.0, 0.0)
+
 
 	_viewport = SubViewport.new()
 	_viewport.size = Vector2i(450, 840)
@@ -70,7 +72,7 @@ func _ready() -> void:
 	_click.volume_db = -6.0
 	add_child(_click)
 
-	scale = Vector3.ONE * 1.5
+	scale = Vector3.ONE * 1.7
 	position = LOWERED_POSITION
 	rotation_degrees = LOWERED_ROTATION
 	visible = false
