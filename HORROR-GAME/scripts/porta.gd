@@ -13,6 +13,8 @@ signal changed
 const CARD_DAY := 3               ## The new student card is handed out on this day and expires at its midnight.
 const FORBIDDEN := "14"
 const RED := "red"
+const HOOKS_NUMBERED := 300         ## The board has a hook for every room number from 1 to 300 ...
+const HOOKS_COMPUTER := 50          ## ... and for every computer room from GT1 to GT50.
 
 var campaign: Node
 var player: Node
@@ -33,15 +35,41 @@ static func key_item(label: String) -> String:
 	return "storage_key" if label == RED else "key_" + label
 
 
-## Labels on the board that can be lent: every open normal/computer room, plus the red room's key.
+## True for a room whose door has a key: a normal or computer room, or the gym.
+static func has_key_lock(label: String) -> bool:
+	var type := Rooms.type_of(label)
+	return type == "normal" or type == "computer" or type == "gym"
+
+
+## Position of a room's hook on the board. The numbered rooms take hooks 1 to 300 in order, the computer rooms take
+## GT1 to GT50 after them ("GT11-12" hangs on GT11). Anything else (the gym) sorts behind them.
+static func hook_order(label: String) -> int:
+	if label == RED:
+		return 100000
+	if label.is_valid_int():
+		return label.to_int()
+	if label.begins_with("GT"):
+		return HOOKS_NUMBERED + label.substr(2).split("-")[0].to_int()
+	return HOOKS_NUMBERED + HOOKS_COMPUTER + 1
+
+
+static func hook_text(label: String) -> String:
+	return "Gym" if label == "Tornaterem" else ("Red room" if label == RED else label)
+
+
+## Labels on the board that can be lent, in board order (1 up to 300, then GT1 up to GT50, then the rest, the red room
+## last): every keyed room, plus the red room's key.
 func lendable_keys() -> Array:
 	var labels: Array = []
 	for f in FloorData.FLOORS.size():
 		for room: Array in FloorData.FLOORS[f]["rooms"]:
 			var label: String = room[0]
-			var type := Rooms.type_of(label)
-			if (type == "normal" or type == "computer") and label != FORBIDDEN and not labels.has(label):
+			if has_key_lock(label) and label != FORBIDDEN and not labels.has(label):
 				labels.append(label)
+	labels.sort_custom(func(a: String, b: String) -> bool:
+		var ka := hook_order(a)
+		var kb := hook_order(b)
+		return ka < kb if ka != kb else a < b)
 	labels.append(RED)
 	return labels
 
@@ -107,7 +135,7 @@ func key_line() -> String:
 
 
 func _room_name(label: String) -> String:
-	return "the storage room" if label == RED else "room " + label
+	return "the storage room" if label == RED else ("the gym" if label == "Tornaterem" else "room " + label)
 
 
 ## `seen`: main's check that the porter is within 6 m with a clear line of sight. Away alone is not enough.
@@ -199,6 +227,6 @@ func on_form_taken() -> void:
 
 func _give(label: String) -> void:
 	var id := key_item(label)
-	player.give_item(id, "Key " + label if label != RED else "Storage key")
+	player.give_item(id, "Key " + hook_text(label) if label != RED else "Storage key")
 	key_given.emit(label)
 	changed.emit()
