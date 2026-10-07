@@ -14,7 +14,7 @@ func _ready() -> void:
 	metal.roughness = 0.4
 	var skin := _material(SKIN)
 	skin.emission_enabled = true  # Faint self-light so the hands read in the dark.
-	skin.emission = SKIN * 0.12
+	skin.emission = SKIN * 0.3
 	_lens = _material(Color(1.0, 0.95, 0.8))
 	_lens.emission_enabled = true
 	_lens.emission = Color(1.0, 0.95, 0.75)
@@ -28,10 +28,14 @@ func _ready() -> void:
 	_box(Vector3(0.0, -0.02, 0.04), Vector3(0.075, 0.085, 0.1), skin)
 	_cylinder(Vector3(0.0, -0.115, 0.3), 0.035, 0.45, skin, Vector3(-72.0, 0.0, 0.0))
 
-	# Left hand, relaxed.
+	# Left hand, relaxed: raised into the lower left of the view, forearm angled back and down to the left corner.
+	# Torch space: the hand sits 0.54 m left of the torch (0.24 m left of the camera axis), about 0.5 m ahead of the camera.
 	add_child(left_hand)
-	_box(Vector3(-0.5, -0.04, 0.0), Vector3(0.08, 0.07, 0.11), skin, left_hand)
-	_cylinder(Vector3(-0.5, -0.15, 0.27), 0.035, 0.45, skin, Vector3(-72.0, 0.0, 0.0), left_hand)
+	var hand_at := Vector3(-0.54, 0.02, 0.05)
+	var back := Vector3(-0.3, -0.5, 0.8).normalized()   # Hand towards the elbow.
+	_box(hand_at, Vector3(0.085, 0.07, 0.11), skin, left_hand)
+	var forearm_rot := Basis(Quaternion(Vector3.UP, back)).get_euler() * (180.0 / PI)
+	_cylinder(hand_at + back * 0.24, 0.037, 0.45, skin, forearm_rot, left_hand)
 
 
 ## Lights up the lens to match the flashlight state.

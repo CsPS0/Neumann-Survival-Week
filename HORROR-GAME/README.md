@@ -31,7 +31,7 @@ Notes:
 | B | Drop the bag, or pick a dropped bag up again within 2.2 m (E on the bag works too) |
 | X | Switch the active hand, left or right (phone and torch swap sides) |
 | V | Put the item in your hand into a pocket or the bag, or take the next stored item into the empty hand |
-| Tab | Next phone app: map, tasks, clues, finds, neu_mecha, e-Kréten, Diákhirdetmények |
+| Tab | Phone up: next phone app (map, tasks, clues, finds, neu_mecha, e-Kréten, Diákhirdetmények). Phone down: show or hide the inventory list |
 | Left / Right arrow | Phone: floor on the map, section in e-Kréten, list position on the notice board |
 | + / - or mouse wheel | Phone: zoom the map (other apps: scroll the list) |
 | I, J, K, L | Phone: pan the zoomed map, scroll lists with I and K |

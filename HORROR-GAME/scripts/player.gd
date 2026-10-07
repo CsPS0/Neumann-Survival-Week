@@ -1,7 +1,7 @@
 class_name Player
 extends CharacterBody3D
 ## First-person controller: WASD + sprint, mouse-look, head bob with footsteps, battery-limited
-## flashlight (F), phone (Q, H for one or two hands), bag (B), active hand (X), stow or take (V), RayCast interaction (E).
+## flashlight (F), phone (Q, H for one or two hands), inventory (Tab), bag (B), active hand (X), stow or take (V), RayCast interaction (E).
 
 const SoundBank := preload("res://scripts/sound_bank.gd")
 const InventoryScript := preload("res://scripts/inventory.gd")
@@ -13,6 +13,7 @@ signal battery_changed(percent: float)  ## 0.0 - 1.0
 signal item_added(item_id: String)
 signal inventory_changed                ## Anything moved between the hand, the pockets and the bag, or the bag was dropped.
 signal phone_mode_changed(two_hands: bool)
+signal inventory_panel_toggled(open: bool)   ## Tab with the phone down shows or hides the inventory list.
 signal prompt_changed(text: String)     ## What E would do on the object under the crosshair ("" = nothing).
 signal stamina_changed(fraction: float)
 signal exhausted_changed(is_exhausted: bool)
@@ -88,6 +89,7 @@ var controls_enabled := true
 var invert_y := false
 var items := InventoryScript.new()   ## Hand, pockets and bag. Use has_item / give_item / remove_item from other scripts.
 var phone_two_hands := false        ## False: phone in the active hand, torch in the other. True: both hands, no torch.
+var inventory_open := false         ## Tab: the inventory list is on screen (closed again when the phone goes up).
 var is_downed := false
 var is_hiding := false
 var is_holding_breath := false
@@ -173,8 +175,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		swap_active_hand()
 	elif event.is_action_pressed(&"stow"):
 		stow_or_take()
-	elif event.is_action_pressed(&"phone_page") and phone.raised:
-		phone.toggle_page()
+	elif event.is_action_pressed(&"phone_page"):
+		if phone.raised:
+			phone.toggle_page()
+		else:
+			inventory_open = not inventory_open
+			inventory_panel_toggled.emit(inventory_open)
 	elif event.is_action_pressed(&"phone_floor_prev") and phone.raised:
 		phone.change_floor(-1)
 	elif event.is_action_pressed(&"phone_floor_next") and phone.raised:
@@ -434,6 +440,12 @@ func _apply_hand_side() -> void:
 	phone.set_left_handed(items.left_handed)
 
 
+func _close_inventory() -> void:
+	if inventory_open:
+		inventory_open = false
+		inventory_panel_toggled.emit(false)
+
+
 ## Resets the player after being caught (inventory is kept).
 func revive() -> void:
 	controls_enabled = true
@@ -456,6 +468,7 @@ func on_caught(source: Node3D = null) -> void:
 	if not controls_enabled:
 		return
 	controls_enabled = false
+	_close_inventory()
 	_look_target = source
 	_lower_phone()
 	set_flashlight(false)
@@ -463,6 +476,7 @@ func on_caught(source: Node3D = null) -> void:
 
 
 func _raise_phone() -> void:
+	_close_inventory()
 	# The phone needs the active hand: whatever is held goes into a pocket or the bag first.
 	if items.hand_item() != "" and not items.stow_hand():
 		inspected.emit("Your hand is full and there is no room to stow it. Free a pocket first.")
