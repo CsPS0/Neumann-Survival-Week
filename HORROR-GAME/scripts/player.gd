@@ -45,6 +45,12 @@ const ACTION_KEYS := {
 	&"phone_page": KEY_TAB,
 	&"phone_floor_prev": KEY_LEFT,
 	&"phone_floor_next": KEY_RIGHT,
+	&"phone_zoom_in": KEY_EQUAL,
+	&"phone_zoom_out": KEY_MINUS,
+	&"phone_view_up": KEY_I,
+	&"phone_view_down": KEY_K,
+	&"phone_view_left": KEY_J,
+	&"phone_view_right": KEY_L,
 	&"hold_breath": KEY_SPACE,
 }
 
@@ -55,6 +61,7 @@ const ACTION_KEYS := {
 @onready var torch: Node3D = $Head/Camera3D/Torch
 @onready var phone: Node3D = $Head/Camera3D/Phone
 
+const PHONE_ZOOM_STEP := 1.5   ## Map zoom per key press or wheel notch.
 const STAMINA_MAX := 100.0
 const STAMINA_DRAIN := 20.0     ## About 5 s of sprint.
 const STAMINA_REGEN := 12.5     ## About 8 s to refill.
@@ -149,12 +156,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		phone.change_floor(-1)
 	elif event.is_action_pressed(&"phone_floor_next") and phone.raised:
 		phone.change_floor(1)
+	elif event.is_action_pressed(&"phone_zoom_in") and phone.raised:
+		phone.zoom(PHONE_ZOOM_STEP)
+	elif event.is_action_pressed(&"phone_zoom_out") and phone.raised:
+		phone.zoom(1.0 / PHONE_ZOOM_STEP)
+	elif event.is_action_pressed(&"phone_view_up") and phone.raised:
+		phone.move_view(Vector2.UP)
+	elif event.is_action_pressed(&"phone_view_down") and phone.raised:
+		phone.move_view(Vector2.DOWN)
+	elif event.is_action_pressed(&"phone_view_left") and phone.raised:
+		phone.move_view(Vector2.LEFT)
+	elif event.is_action_pressed(&"phone_view_right") and phone.raised:
+		phone.move_view(Vector2.RIGHT)
 	elif event is InputEventMouseButton and event.pressed:
-		if phone.raised and phone.page == 0:
+		if phone.raised:
 			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-				phone.change_floor(-1)
+				phone.zoom(PHONE_ZOOM_STEP)
 			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-				phone.change_floor(1)
+				phone.zoom(1.0 / PHONE_ZOOM_STEP)
 	elif event.is_action_pressed(interact_action):
 		_interact()
 

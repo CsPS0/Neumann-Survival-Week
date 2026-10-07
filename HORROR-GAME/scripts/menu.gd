@@ -13,7 +13,7 @@ const SettingsUI := preload("res://scripts/settings_ui.gd")
 const LORE := "Five days at the Neumann school. Something in the building is not what it seems.\n\n" \
 		+ "Attend your lessons, watch the teachers, and find out who it is before it finds you."
 const CONTROLS := "WASD  move        Shift  sprint        Mouse  look\n" \
-		+ "F  flashlight        Q  phone (Tab: map / tasks / clues)        E  interact\n" \
+		+ "F  flashlight        Q  phone (Tab: apps)        E  interact\n" \
 		+ "G  name the entity (day 4)        Esc  pause"
 
 var profile: Node
