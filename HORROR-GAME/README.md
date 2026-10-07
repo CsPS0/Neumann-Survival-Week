@@ -27,6 +27,10 @@ Notes:
 | Mouse | Look |
 | F | Flashlight (battery-limited) |
 | Q | Phone |
+| H | Phone mode: one hand (map and tasks, the light stays on) or two hands (full screen, every app, no light) |
+| B | Drop the bag, or pick a dropped bag up again within 2.2 m (E on the bag works too) |
+| X | Switch the active hand, left or right (phone and torch swap sides) |
+| V | Put the item in your hand into a pocket or the bag, or take the next stored item into the empty hand |
 | Tab | Next phone app: map, tasks, clues, finds, neu_mecha, e-Kréten, Diákhirdetmények |
 | Left / Right arrow | Phone: floor on the map, section in e-Kréten, list position on the notice board |
 | + / - or mouse wheel | Phone: zoom the map (other apps: scroll the list) |
@@ -37,6 +41,15 @@ Notes:
 | 1 to 4 | Pick a dialog choice |
 | Esc | Pause menu |
 | R | Restart after an ending |
+
+### Carrying items
+
+- You have one active hand, two pockets (one item each) and a bag on your back (8 slots). New items go to the hand, then the pockets, then the bag.
+- The bag weighs 3 kg empty and more with items. Each kg slows you by 3%, up to 30%. Drop it (B) to move at full speed.
+- Items in a dropped bag are out of reach: doors, the porter and the ritual do not see them. Pick the bag up again to use them.
+- If everything is full, ordinary pickups are refused. Keys from the porter and story items are never lost: they go into your hand.
+- The phone needs the active hand: an item you hold goes into a pocket or the bag when you raise it.
+- One-hand phone: map and tasks only, no zoom or pan, and the light stays on. Two-hand phone: the phone fills the screen with every app, but the light goes out until you lower it or press H.
 
 ## The school
 
@@ -121,7 +134,7 @@ All character names in the committed code are invented.
 
 These features exist in the code but are early and untested on real hardware:
 
-- **Touch controls (Android):** an on-screen joystick, a look area and buttons for F, Q, E, Tab and Esc. Mobile devices use a lower render scale.
+- **Touch controls (Android):** an on-screen joystick, a look area and buttons for F, Q, E, Tab, Esc, H, bag, hand and stow. Mobile devices use a lower render scale.
 - **Co-op (up to 4 players):** Host Co-op and Join Co-op in the main menu, with a lobby, a ping marker (middle mouse button) and proximity voice. Join currently connects to the same computer only (127.0.0.1).
 - **VR (OpenXR):** the game switches to VR when an OpenXR runtime is present, otherwise it runs in standard mode.
 
@@ -133,6 +146,7 @@ These features exist in the code but are early and untested on real hardware:
 | `scripts/campaign.gd` | Days, bells, lessons, stats, the culprit and endings. |
 | `scripts/quest.gd` | The four-step exorcism quest. |
 | `scripts/player.gd` | First-person controller, flashlight, phone, interaction. |
+| `scripts/inventory.gd` | Hand, pockets and bag: slots, weight and the speed penalty. `scripts/dropped_bag.gd` is the bag on the floor. |
 | `scripts/horror_entity.gd` | Entity AI: idle, patrol, chase, attack. |
 | `scripts/teacher_npc.gd`, `staff_manager.gd`, `caretaker.gd`, `porter.gd`, `csoki.gd`, `crowd.gd` | NPCs. |
 | `scripts/lessons.gd`, `lesson_ui.gd`, `answer_sheet.gd`, `clues.gd`, `endings.gd` | Game data and their UI. The answer sheet is the paper the quiz answers are typed on. |

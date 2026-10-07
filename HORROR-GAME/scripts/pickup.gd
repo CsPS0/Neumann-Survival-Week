@@ -51,6 +51,9 @@ func interact(by: Node = null) -> void:
 	if kind == "biscuit" and by.has_item("biscuit"):
 		by.inspected.emit("Your pocket already holds a biscuit.")
 		return
+	if kind not in ["battery", "mecha"] and by.has_method(&"can_carry") and not by.can_carry():
+		by.inspected.emit("Your hand and pockets are full, and the bag is full or on the floor.")
+		return
 	if kind == "battery":
 		by.add_battery(battery_amount)
 		by.inspected.emit("Battery +%d%%" % int(battery_amount))

@@ -46,6 +46,18 @@ func trigger_phone() -> void:
 func trigger_phone_tab() -> void:
 	_trigger_action(&"phone_page")
 
+func trigger_phone_hands() -> void:
+	_trigger_action(&"phone_hands")
+
+func trigger_bag() -> void:
+	_trigger_action(&"bag")
+
+func trigger_swap_hand() -> void:
+	_trigger_action(&"swap_hand")
+
+func trigger_stow() -> void:
+	_trigger_action(&"stow")
+
 func trigger_pause() -> void:
 	_trigger_action(&"ui_cancel")
 

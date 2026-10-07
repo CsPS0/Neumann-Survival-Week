@@ -43,3 +43,35 @@ layout_mode = 0
 
 [node name="BtnEsc" type="Button" parent="Buttons"]
 layout_mode = 0
+
+[node name="BtnHands" type="Button" parent="Buttons"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 200.0
+offset_right = 100.0
+offset_bottom = 260.0
+text = "H"
+
+[node name="BtnBag" type="Button" parent="Buttons"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 270.0
+offset_right = 100.0
+offset_bottom = 330.0
+text = "Bag"
+
+[node name="BtnSwap" type="Button" parent="Buttons"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 340.0
+offset_right = 100.0
+offset_bottom = 400.0
+text = "Hand"
+
+[node name="BtnStow" type="Button" parent="Buttons"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 410.0
+offset_right = 100.0
+offset_bottom = 470.0
+text = "Stow"
