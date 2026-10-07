@@ -12,11 +12,11 @@ const FLOOR_HEIGHT := 4.0   ## Same as main.gd (main cannot be preloaded here: i
 
 const PAGES := [
 	{"id": "lab1", "room": "14", "floor": 0, "slot": 1, "title": "Experiment log 1",
-		"text": "Day 1. The club sealed a glass ampoule marked S-14 in the fume cupboard: sodium, sulphur and a salt I cannot name. The meter reads wrong in a way I have never seen."},
+		"text": "Day 1. The club received a strange object: a black metal egg, cold to the touch, with no seam. We set it in the fume cupboard. The meter beside it reads wrong in a way I have never seen."},
 	{"id": "lab2", "room": "14", "floor": 0, "slot": 2, "title": "Experiment log 2",
-		"text": "Day 9. The lights flicker whenever the ampoule is moved. Two students felt cold. The caretaker says the lab door stood open at night, but I locked it myself."},
+		"text": "Day 9. The lights flicker whenever the object is moved. Two students felt cold and slept for a day. The caretaker says the lab door stood open at night, but I locked it myself."},
 	{"id": "lab3", "room": "14", "floor": 0, "slot": 3, "title": "Experiment log 3",
-		"text": "Last entry. It is no longer in the ampoule. It is in the school. Salt, holy water and a bell: the old caretaker's rhyme. I do not understand it. Keep this room locked."},
+		"text": "Last entry. The object cracked tonight and something left it. It is in the school and it wants a body. Salt, holy water and a bell: the old caretaker's rhyme. Keep this room locked."},
 	{"id": "gym1", "room": "27", "floor": 0, "slot": 0, "title": "Coach's log 1",
 		"text": "3 a.m. alarm again. Wet footprints from the lab corridor to the Tornaterem and none back. Nobody on the camera."},
 	{"id": "gym2", "room": "Tornaterem", "floor": 0, "slot": 0, "title": "Coach's log 2",

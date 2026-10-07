@@ -19,6 +19,7 @@ var ambient := false                    ## Background roster teacher: never talk
 var role_label := "teacher"
 var body_height := 1.75
 var body_radius := 0.3
+var sick := false                       ## Ill from day 2: green skin, stooped, stands still and coughs.
 var gender := ""                        ## "f" / "m"; empty = Staff.gender_of(npc_name) when the body is built.
 
 var _nav := NavigationAgent3D.new()
@@ -36,6 +37,7 @@ var _ready_to_walk := false
 var _target_set := false
 var _walk_time := 0.0
 var _station := Vector3.INF
+var _cough := 0.0
 
 
 func _ready() -> void:
@@ -47,6 +49,9 @@ func _ready() -> void:
 	if gender == "":
 		gender = Staff.gender_of(npc_name)
 	_build_body()
+	if sick:
+		get_node("Rig").rotation.x = deg_to_rad(10.0)   # Stooped.
+		_cough = randf_range(2.0, 8.0)
 
 	var shape := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
@@ -101,6 +106,9 @@ func set_station(pos: Vector3) -> void:
 func _physics_process(delta: float) -> void:
 	if not _ready_to_walk:
 		return
+	if sick and chase_target == null and not _leaving:
+		_stand_ill(delta)
+		return
 	var direction := Vector3.ZERO
 	if chase_target:
 		_nav.target_position = chase_target.global_position
@@ -153,6 +161,21 @@ func _physics_process(delta: float) -> void:
 		rotation.y = lerp_angle(rotation.y, atan2(-direction.x, -direction.z), 6.0 * delta)
 	_animate(delta, direction.length() * speed)
 
+## An ill teacher stays where they are and coughs now and then.
+func _stand_ill(delta: float) -> void:
+	velocity.x = 0.0
+	velocity.z = 0.0
+	if not is_on_floor():
+		velocity.y -= _gravity * delta
+	move_and_slide()
+	_animate(delta, 0.0)
+	_cough -= delta
+	if _cough <= 0.0:
+		_cough = randf_range(8.0, 16.0)
+		_footsteps.stream = SoundBank.cough()
+		_footsteps.play()
+
+
 func _open_nearby_doors() -> void:
 	for door: Node3D in get_tree().get_nodes_in_group(&"doors"):
 		if door.global_position.distance_squared_to(global_position) < 4.0:
@@ -177,6 +200,8 @@ func _animate(delta: float, speed: float) -> void:
 ## Male or female body and a procedural face, all seeded from the name (no photos, no textures).
 func _build_body() -> void:
 	var face := face_params(npc_name, gender)
+	if sick:
+		face["skin"] = (face["skin"] as Color).lerp(Color(0.6, 0.75, 0.52), 0.45)
 	var female := gender == "f"
 	var skin := _material(face["skin"])
 	var shirt := _material(shirt_colour)

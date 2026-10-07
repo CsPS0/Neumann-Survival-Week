@@ -157,6 +157,8 @@ var _item_spots := {}                     ## ITEM_SPOTS id -> pickup position on
 var _form_spot := Vector3.ZERO            ## The signed form's table (day-1 sticker task).
 var _form_room_label := ""
 var _form_room_floor := -1
+var _strange_object: Node3D                 ## Cracked object in Lab 14 (from day 2).
+var _lab_fire: OmniLight3D                  ## Flickering glow in the wrecked lab on day 1 after the blast.
 var _vial: Node3D                         ## Holy water: needs the hunt and the fuse.
 var _room_doors := {}                     ## "floor:label" -> Door
 var csoki: Node         ## The caretaker's dog; lives in the ground-floor hall all week.
@@ -246,6 +248,7 @@ func _ready() -> void:
 	add_child(porta)
 	tasks.porta = porta
 	tasks.finds = finds
+	tasks.campaign = campaign
 	add_child(tasks)
 	for i in 4:
 		quest.code.append(randi() % 10)
@@ -378,6 +381,9 @@ func _connect_signals() -> void:
 	campaign.day_started.connect(_on_day_started)
 	campaign.ending.connect(_on_ending)
 	campaign.event.connect(achievements.on_event)
+	campaign.event.connect(func(name: String, _data: Dictionary) -> void:
+		if name == "explosion":
+			_on_explosion())
 	achievements.unlocked.connect(func(id: String) -> void:
 		_show_message("Achievement: %s" % achievements.LIST[id][0], 4.0))
 	campaign.hunt_started.connect(_on_hunt_started)
@@ -504,6 +510,42 @@ func _blackout() -> void:
 	_flash_tween.tween_callback(func() -> void: _flash.color = Color(0.7, 0.0, 0.0, 0.0))
 
 
+## Day 1, after the third lesson: Lab 14 explodes and everyone is sent home. The lab door is blown open and burns until
+## the next morning, so staying behind pays off with the lab's secrets, at the risk of the caretaker.
+func _on_explosion() -> void:
+	var boom := AudioStreamPlayer.new()
+	boom.stream = SoundBank.explosion()
+	boom.volume_db = 4.0
+	boom.process_mode = Node.PROCESS_MODE_ALWAYS
+	boom.finished.connect(boom.queue_free)
+	add_child(boom)
+	boom.play()
+	if _flash_tween:
+		_flash_tween.kill()
+	_flash.color = Color(1.0, 0.85, 0.6, 0.95)
+	_flash_tween = create_tween()
+	_flash_tween.tween_property(_flash, "color:a", 0.0, 2.5)
+	_flash_tween.tween_callback(func() -> void: _flash.color = Color(0.7, 0.0, 0.0, 0.0))
+	var door: Node = _room_doors.get("0:14")
+	if door:
+		door.locked = false
+		door.set_open(true)
+	if _lab_fire == null:
+		var centre := _room_centre(0, "14")
+		_lab_fire = OmniLight3D.new()
+		_lab_fire.light_color = Color(1.0, 0.45, 0.15)
+		_lab_fire.omni_range = 9.0
+		_lab_fire.position = centre + Vector3(0.0, 1.8, 0.0)
+		add_child(_lab_fire)
+		var flicker := create_tween().bind_node(_lab_fire).set_loops()
+		flicker.tween_property(_lab_fire, "light_energy", 0.5, 0.17)
+		flicker.tween_property(_lab_fire, "light_energy", 1.8, 0.23)
+	_show_message("A deafening blast shakes the building. The alarm rings: everyone out, school is cancelled for today.", 7.0)
+	get_tree().create_timer(7.5, false).timeout.connect(func() -> void:
+		if campaign.day == CampaignScript.INCIDENT_DAY and campaign.ending_id == 0:
+			_show_message("Go home through the front door, or stay and find out what happened in Lab 14. The caretaker is on patrol.", 8.0))
+
+
 func _on_ending(id: int) -> void:
 	_game_over = true
 	_accusing = false
@@ -531,6 +573,15 @@ func _on_day_started(day: int) -> void:
 		old.queue_free()
 	var card_was_valid: bool = porta.card_valid
 	porta.on_day_started(day)
+	if day >= 2:
+		if _lab_fire:
+			_lab_fire.queue_free()
+			_lab_fire = null
+		var lab_door: Node = _room_doors.get("0:14")
+		if lab_door and campaign.incident and day == 2:
+			lab_door.set_open(false)
+			_lock_lab_door(lab_door, true)   # Police tape: back to the porter's board key.
+	_show_strange_object(day >= 2)
 	if day >= 2 and not porta.card_valid:
 		for form: Node in get_tree().get_nodes_in_group("form"):
 			form.queue_free()
@@ -783,7 +834,8 @@ func _on_bell(kind: String, index: int) -> void:
 			for teacher: Node in get_tree().get_nodes_in_group("teachers"):
 				teacher.leave()
 			_set_after_hours_lock(AFTER_HOURS_ROOMS[campaign.day - 1], false)
-			_show_message("Last bell. Go home through the front door, or stay and risk it.", 6.0)
+			if not (campaign.incident and campaign.day == CampaignScript.INCIDENT_DAY):   # The blast has its own text.
+				_show_message("Last bell. Go home through the front door, or stay and risk it.", 6.0)
 		"caretaker":
 			_spawn_caretaker()
 
@@ -1238,10 +1290,9 @@ func _place_story_objects() -> void:
 	_vial = _item("vial", "vial", "Holy water", cabinet + Vector3(0.0, 1.1, 0.0))
 	var lab_door: Node = _room_doors.get("0:14")
 	if lab_door:
-		lab_door.locked = true
-		lab_door.key_id = "key_14"
-		lab_door.locked_message = "Locked. The key for 14 is not on the board."
+		_lock_lab_door(lab_door)
 		quest.lab_door = lab_door
+	_build_strange_object(lab)
 	var fuse_room := _room_centre(0, Rooms.STORY_ROOMS["fuse"])
 	_fuse_box = _box(_region, fuse_room + Vector3(0.0, 0.75, 0.0), Vector3(0.9, 1.5, 0.35), _metal_material, true, InteractableScript)
 	_fuse_box.prompt = "Check fuse box"
@@ -1268,6 +1319,44 @@ func _place_story_objects() -> void:
 	_build_form_table()
 	_build_altar()
 	_place_batteries()
+
+
+func _lock_lab_door(door: Node, sealed := false) -> void:
+	door.locked = true
+	door.key_id = "key_14"
+	door.locked_message = "Sealed with tape after the blast. The key for 14 is not on the board." if sealed \
+			else "Locked. The key for 14 is not on the board."
+
+
+## The strange object the chemistry club experimented on: a cracked black egg on the lab table. Only exists from day 2.
+func _build_strange_object(lab: Vector3) -> void:
+	var glow := _make_material(Color(0.05, 0.03, 0.08), 0.2)
+	glow.emission_enabled = true
+	glow.emission = Color(0.6, 0.1, 0.9)
+	glow.emission_energy_multiplier = 1.5
+	_strange_object = _box(_region, lab + Vector3(0.0, 0.75 + 0.14, 0.0), Vector3(0.22, 0.28, 0.22), glow, true, InteractableScript)
+	var egg := SphereMesh.new()
+	egg.radius = 0.11
+	egg.height = 0.28
+	egg.material = glow
+	(_strange_object.get_child(0) as MeshInstance3D).mesh = egg
+	var light := OmniLight3D.new()
+	light.light_color = Color(0.7, 0.2, 1.0)
+	light.omni_range = 4.0
+	light.light_energy = 1.2
+	_strange_object.add_child(light)
+	_strange_object.prompt = "Examine the object"
+	_strange_object.handler = func(by: Node) -> void:
+		by.inspected.emit("A black egg, cracked open. It is warm now, and it pulses like a slow heartbeat. Something left it.")
+	_strange_object.visible = false
+	_strange_object.process_mode = Node.PROCESS_MODE_DISABLED
+	_strange_object.collision_layer = 0
+
+
+func _show_strange_object(on: bool) -> void:
+	_strange_object.visible = on
+	_strange_object.process_mode = Node.PROCESS_MODE_INHERIT if on else Node.PROCESS_MODE_DISABLED
+	_strange_object.collision_layer = 16 if on else 0
 
 
 ## Porta (ground floor, 3.8 m square, door in the north wall): the desk in the south-east, the porter behind it, the
@@ -1531,6 +1620,7 @@ func _spawn_teachers() -> void:
 		teacher.route = route
 		teacher.exit_point = _spawn_point
 		teacher.dialogue_provider = Callable(campaign, "dialogue")
+		teacher.sick = campaign.sick.has(entry[0])
 		teacher.path_offset = _nav_offset
 		teacher.position = route[0] + Vector3(0.0, 0.1, 0.0)
 		add_child(teacher)
