@@ -3,9 +3,9 @@ extends Node
 
 const Achievements := preload("res://scripts/achievements.gd")
 const Endings := preload("res://scripts/endings.gd")
-const DEFAULTS := {"volume": 0.8, "sensitivity": 0.0025, "invert_y": false, "fov": 75.0, "brightness": 1.0, "fullscreen": false, "easy_map": false, "scare_flash": true}
+const DEFAULTS := {"volume": 0.8, "sensitivity": 0.0025, "invert_y": false, "fov": 75.0, "brightness": 1.0, "fullscreen": false, "easy_map": false, "scare_flash": true, "quality": 2}
 ## Slider ranges, kept in step with settings_ui.gd. Hand-edited values are clamped into them.
-const RANGES := {"volume": [0.0, 1.0], "sensitivity": [0.001, 0.006], "fov": [60.0, 100.0], "brightness": [0.6, 1.6]}
+const RANGES := {"volume": [0.0, 1.0], "sensitivity": [0.001, 0.006], "fov": [60.0, 100.0], "brightness": [0.6, 1.6], "quality": [0, 2]}
 
 var path := "user://profile.cfg"
 var settings := DEFAULTS.duplicate()
@@ -15,6 +15,11 @@ var endings_seen: Array[int] = []
 
 func _ready() -> void:
 	add_to_group("profile")
+
+
+## Graphics quality when the player has not chosen one: low on phones and headsets, high elsewhere.
+static func default_quality() -> int:
+	return 0 if OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("web") else 2
 
 
 func get_setting(key: String) -> Variant:
@@ -58,11 +63,12 @@ func load_from_disk() -> void:
 	settings = DEFAULTS.duplicate()
 	unlocked.clear()
 	endings_seen.clear()
+	settings["quality"] = default_quality()
 	var file := ConfigFile.new()
 	if file.load(path) != OK:
 		return
 	for key: String in DEFAULTS:
-		settings[key] = _clean(key, file.get_value("settings", key, DEFAULTS[key]))
+		settings[key] = _clean(key, file.get_value("settings", key, settings[key]))
 	var ids: Variant = file.get_value("progress", "unlocked", [])
 	if ids is Array:
 		for id: Variant in ids:

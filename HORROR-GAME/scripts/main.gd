@@ -38,6 +38,10 @@ const WALL_HEIGHT := 3.2
 const WALL_THICKNESS := 0.25
 const DOOR_WIDTH := 1.5
 const DOOR_HEIGHT := 2.2
+const WINDOW_SILL := 0.9        ## Windows in the outer walls: sill height, top height, width and spacing.
+const WINDOW_TOP := 2.4
+const WINDOW_WIDTH := 1.6
+const WINDOW_PITCH := 3.2
 const STAIR_STEPS := 22
 const FLOOR_NAMES := ["Ground floor", "1st floor", "2nd floor"]
 const TEACHER_ORDER: Array = Lessons.SUSPECT_IDS   ## Accusation options, in button order.
@@ -188,6 +192,9 @@ var _origin := Vector2.ZERO
 var _scale := 1.0
 var _y := 0.0
 var _floor_i := 0
+var _floor_bounds := Rect2()   ## Outline of the floor being built, in world metres: walls on it get windows.
+var _glass_material: StandardMaterial3D
+var _frame_material: StandardMaterial3D
 var _puppets := {}
 const PlayerPuppetScene = preload("res://scenes/player_puppet.tscn")
 
@@ -450,6 +457,7 @@ func _on_peer_disconnected(id: int) -> void:
 
 func _apply_settings() -> void:
 	profile.apply(player, $WorldEnvironment.environment)
+	daynight.set_quality(int(profile.get_setting("quality")))
 
 
 func _start_game() -> void:
@@ -1032,6 +1040,7 @@ func _build_floor(data: Dictionary, index: int, stair_holes: Array[Rect2]) -> vo
 	var p0 := _to_world(rect.position.x, rect.position.y)
 	var p1 := _to_world(rect.end.x, rect.end.y)
 	var world_rect := Rect2(p0, p1 - p0)
+	_floor_bounds = world_rect.abs()
 	var no_holes: Array[Rect2] = []
 	# Upper floors have the stairwell cut out of the slab; every floor but the top has a hole in its ceiling.
 	_slab(world_rect, _y, 0.5, stair_holes if index > 0 else no_holes, _floor_material, true)
@@ -1088,12 +1097,91 @@ func _build_room(room: Array, locked := false) -> void:
 
 
 func _wall(a: Vector2, b: Vector2, y0 := 0.0, y1 := WALL_HEIGHT) -> void:
+	if y0 == 0.0 and y1 == WALL_HEIGHT and _is_outer_wall(a, b) and _wall_windows(a, b):
+		return
 	var mid := (a + b) * 0.5
 	var length := a.distance_to(b) + WALL_THICKNESS
 	var horizontal := absf(a.y - b.y) < 0.001
 	var size := Vector3(length, y1 - y0, WALL_THICKNESS) if horizontal \
 			else Vector3(WALL_THICKNESS, y1 - y0, length)
 	_box(_region, Vector3(mid.x, _y + (y0 + y1) * 0.5, mid.y), size, _wall_material, true)
+
+
+func _is_outer_wall(a: Vector2, b: Vector2) -> bool:
+	var tolerance := 0.06
+	if absf(a.y - b.y) < 0.001:
+		return absf(a.y - _floor_bounds.position.y) < tolerance or absf(a.y - _floor_bounds.end.y) < tolerance
+	if absf(a.x - b.x) < 0.001:
+		return absf(a.x - _floor_bounds.position.x) < tolerance or absf(a.x - _floor_bounds.end.x) < tolerance
+	return false
+
+
+## Outer wall with window openings, evenly spaced. Returns false when the wall is too short for one.
+func _wall_windows(a: Vector2, b: Vector2) -> bool:
+	var horizontal := absf(a.y - b.y) < 0.001
+	var lo := minf(a.x, b.x) if horizontal else minf(a.y, b.y)
+	var hi := maxf(a.x, b.x) if horizontal else maxf(a.y, b.y)
+	var fixed := a.y if horizontal else a.x
+	var count := int((hi - lo - 0.8) / WINDOW_PITCH)
+	if count < 1:
+		return false
+	var cell := (hi - lo) / count
+	var half := WALL_THICKNESS * 0.5
+	var cuts: Array[float] = [lo - half]
+	for i in count:
+		var centre := lo + cell * (i + 0.5)
+		cuts.append(centre - WINDOW_WIDTH * 0.5)
+		cuts.append(centre + WINDOW_WIDTH * 0.5)
+	cuts.append(hi + half)
+	_wall_strip(cuts[0], cuts[cuts.size() - 1], fixed, horizontal, 0.0, WINDOW_SILL)
+	_wall_strip(cuts[0], cuts[cuts.size() - 1], fixed, horizontal, WINDOW_TOP, WALL_HEIGHT)
+	for i in range(0, cuts.size(), 2):
+		_wall_strip(cuts[i], cuts[i + 1], fixed, horizontal, WINDOW_SILL, WINDOW_TOP)
+	for i in count:
+		_window_pane((cuts[i * 2 + 1] + cuts[i * 2 + 2]) * 0.5, fixed, horizontal)
+	return true
+
+
+func _wall_strip(from: float, to: float, fixed: float, horizontal: bool, y0: float, y1: float) -> void:
+	var mid := (from + to) * 0.5
+	var length := to - from
+	var size := Vector3(length, y1 - y0, WALL_THICKNESS) if horizontal else Vector3(WALL_THICKNESS, y1 - y0, length)
+	var centre := Vector3(mid, _y + (y0 + y1) * 0.5, fixed) if horizontal \
+			else Vector3(fixed, _y + (y0 + y1) * 0.5, mid)
+	_box(_region, centre, size, _wall_material, true)
+
+
+## Glass and a cross-shaped frame. The glass casts no shadow, so the sun reaches the room.
+func _window_pane(along: float, fixed: float, horizontal: bool) -> void:
+	if _glass_material == null:
+		_glass_material = StandardMaterial3D.new()
+		_glass_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_glass_material.albedo_color = Color(0.75, 0.88, 1.0, 0.1)
+		_glass_material.roughness = 0.05
+		_glass_material.metallic_specular = 1.0
+		_frame_material = _make_material(Color(0.22, 0.2, 0.18), 0.6)
+	var height := WINDOW_TOP - WINDOW_SILL
+	var y := _y + (WINDOW_SILL + WINDOW_TOP) * 0.5
+	var pane := Node3D.new()
+	pane.position = Vector3(along, y, fixed) if horizontal else Vector3(fixed, y, along)
+	pane.rotation.y = 0.0 if horizontal else PI * 0.5
+	add_child(pane)
+	var parts := [
+		[Vector3(WINDOW_WIDTH, height, 0.02), Vector3.ZERO, _glass_material],
+		[Vector3(0.05, height, 0.05), Vector3.ZERO, _frame_material],
+		[Vector3(WINDOW_WIDTH, 0.05, 0.05), Vector3.ZERO, _frame_material],
+		[Vector3(WINDOW_WIDTH, 0.06, 0.12), Vector3(0.0, -height * 0.5, 0.0), _frame_material],
+	]
+	for part: Array in parts:
+		var mesh := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = part[0]
+		mesh.mesh = box
+		mesh.position = part[1]
+		mesh.material_override = part[2]
+		if part[2] == _glass_material:
+			mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		pane.add_child(mesh)
 
 
 ## `closed` (demo): the door is locked for good, or a doorless opening gets a solid DemoBarrier. Either way the
