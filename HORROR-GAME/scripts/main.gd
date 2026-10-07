@@ -52,6 +52,8 @@ const OUTWARD := {"N": Vector2(0, -1), "S": Vector2(0, 1), "W": Vector2(-1, 0), 
 ## Open rooms that never hold the red room or a note: the fixed story rooms and the lesson rooms.
 const RESERVED_ROOMS := ["5", "14", "24", "33", "229", "205", "GT8", "114", "23", "113", "28", "109", "121", "GT11-12", "GT2"]
 
+const CLASS_OPEN_EARLY := 5.0   ## Game minutes before the bell that the teacher opens the classroom.
+
 const AFTER_HOURS_ROOMS := [[2, "205"], [2, "GT8"], [1, "114"]]   ## One per day: locked until the last bell.
 ## Useful items on corner tables (same spot rule as the finds: `FindsScript.spot_position`), in open rooms only.
 ## 129 uses slot 2: its slot 1 holds the "Diary 2" find.
@@ -106,6 +108,7 @@ var ending_screen := EndingScreen.new()
 var profile := preload("res://scripts/profile.gd").new()
 var achievements := preload("res://scripts/achievements.gd").new()
 var choice_ui := preload("res://scripts/choice_ui.gd").new()
+var answer_sheet := preload("res://scripts/answer_sheet.gd").new()
 var lesson_ui := preload("res://scripts/lesson_ui.gd").new()
 
 var _menu_camera := Camera3D.new()
@@ -166,6 +169,9 @@ var _strange_object: Node3D                 ## Cracked object in Lab 14 (from da
 var _lab_fire: OmniLight3D                  ## Flickering glow in the wrecked lab on day 1 after the blast.
 var _vial: Node3D                         ## Holy water: needs the hunt and the fuse.
 var _room_doors := {}                     ## "floor:label" -> Door
+var _room_panels := {}                    ## "floor:label" -> every panel Door of the room (a classroom can have two).
+var _class_open := {}                     ## Classroom label -> its teacher has opened it for the lesson.
+var _class_timer := 0.0
 var csoki: Node         ## The caretaker's dog; lives in the ground-floor hall all week.
 var _last_door: Node
 var _patrol_markers: Array[Marker3D] = []
@@ -220,7 +226,10 @@ func _ready() -> void:
 	add_child(campaign)
 	add_child(ending_screen)
 	add_child(choice_ui)
+	add_child(answer_sheet)
 	lesson_ui.choice_ui = choice_ui
+	lesson_ui.sheet = answer_sheet
+	lesson_ui.typed = not XRManager.is_xr_active()
 	add_child(lesson_ui)
 	daynight.environment = $WorldEnvironment.environment
 	quest.player = player
@@ -254,6 +263,7 @@ func _ready() -> void:
 	add_child(dream)
 	porta.campaign = campaign
 	porta.player = player
+	porta.room_closed = _is_room_closed
 	add_child(porta)
 	tasks.porta = porta
 	tasks.finds = finds
@@ -268,6 +278,7 @@ func _ready() -> void:
 	for i in FloorData.FLOORS.size():
 		_build_floor(FloorData.FLOORS[i], i, stair_holes)
 	_build_stairs()
+	_setup_classrooms()
 	_place_story_objects()
 	_set_story_active(false)
 	var tables: Array[Vector3] = _clue_spots.duplicate()
@@ -340,6 +351,10 @@ func _stop_title_scene() -> void:
 
 func _process(delta: float) -> void:
 	_hud_timer -= delta
+	_class_timer -= delta
+	if _class_timer <= 0.0:
+		_class_timer = 0.5
+		_update_classrooms()
 	_front_door.prompt = "Go home (next day)" if campaign.day <= CampaignScript.LAST_SCHOOL_DAY 			and daynight.minutes >= CampaignScript.LAST_BELL else "Run away (ends the run)"
 	var floor_now := clampi(roundi(player.global_position.y / FLOOR_HEIGHT), 0, FLOOR_NAMES.size() - 1)
 	if floor_now != _floor_index or _hud_timer <= 0.0:
@@ -356,7 +371,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G and not menu.is_open():
 		_open_accusation()
-	elif event.is_action_pressed(&"ui_cancel") and not _game_over and not menu.is_open() and not choice_ui.visible:
+	elif event.is_action_pressed(&"ui_cancel") and not _game_over and not menu.is_open() and not choice_ui.visible \
+			and not lesson_ui.visible:
 		get_tree().paused = true
 		_hud_layer.visible = false
 		menu.show_pause()
@@ -569,6 +585,7 @@ func _on_ending(id: int) -> void:
 	if _code_open:
 		_close_code_lock()
 	choice_ui.close()
+	answer_sheet.close()
 	entity.sleep()
 	player.controls_enabled = false
 	ending_screen.show_ending(id, campaign.stats())
@@ -587,6 +604,7 @@ func _on_day_started(day: int) -> void:
 		old.queue_free()
 	var card_was_valid: bool = porta.card_valid
 	porta.on_day_started(day)
+	_reset_classrooms()
 	if day >= 2:
 		if _lab_fire:
 			_lab_fire.queue_free()
@@ -710,7 +728,7 @@ func _open_porter_menu(_by: Node) -> void:
 		_show_message("Mr. Bakó is asleep at his desk, snoring softly.")
 		return
 	_open_porta("porta_menu", "Porta", "Mr. Bakó looks up from his newspaper.",
-			["Ask for a key", "Tell him there is a leak in the WC", "Chat", "Ask for the sticker", "Leave"])
+			["Ask for a key", "Tell him there is a leak in the WC", "Chat", "Ask for the sticker", "Return the key", "Leave"])
 
 
 func _open_key_board(_by: Node) -> void:
@@ -757,6 +775,8 @@ func _on_porta_choice(index: int) -> void:
 					_show_message("Mr. Bakó: " + _porter_chat())
 				3:
 					_show_message("Mr. Bakó: " + porta.ask_sticker())
+				4:
+					_show_message("Mr. Bakó: " + porta.return_key())
 		"porta_keys":
 			if index < _porta_labels.size():
 				_show_message("Mr. Bakó: " + porta.ask_key(_porta_labels[index]))
@@ -858,6 +878,67 @@ func _on_bell(kind: String, index: int) -> void:
 				_show_message("Last bell. Go home through the front door, or stay and risk it.", 6.0)
 		"caretaker":
 			_spawn_caretaker()
+
+
+## Classrooms are locked all day. Their teacher opens each one CLASS_OPEN_EARLY minutes before the lesson and locks it
+## after, once the player is out of it (never locked in). A key opens one earlier; closing it with the key locks it.
+func _setup_classrooms() -> void:
+	for subject: String in Lessons.SUBJECTS:
+		for door: Node in _room_panels.get("%d:%s" % [Lessons.floor_of(subject), Lessons.room_of(subject)], []):
+			door.lock_key = PortaScript.key_item(Lessons.room_of(subject))
+			door.key_id = door.lock_key
+			door.locked = true
+
+
+func _reset_classrooms() -> void:
+	_class_open.clear()
+	for subject: String in Lessons.SUBJECTS:
+		var message := "Locked. Ask Mr. Bakó at the Porta for the key."
+		if campaign.day <= CampaignScript.LAST_SCHOOL_DAY:
+			message = "Locked. The teacher opens it at %s. Mr. Bakó at the Porta has a key." % CampaignScript.fmt(
+					CampaignScript.lesson_start(Lessons.lesson_of(subject, campaign.day)) - CLASS_OPEN_EARLY)
+		_set_classroom(subject, false, message)
+
+
+func _update_classrooms() -> void:
+	if campaign.day > CampaignScript.LAST_SCHOOL_DAY:
+		return
+	var m: float = daynight.minutes
+	for subject: String in Lessons.SUBJECTS:
+		var lesson := Lessons.lesson_of(subject, campaign.day)
+		var want := m >= CampaignScript.lesson_start(lesson) - CLASS_OPEN_EARLY and m < CampaignScript.lesson_end(lesson)
+		var room := Lessons.room_of(subject)
+		var is_open: bool = _class_open.get(room, false)
+		if want and not is_open:
+			_class_open[room] = true
+			_set_classroom(subject, true)
+		elif not want and is_open and not _player_in_room(subject):
+			_class_open[room] = false
+			_set_classroom(subject, false)
+
+
+func _set_classroom(subject: String, open: bool, message := "") -> void:
+	for door: Node in _room_panels.get("%d:%s" % [Lessons.floor_of(subject), Lessons.room_of(subject)], []):
+		if open:
+			door.locked = false
+			door.set_open(true)
+		else:
+			door.set_open(false)
+			door.locked = true
+			if message != "":
+				door.locked_message = message
+
+
+## Porta rule: the key only goes back once the room's door is closed (and, for a classroom, locked).
+func _is_room_closed(label: String) -> bool:
+	var wanted := quest.red_room_label if label == PortaScript.RED else label
+	for key: String in _room_panels:
+		if key.substr(key.find(":") + 1) != wanted:
+			continue
+		for door: Node in _room_panels[key]:
+			if door.is_open or (door.lock_key != "" and not door.locked):
+				return false
+	return true
 
 
 func _run_encounter(break_index: int) -> void:
@@ -1068,6 +1149,10 @@ func _wall_with_door(a: Vector2, b: Vector2, side: String, centre: Vector2, labe
 	door.rotation.y = 0.0 if along_x else -PI * 0.5
 	add_child(door)
 	_last_door = door
+	var panel_key := "%d:%s" % [_floor_i, label]
+	if not _room_panels.has(panel_key):
+		_room_panels[panel_key] = []
+	_room_panels[panel_key].append(door)
 	if locked and not closed:
 		door.unlocked.connect(func() -> void:
 			quest.red_room_opened = true

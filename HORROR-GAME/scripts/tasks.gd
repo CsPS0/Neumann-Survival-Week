@@ -41,6 +41,8 @@ func lines(day: int) -> Array[String]:
 		if porta != null and not porta.card_valid:
 			out.append("[!] Card expired: the porter lends nothing")
 		out.append("%s Find out what happened in Lab 14" % _mark("lab"))
+	if porta != null and porta.key_line() != "":
+		out.append(porta.key_line())
 	return out
 
 

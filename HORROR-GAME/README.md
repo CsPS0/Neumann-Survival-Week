@@ -44,7 +44,7 @@ Notes:
 
 ## The five-day campaign
 
-- **Days 1 to 3: school days.** The day opens at 06:00. Bells ring for 7 lessons. Walk to the right room in time and answer a 3-question quiz. Skip 6 lessons and you are expelled. After the last bell you go home through the front door, or stay and risk the caretaker.
+- **Days 1 to 3: school days.** The day opens at 06:00. Bells ring for 7 lessons. Walk to the right room in time and answer a 3-question quiz on a paper answer sheet. Skip 6 lessons and you are expelled. After the last bell you go home through the front door, or stay and risk the caretaker.
 - **Day 1: the explosion.** The morning is calm. After the third lesson Lab 14 explodes, the alarm rings and everyone is sent home. You choose: go home, or stay and find out what happened. The lab door is blown open until the next morning, but the caretaker patrols.
 - **Day 2 onwards: the outbreak.** The chemistry club's strange object has cracked and something left it. Some teachers and students fall ill (green skin, coughing, slumped at their desks). The teacher who hosts the demon never falls ill. Lab 14 is sealed again and the cracked object sits on its table.
 - **Day 3: test day and the haunting.** Every lesson is a 4-question test. The new student card is handed out at the Porta today and expires at midnight. The demon starts to prank you: flickering lights, a knock, a slammed door, a whisper and a short blackout flash. None of it hurts you.
@@ -55,9 +55,17 @@ Notes:
 
 ### Lessons and quizzes
 
-Seven subjects (Maths, Literature, Programming, Physics, History, English, Networks), each with its own room, teacher and question pool. The timetable changes every school day. Your quiz score counts towards the best ending.
+Seven subjects (Maths, Literature, Programming, Physics, History, English, Networks), each with its own room, teacher and question pool. The timetable changes every school day. You type each answer on the sheet and press Enter. Case, spaces and accents do not matter, and some questions accept more than one wording. Decisions (the accusation, the altar, the Porta lists) still use the numbered choice list, and VR keeps the choice list for quiz questions too. Your quiz score counts towards the best ending.
 
-### Deduction
+### Classrooms and keys
+
+The seven lesson classrooms are locked all day. The teacher opens each one 5 minutes before its lesson and locks it again after the lesson, once you are out of it. On hunt days they stay locked. To get in at another time, ask the porter for a key:
+
+- You sign for the key and the porter writes down the time.
+- You hold one signed key at a time. Bring it back before you ask for another.
+- Close the room before you hand the key back. With the key in your pocket, closing an open classroom door also locks it.
+- The porter never lends key 14.
+
 
 One of eight invented teachers is the entity, picked at random each run. Teachers talk when you press E. Clues hidden around the school each point to exactly one teacher, and the culprit lets more strange lines slip each day. Read the clues on your phone, then press G to accuse.
 
@@ -78,7 +86,7 @@ On day 5 the altar also offers a deal with the demon.
 - **Teachers:** follow daily routines, stand in their rooms during lessons and leave the building at dusk. Background teachers fill the corridors on school days.
 - **The caretaker:** patrols after hours. If he catches you, you are expelled.
 - **Csoki:** the caretaker's dog. It barks when the entity or the caretaker is near. A dog biscuit makes it follow you.
-- **The porter:** stands behind the Porta desk, lends keys and checks student cards.
+- **The porter:** stands behind the Porta desk, lends keys against a signature, takes them back once the room is closed, and checks student cards.
 - **Students:** a crowd sits in classrooms during lessons and walks the corridors during breaks.
 
 All character names in the committed code are invented.
@@ -122,7 +130,7 @@ These features exist in the code but are early and untested on real hardware:
 | `scripts/player.gd` | First-person controller, flashlight, phone, interaction. |
 | `scripts/horror_entity.gd` | Entity AI: idle, patrol, chase, attack. |
 | `scripts/teacher_npc.gd`, `staff_manager.gd`, `caretaker.gd`, `porter.gd`, `csoki.gd`, `crowd.gd` | NPCs. |
-| `scripts/lessons.gd`, `lesson_ui.gd`, `clues.gd`, `endings.gd` | Game data and their UI. |
+| `scripts/lessons.gd`, `lesson_ui.gd`, `answer_sheet.gd`, `clues.gd`, `endings.gd` | Game data and their UI. The answer sheet is the paper the quiz answers are typed on. |
 | `scripts/floor_data.gd`, `rooms.gd`, `furniture.gd`, `textures.gd`, `sound_bank.gd` | World, materials and procedural sound. |
 | `scripts/menu.gd`, `settings_ui.gd`, `profile.gd`, `achievements.gd` | Menus, settings and saved profile. |
 | `scripts/staff_source.gd` | Loads the gitignored `scripts/staff.gd` when present, else the committed placeholder. |
