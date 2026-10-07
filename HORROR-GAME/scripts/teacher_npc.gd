@@ -29,8 +29,20 @@ var _wait := 0.0
 var _leaving := false
 var _line := -1
 var _swing := 0.0
-var _arms: Array[Node3D] = []
-var _legs: Array[Node3D] = []
+var _arms: Array[Node3D] = []   ## Shoulder pivots (the dog in csoki.gd reuses _legs for its four legs).
+var _legs: Array[Node3D] = []   ## Hip pivots.
+var _knees: Array[Node3D] = []
+var _elbows: Array[Node3D] = []
+var _eyes: Array[Node3D] = []
+var _hips: Node3D
+var _upper: Node3D
+var _head_node: Node3D
+var _amp := 0.0                 ## Smoothed walk amount, 0 = standing, 1 = normal walk.
+var _phase := 0.0               ## Walk cycle angle.
+var _clock := 0.0
+var _stoop := 0.0               ## Forward lean in radians (ill teachers).
+var _blink := 3.0
+var _look_seed := 0.0
 var _step_accum := 0.0
 var _footsteps := AudioStreamPlayer3D.new()
 var _ready_to_walk := false
@@ -50,8 +62,11 @@ func _ready() -> void:
 		gender = Staff.gender_of(npc_name)
 	_build_body()
 	if sick:
-		get_node("Rig").rotation.x = deg_to_rad(10.0)   # Stooped.
+		_stoop = deg_to_rad(14.0)   # Stooped.
 		_cough = randf_range(2.0, 8.0)
+	_clock = randf() * 20.0
+	_look_seed = randf() * TAU
+	_blink = randf_range(1.5, 5.0)
 
 	var shape := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
@@ -182,13 +197,50 @@ func _open_nearby_doors() -> void:
 			door.set_open(true)
 
 
+## Walk cycle with smooth blending: the walk amount eases in and out, so starting, stopping and the speed change
+## to a chase never snap. Standing has its own idle motion (breathing, weight shift, glances, blinking).
 func _animate(delta: float, speed: float) -> void:
-	_swing += delta * speed * 4.0
-	var amount := minf(speed / 1.5, 1.5)
-	for i in _arms.size():
-		_arms[i].rotation.x = sin(_swing + i * PI) * 0.6 * amount
-	for i in _legs.size():
-		_legs[i].rotation.x = sin(_swing + i * PI + PI) * 0.6 * amount
+	if _hips == null:   # Not a person (the dog in csoki.gd): plain leg swing.
+		_swing += delta * speed * 4.0
+		var plain := minf(speed / 1.5, 1.5)
+		for i in _arms.size():
+			_arms[i].rotation.x = sin(_swing + i * PI) * 0.6 * plain
+		for i in _legs.size():
+			_legs[i].rotation.x = sin(_swing + i * PI + PI) * 0.6 * plain
+		_step_sound(speed, delta)
+		return
+	_clock += delta
+	var ease_rate := 1.0 - exp(-7.0 * delta)
+	_amp = lerpf(_amp, minf(speed / 1.5, 1.8), ease_rate)
+	_phase += delta * (0.5 + _amp) * 4.6 * (1.0 if speed > 0.05 else 0.0)
+	var walk := clampf(_amp, 0.0, 1.0)
+	var run := clampf(_amp - 1.0, 0.0, 0.8)
+	var swing := (0.5 + 0.2 * run) * minf(_amp, 1.6)
+	for i in 2:
+		var side := PI * i
+		_legs[i].rotation.x = sin(_phase + side) * swing
+		_knees[i].rotation.x = -(maxf(cos(_phase + side), 0.0) * (0.55 + 0.5 * run) * walk + 0.04)
+		_arms[i].rotation.x = -sin(_phase + side) * swing * 0.8 + sin(_clock * 1.3 + i) * 0.015 * (1.0 - walk)
+		_arms[i].rotation.z = (0.05 + 0.03 * sin(_clock * 0.9 + i)) * (1.0 if i == 1 else -1.0)
+		_elbows[i].rotation.x = 0.18 + walk * 0.25 + run * 0.7 + (0.2 if sick else 0.0)
+	var idle := 1.0 - walk
+	_hips.rotation.y = -sin(_phase) * 0.12 * walk
+	_upper.rotation.y = sin(_phase) * 0.1 * walk
+	_upper.rotation.x = -(_stoop + 0.22 * run + 0.02 * sin(_clock * 1.6) * idle)
+	_upper.scale.y = 1.0 + sin(_clock * 1.7) * 0.006 * idle
+	get_node("Rig").position.y = (cos(_phase * 2.0) * 0.016 * walk) - 0.004 * idle
+	get_node("Rig").rotation.z = sin(_clock * 0.45 + _look_seed) * 0.018 * idle   # Weight shift.
+	_head_node.rotation.y = sin(_clock * 0.35 + _look_seed) * 0.35 * idle + sin(_phase) * -0.05 * walk
+	_head_node.rotation.x = sin(_clock * 0.5 + _look_seed * 2.0) * 0.06 + (0.18 if sick else 0.0)
+	_blink -= delta
+	for eye in _eyes:
+		eye.scale.y = 0.12 if _blink < 0.1 else 1.0
+	if _blink < 0.0:
+		_blink = randf_range(2.0, 5.5)
+	_step_sound(speed, delta)
+
+
+func _step_sound(speed: float, delta: float) -> void:
 	_step_accum += speed * delta
 	if _step_accum > 1.2:
 		_step_accum = 0.0
@@ -197,7 +249,8 @@ func _animate(delta: float, speed: float) -> void:
 		_footsteps.play()
 
 
-## Male or female body and a procedural face, all seeded from the name (no photos, no textures).
+## Body, clothes and a procedural face, all seeded from the name (no photos, no textures). Parts are layered:
+## pelvis and legs (trousers or skirt), torso (shirt, optional jacket, collar, tie), arms with elbows, neck and head.
 func _build_body() -> void:
 	var face := face_params(npc_name, gender)
 	if sick:
@@ -205,40 +258,76 @@ func _build_body() -> void:
 	var female := gender == "f"
 	var skin := _material(face["skin"])
 	var shirt := _material(shirt_colour)
+	var top := _material(face["jacket_colour"]) if face["jacket"] else shirt
 	var trousers := _material(face["trousers"])
+	var shoes := _material(face["shoe"])
 	var hair := _material(face["hair"])
-	var rig := Node3D.new()   # Women are drawn at 0.95x; the collision capsule stays the same.
+	var rig := Node3D.new()   # The collision capsule stays the same whatever the height and build.
 	rig.name = "Rig"
-	rig.scale = Vector3.ONE * (0.95 if female else 1.0)
+	var height: float = face["height"] * (0.95 if female else 1.0)
+	rig.scale = Vector3(face["build"] * height, height, face["build"] * height)
 	add_child(rig)
 
-	var half := 0.18 if female else 0.21
+	var half := 0.17 if female else 0.2
+	var depth := 0.2 if female else 0.22
+	_hips = Node3D.new()
+	_hips.name = "Hips"
+	_hips.position = Vector3(0.0, 0.92, 0.0)
+	rig.add_child(_hips)
+	_box(_hips, Vector3(half * 1.7 if female else half * 1.55, 0.2, depth * 0.95), Vector3.ZERO, trousers)
+	if face["skirt"]:
+		_cylinder(_hips, 0.17, 0.5, Vector3(0, -0.22, 0), _material(face["skirt_colour"]), 0.27).name = "Skirt"
 	for side in [-1.0, 1.0]:
 		var leg := Node3D.new()
-		leg.position = Vector3(0.09 * side, 0.85, 0.0)
-		rig.add_child(leg)
-		_cylinder(leg, 0.065, 0.85, Vector3(0, -0.425, 0), trousers)
+		leg.position = Vector3(0.085 * side, -0.02, 0.0)
+		_hips.add_child(leg)
+		_cylinder(leg, 0.08, 0.46, Vector3(0, -0.23, 0), skin if face["skirt"] else trousers, 0.062)
+		var knee := Node3D.new()
+		knee.position = Vector3(0, -0.46, 0)
+		leg.add_child(knee)
+		_cylinder(knee, 0.058, 0.42, Vector3(0, -0.2, 0), skin if face["skirt"] else trousers, 0.044)
+		_box(knee, Vector3(0.095, 0.07, 0.27), Vector3(0, -0.405, -0.05), shoes)
 		_legs.append(leg)
+		_knees.append(knee)
 
-		var arm := Node3D.new()
-		arm.position = Vector3((half + 0.02) * side, 1.5, 0.0)
-		rig.add_child(arm)
-		_cylinder(arm, 0.04, 0.6, Vector3(0, -0.3, 0), shirt)
-		_sphere(arm, 0.05, Vector3(0, -0.62, 0), skin)
-		_arms.append(arm)
-
-	_box(rig, Vector3(half * 2.0, 0.62, 0.2 if female else 0.22), Vector3(0.0, 1.2, 0.0), shirt).name = "Torso"
-	if face["skirt"]:
-		_cylinder(rig, 0.17, 0.5, Vector3(0, 0.68, 0), _material(face["skirt_colour"]), 0.27).name = "Skirt"
+	_upper = Node3D.new()
+	_upper.name = "Upper"
+	_upper.position = Vector3(0.0, 0.92, 0.0)
+	rig.add_child(_upper)
+	_box(_upper, Vector3(half * 1.72, 0.22, depth * 0.95), Vector3(0, 0.11, 0.0), top)
+	_box(_upper, Vector3(half * 2.0, 0.4, depth), Vector3(0, 0.37, 0.0), top).name = "Torso"
+	var front := -(depth * 0.5)
+	if face["jacket"]:
+		_box(_upper, Vector3(0.11, 0.34, 0.012), Vector3(0, 0.34, front - 0.002), shirt, false)   # Shirt under the open jacket.
+	_box(_upper, Vector3(0.13, 0.035, 0.1), Vector3(0, 0.575, front * 0.4), shirt, false)         # Collar.
 	if face["tie"]:
-		_box(rig, Vector3(0.05, 0.36, 0.012), Vector3(0, 1.3, -0.115), _material(face["tie_colour"]), false)
-	_cylinder(rig, 0.05, 0.1, Vector3(0, 1.55, 0), skin)
+		_box(_upper, Vector3(0.05, 0.3, 0.012), Vector3(0, 0.36, front - 0.012), _material(face["tie_colour"]), false)
+	for side in [-1.0, 1.0]:
+		_sphere(_upper, 0.058, Vector3((half + 0.012) * side, 0.54, 0.0), top)
+		var arm := Node3D.new()
+		arm.position = Vector3((half + 0.05) * side, 0.52, 0.0)
+		_upper.add_child(arm)
+		_cylinder(arm, 0.047, 0.3, Vector3(0, -0.15, 0), top, 0.038)
+		var elbow := Node3D.new()
+		elbow.position = Vector3(0, -0.3, 0)
+		arm.add_child(elbow)
+		_cylinder(elbow, 0.037, 0.26, Vector3(0, -0.13, 0), top if face["jacket"] else shirt, 0.031)
+		_sphere(elbow, 0.036, Vector3(0, -0.29, 0), skin).scale = Vector3(0.9, 1.15, 0.7)
+		_arms.append(arm)
+		_elbows.append(elbow)
+	_cylinder(_upper, 0.05, 0.1, Vector3(0, 0.63, 0), skin)
+
+	_head_node = Node3D.new()
+	_head_node.name = "Head"
+	_head_node.position = Vector3(0, 0.79, 0.0)
+	_upper.add_child(_head_node)
 	var head := Node3D.new()
-	head.name = "Head"
-	head.position = Vector3(0, 1.68, 0)
 	head.scale = Vector3(face["width"], 1.0, 1.0)
-	rig.add_child(head)
-	_sphere(head, 0.12, Vector3.ZERO, skin)
+	_head_node.add_child(head)
+	_sphere(head, 0.11, Vector3.ZERO, skin).scale = Vector3(1.0, 1.14, 1.02)
+	_sphere(head, 0.082, Vector3(0, -0.07, -0.028), skin).scale = Vector3(1.0, 0.8, 1.0)   # Jaw and chin.
+	for side in [-1.0, 1.0]:
+		_sphere(head, 0.026, Vector3(0.108 * side, -0.005, 0.0), skin, false).scale = Vector3(0.45, 1.0, 0.8)   # Ears.
 	_build_face(head, face, hair)
 
 
@@ -248,29 +337,38 @@ func _build_face(head: Node3D, face: Dictionary, hair: Material) -> void:
 	var pupil := _material(face["eyes"])
 	var dark := _material(Color(0.08, 0.07, 0.07))
 	for side in [-1.0, 1.0]:
-		_sphere(head, 0.026, Vector3(0.042 * side, 0.02, -0.1), white, false)
-		_sphere(head, 0.013, Vector3(0.042 * side, 0.02, -0.119), pupil, false)
-		_box(head, Vector3(0.05, face["brow"], 0.014), Vector3(0.042 * side, 0.056, -0.108), hair, false)
+		var eye := Node3D.new()
+		eye.position = Vector3(0.04 * side, 0.02, -0.092)
+		head.add_child(eye)
+		_eyes.append(eye)
+		_sphere(eye, 0.024, Vector3.ZERO, white, false)
+		_sphere(eye, 0.012, Vector3(0, 0, -0.018), pupil, false)
+		_box(head, Vector3(0.05, face["brow"], 0.014), Vector3(0.04 * side, 0.055, -0.099), hair, false)
 		if face["glasses"]:
-			var ring := _torus(head, 0.027, 0.033, Vector3(0.042 * side, 0.02, -0.13), dark)
+			var ring := _torus(head, 0.027, 0.033, Vector3(0.04 * side, 0.02, -0.12), dark)
 			ring.rotation.x = PI * 0.5
 	if face["glasses"]:
-		_box(head, Vector3(0.024, 0.006, 0.006), Vector3(0, 0.024, -0.13), dark, false)
+		_box(head, Vector3(0.024, 0.006, 0.006), Vector3(0, 0.024, -0.12), dark, false)
 	var skin: Color = face["skin"]
-	_box(head, Vector3(0.024, 0.045, 0.03), Vector3(0, -0.005, -0.125), _material(skin.darkened(0.08)), false)
-	_box(head, Vector3(0.05, 0.012, 0.01), Vector3(0, -0.05, -0.112), _material(Color(0.5, 0.18, 0.17)), false)
+	_box(head, Vector3(0.022, 0.045, 0.03), Vector3(0, -0.008, -0.113), _material(skin.darkened(0.08)), false)
+	_box(head, Vector3(0.05, 0.011, 0.01), Vector3(0, -0.05, -0.1), _material(Color(0.5, 0.18, 0.17)), false)
 	if face["moustache"]:
-		_box(head, Vector3(0.06, 0.016, 0.02), Vector3(0, -0.032, -0.116), hair, false)
+		_box(head, Vector3(0.06, 0.016, 0.02), Vector3(0, -0.032, -0.104), hair, false)
 	if face["beard"]:
-		_sphere(head, 0.09, Vector3(0, -0.095, -0.04), hair).scale = Vector3(1.0, 0.75, 0.9)
-	_sphere(head, 0.125, Vector3(0, 0.055, 0.03), hair).scale = Vector3(1.04, 0.72, 1.0)
+		_sphere(head, 0.085, Vector3(0, -0.09, -0.035), hair).scale = Vector3(1.0, 0.75, 0.9)
+	if face["style"] == "bald":
+		for side in [-1.0, 1.0]:
+			_box(head, Vector3(0.02, 0.07, 0.11), Vector3(0.1 * side, 0.0, 0.03), hair, false)
+		_box(head, Vector3(0.19, 0.06, 0.04), Vector3(0, 0.0, 0.092), hair, false)
+		return
+	_sphere(head, 0.118, Vector3(0, 0.05, 0.024), hair).scale = Vector3(1.04, 0.74, 1.0)
 	match face["style"]:
 		"long":
-			_box(head, Vector3(0.24, 0.34, 0.08), Vector3(0, -0.1, 0.08), hair)
+			_box(head, Vector3(0.22, 0.34, 0.08), Vector3(0, -0.1, 0.08), hair)
 		"bun":
-			_sphere(head, 0.06, Vector3(0, 0.07, 0.13), hair)
+			_sphere(head, 0.06, Vector3(0, 0.07, 0.12), hair)
 		"short_f":
-			_sphere(head, 0.128, Vector3(0, 0.01, 0.04), hair).scale = Vector3(1.05, 0.8, 0.95)
+			_sphere(head, 0.12, Vector3(0, 0.01, 0.04), hair).scale = Vector3(1.05, 0.8, 0.95)
 
 
 const SKIN := [Color(0.96, 0.8, 0.69), Color(0.92, 0.74, 0.62), Color(0.86, 0.68, 0.56), Color(0.78, 0.6, 0.48),
@@ -278,6 +376,8 @@ const SKIN := [Color(0.96, 0.8, 0.69), Color(0.92, 0.74, 0.62), Color(0.86, 0.68
 const HAIR := [Color(0.07, 0.06, 0.05), Color(0.2, 0.13, 0.08), Color(0.38, 0.25, 0.14), Color(0.75, 0.62, 0.38),
 		Color(0.45, 0.18, 0.09), Color(0.6, 0.6, 0.58), Color(0.82, 0.82, 0.8)]
 const EYES := [Color(0.2, 0.12, 0.06), Color(0.25, 0.4, 0.55), Color(0.3, 0.38, 0.22), Color(0.1, 0.08, 0.06)]
+const SHOES := [Color(0.06, 0.05, 0.05), Color(0.2, 0.12, 0.07), Color(0.12, 0.12, 0.14)]
+const JACKETS := [Color(0.13, 0.14, 0.2), Color(0.25, 0.22, 0.18), Color(0.3, 0.3, 0.32), Color(0.2, 0.12, 0.14)]
 const TROUSERS := [Color(0.12, 0.12, 0.16), Color(0.2, 0.18, 0.15), Color(0.1, 0.13, 0.2)]
 
 
@@ -294,10 +394,15 @@ static func face_params(person: String, sex: String) -> Dictionary:
 		"width": rng.randf_range(0.9, 1.1),
 		"brow": rng.randf_range(0.009, 0.02),
 		"glasses": rng.randf() < 0.35,
+		"height": rng.randf_range(0.95, 1.06),
+		"build": rng.randf_range(0.93, 1.1),
+		"shoe": SHOES[rng.randi_range(0, SHOES.size() - 1)],
+		"jacket": rng.randf() < 0.45,
+		"jacket_colour": JACKETS[rng.randi_range(0, JACKETS.size() - 1)],
 	}
 	var roll := rng.randf()
 	var hue := rng.randf()
-	p["style"] = ["long", "bun", "short_f"][mini(int(roll * 3.0), 2)] if female else "short"
+	p["style"] = ["long", "bun", "short_f"][mini(int(roll * 3.0), 2)] if female else ("bald" if roll < 0.12 else "short")
 	p["skirt"] = female and rng.randf() < 0.5
 	p["skirt_colour"] = Color.from_hsv(hue, 0.35, 0.3)
 	p["tie"] = not female and rng.randf() < 0.5

@@ -9,6 +9,7 @@ const Lessons := preload("res://scripts/lessons.gd")
 const CampaignScript := preload("res://scripts/campaign.gd")
 const SoundBank := preload("res://scripts/sound_bank.gd")
 const Outbreak := preload("res://scripts/outbreak.gd")
+const StudentModel := preload("res://scripts/student_model.gd")
 
 const MAX_CROWD := 150
 const NEAR := 35.0           ## Only classrooms and corridors within this many metres (and one floor) are drawn.
@@ -30,8 +31,7 @@ var hidden := false:   ## True: draw nobody (scare flash).
 var avoid: Array[Vector3] = []   ## Table positions to keep seats away from (main's clue and find tables).
 var seats := {}   ## "floor:label" -> chairs of that classroom ({pos, yaw}), from main's furniture.
 
-var _body_mm := MultiMesh.new()
-var _head_mm := MultiMesh.new()
+var _body_mm := MultiMesh.new()   ## Body, clothes, head and hair in one mesh, animated by the shader.
 var _slots: Array[Dictionary] = []   ## {kind: "seat"|"flow", pos: Vector3, yaw: float, colour: Color, ...}
 var _drawn: Array[Dictionary] = []   ## The subset actually drawn this frame (counts read this).
 var _shown := 0
@@ -48,31 +48,16 @@ var _scream := AudioStreamPlayer3D.new()
 func _ready() -> void:
 	_body_mm.transform_format = MultiMesh.TRANSFORM_3D
 	_body_mm.use_colors = true
-	var body := CapsuleMesh.new()
-	body.radius = 0.2
-	body.height = 1.5
-	_body_mm.mesh = body
+	_body_mm.use_custom_data = true
+	_body_mm.mesh = StudentModel.mesh()
 	_body_mm.instance_count = MAX_CROWD
-	_head_mm.transform_format = MultiMesh.TRANSFORM_3D
-	var head := SphereMesh.new()
-	head.radius = 0.12
-	head.height = 0.24
-	_head_mm.mesh = head
-	_head_mm.instance_count = MAX_CROWD
-	var body_material := StandardMaterial3D.new()
-	body_material.vertex_color_use_as_albedo = true
-	body_material.roughness = 0.9
-	var head_material := StandardMaterial3D.new()
-	head_material.albedo_color = Color(0.8, 0.62, 0.52)
-	head_material.roughness = 0.9
-	for pair: Array in [[_body_mm, body_material], [_head_mm, head_material]]:
-		var instance := MultiMeshInstance3D.new()
-		instance.multimesh = pair[0]
-		instance.material_override = pair[1]
-		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(instance)
+	var instance := MultiMeshInstance3D.new()
+	instance.multimesh = _body_mm
+	instance.material_override = StudentModel.material()
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	instance.custom_aabb = AABB(Vector3(-200.0, -20.0, -200.0), Vector3(400.0, 60.0, 400.0))
+	add_child(instance)
 	_body_mm.visible_instance_count = 0
-	_head_mm.visible_instance_count = 0
 	_scream.max_distance = 40.0
 	add_child(_scream)
 
@@ -170,6 +155,8 @@ func _seat_class(id: String, room: Array) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(id)
 	var list: Array[Dictionary] = []
+	var look := RandomNumberGenerator.new()   # Own generator: the look never shifts the colours and sick rolls above.
+	look.seed = hash([id, "look"])
 	var chairs: Array = seats.get("%d:%s" % [room[0], room[1]], [])
 	for chair: Dictionary in chairs.slice(0, wanted):
 		var colour := _shirt(rng)
@@ -177,7 +164,8 @@ func _seat_class(id: String, room: Array) -> void:
 		if ill:
 			colour = colour.lerp(Color(0.6, 0.75, 0.55), 0.6)
 		if not _blocked(chair["pos"]):
-			list.append({"kind": "seat", "pos": chair["pos"], "yaw": chair["yaw"], "colour": colour, "sick": ill})
+			list.append({"kind": "seat", "pos": chair["pos"], "yaw": chair["yaw"], "colour": colour, "sick": ill,
+					"look": look.randf()})
 	if _slots.size() + list.size() <= MAX_CROWD:
 		_slots.append_array(list)
 
@@ -230,7 +218,8 @@ func _build_flow(density: float, seed_value: int) -> void:
 			var dir := 1.0 if rng.randf() < 0.5 else -1.0
 			_slots.append({"kind": "flow", "line": line, "s": rng.randf() * float(line["length"]),
 					"dir": dir, "speed": rng.randf_range(FLOW_SPEED.x, FLOW_SPEED.y),
-					"lane": dir * rng.randf_range(0.2, 0.6), "colour": _shirt(rng), "pos": Vector3.ZERO, "yaw": 0.0})
+					"lane": dir * rng.randf_range(0.2, 0.6), "colour": _shirt(rng), "pos": Vector3.ZERO, "yaw": 0.0,
+					"look": fposmod(float(hash([seed_value, _slots.size()])), 997.0) / 997.0})
 			_moving = true
 
 
@@ -299,17 +288,16 @@ func _apply(list: Array[Dictionary]) -> void:
 	for i in _shown:
 		var slot: Dictionary = list[i]
 		var pos: Vector3 = slot["pos"]
-		var facing := Basis(Vector3.UP, slot["yaw"])
+		var look: float = slot["look"]
+		var sick: bool = slot.get("sick", false)
+		var height := lerpf(0.92, 1.05, fposmod(look * 11.0, 1.0))
+		var basis := Basis(Vector3.UP, slot["yaw"]).scaled(Vector3(1.0, height, 1.0))
 		if slot["kind"] == "seat":
-			# On the chair seat (0.45 m): the shortened body from the seat up, the head above it.
-			_body_mm.set_instance_transform(i, Transform3D(facing.scaled(Vector3(1.0, 0.55, 1.0)), pos + Vector3(0.0, 0.86, 0.0)))
-			var head_at := pos + Vector3(0.0, 1.38, 0.0)
-			if slot.get("sick", false):
-				head_at = pos + Vector3(0.0, 1.2, 0.0) + facing * Vector3(0.0, 0.0, -0.15)   # Slumped over the desk.
-			_head_mm.set_instance_transform(i, Transform3D(facing, head_at))
+			# Hips on the chair seat (0.45 m): the model is 0.42 m lower and the shader folds the legs.
+			_body_mm.set_instance_transform(i, Transform3D(basis, pos + Vector3(0.0, -0.42 * height, 0.0)))
+			_body_mm.set_instance_custom_data(i, Color(look + (2.0 if sick else 0.0), 1.0, 0.0, 0.0))
 		else:
-			_body_mm.set_instance_transform(i, Transform3D(facing, pos + Vector3(0.0, 0.75, 0.0)))
-			_head_mm.set_instance_transform(i, Transform3D(facing, pos + Vector3(0.0, 1.62, 0.0)))
+			_body_mm.set_instance_transform(i, Transform3D(basis, pos))
+			_body_mm.set_instance_custom_data(i, Color(look, 0.0, look * TAU, slot["speed"]))
 		_body_mm.set_instance_color(i, slot["colour"])
 	_body_mm.visible_instance_count = _shown
-	_head_mm.visible_instance_count = _shown
