@@ -13,7 +13,7 @@ const RAISED_ROTATION := Vector3(-11.0, 9.0, 0.0)
 const SKIN := Color(0.72, 0.55, 0.47)
 
 var raised := false
-var page := 0                   ## 0 = map, 1 = tasks/timetable, 2 = clues, 3 = finds, 4 = neu_mecha.
+var page := 0                   ## 0 = map, 1 = tasks, 2 = clues, 3 = finds, 4 = neu_mecha, 5 = e-Kréten, 6 = Diákhirdetmények.
 
 var _map: Control
 var _viewport: SubViewport
@@ -83,14 +83,37 @@ func toggle() -> void:
 
 
 func toggle_page() -> void:
-	page = (page + 1) % 5
-	_map.page = page
+	page = (page + 1) % MapScript.PAGE_COUNT
+	_map.set_page(page)
 	_click.play()
 
 
+## Left / Right: the floor on the map, the section in e-Kréten, the list position on the notice board.
 func change_floor(delta: int) -> void:
-	_map.floor_view = clampi(_map.floor_view + delta, 0, 2)
+	match page:
+		0:
+			_map.reset_map(clampi(_map.floor_view + delta, 0, 2))
+		5:
+			_map.set_section(_map.section + delta)
+		6:
+			_map.scroll_by(delta)
 	_click.play()
+
+
+## Map: zoom in (factor above 1) or out. Other pages scroll their list one row, up for zoom in.
+func zoom(factor: float) -> void:
+	if page == 0:
+		_map.zoom_by(factor)
+	else:
+		_map.scroll_by(-1 if factor > 1.0 else 1)
+
+
+## I / J / K / L: pan the map, or scroll the list of the open page (up and down only).
+func move_view(dir: Vector2) -> void:
+	if page == 0:
+		_map.pan_by(dir)
+	elif dir.y != 0.0:
+		_map.scroll_by(int(signf(dir.y)))
 
 
 func set_raised(on: bool) -> void:
@@ -102,8 +125,8 @@ func set_raised(on: bool) -> void:
 		_tween.kill()
 	var torch := get_node_or_null("../Torch")
 	if on:
-		_map.floor_view = 0
-		_map.page = page
+		_map.reset_map(0)
+		_map.set_page(page)
 		_map.refresh_settings()
 		visible = true
 		_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS

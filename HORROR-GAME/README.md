@@ -27,8 +27,10 @@ Notes:
 | Mouse | Look |
 | F | Flashlight (battery-limited) |
 | Q | Phone |
-| Tab | Next phone page: map, tasks, clues, finds, neu_mecha |
-| Left / Right arrow | Switch the floor on the phone map |
+| Tab | Next phone app: map, tasks, clues, finds, neu_mecha, e-Kréten, Diákhirdetmények |
+| Left / Right arrow | Phone: floor on the map, section in e-Kréten, list position on the notice board |
+| + / - or mouse wheel | Phone: zoom the map (other apps: scroll the list) |
+| I, J, K, L | Phone: pan the zoomed map, scroll lists with I and K |
 | E | Interact: doors, items, teachers, lockers |
 | Space | Hold breath while hiding in a locker |
 | G | Name the entity (from day 4) |
@@ -109,6 +111,9 @@ All character names in the committed code are invented.
 
 - Achievements and seen endings, saved with your settings in `user://profile.cfg`.
 - Settings: volume, mouse sensitivity, field of view, brightness, easy map (shows your position on the phone map) and scare flashes.
+- The phone holds the tasks, so the HUD only shows the day, floor, time, battery and what is in your hand. The map zooms up to 6x and follows you when the easy map is on.
+- e-Kréten on the phone, a copy of the e-Kréta school system: today's timetable, grades from your quizzes and the day 3 test, absences and messages from the school. All data is invented.
+- Neumann Diákhirdetmények on the phone, a student notice board: lost items that hint where a collectible lies (marked found once you have it) and news that adds lore. New posts arrive every day.
 - The daily neu_mecha feed on the phone: each day a post hides a mecha chameleon somewhere in the school.
 - Hidden pages, secrets and cards to find (phone page "Finds").
 
@@ -132,6 +137,7 @@ These features exist in the code but are early and untested on real hardware:
 | `scripts/teacher_npc.gd`, `staff_manager.gd`, `caretaker.gd`, `porter.gd`, `csoki.gd`, `crowd.gd` | NPCs. |
 | `scripts/lessons.gd`, `lesson_ui.gd`, `answer_sheet.gd`, `clues.gd`, `endings.gd` | Game data and their UI. The answer sheet is the paper the quiz answers are typed on. |
 | `scripts/floor_data.gd`, `rooms.gd`, `furniture.gd`, `textures.gd`, `sound_bank.gd` | World, materials and procedural sound. |
+| `scripts/phone_viewmodel.gd`, `phone_map.gd`, `ekreta.gd`, `bulletin.gd` | The phone: its apps, map zoom, and the data behind e-Kréten and the notice board. |
 | `scripts/menu.gd`, `settings_ui.gd`, `profile.gd`, `achievements.gd` | Menus, settings and saved profile. |
 | `scripts/staff_source.gd` | Loads the gitignored `scripts/staff.gd` when present, else the committed placeholder. |
 | `scripts/net_session.gd`, `input_bridge.gd`, `touch_controls.gd`, `xr_manager.gd` | Co-op, touch and VR. |

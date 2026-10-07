@@ -60,6 +60,9 @@ var blackouts := 0
 var incident := false           ## True once the day-1 explosion has happened.
 var sick: Array[String] = []    ## npc ids of the teachers who are ill today (never the culprit).
 
+var grades: Array[Dictionary] = []     ## One entry per attended lesson: {day, lesson, subject, correct, total}. Read by e-Kréten.
+var absences: Array[Dictionary] = []   ## One entry per skipped lesson: {day, lesson, subject}.
+
 var _resolved: Array[bool] = []
 var _ended: Array[bool] = []
 var _last_bell_sent := false
@@ -187,6 +190,7 @@ func _tick_school(m: float) -> void:
 			if m >= lesson_start(i) + GRACE:
 				_resolved[i] = true
 				skipped += 1
+				absences.append({"day": day, "lesson": i, "subject": Lessons.subject_at(day, i)})
 				lesson_missed.emit(i)
 				stats_changed.emit()
 				if skipped >= SKIP_LIMIT:
@@ -232,6 +236,7 @@ func finish_lesson(i: int, correct: int, n: int) -> void:
 	attended += 1
 	right += correct
 	total += n
+	grades.append({"day": day, "lesson": i, "subject": Lessons.subject_at(day, i), "correct": correct, "total": n})
 	_day_attended += 1
 	_attended_today.append(i)
 	_day_perfect = _day_perfect and correct == n
@@ -372,6 +377,11 @@ func phone_lines() -> Array[String]:
 	lines.append("")
 	lines.append("skipped %d/%d   quiz %d/%d" % [skipped, SKIP_LIMIT, right, total])
 	return lines
+
+
+## Indices of today's lessons the player has attended.
+func attended_lessons() -> Array[int]:
+	return _attended_today.duplicate()
 
 
 func _next_lesson(m: float) -> int:

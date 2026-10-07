@@ -1817,7 +1817,7 @@ func _build_hud() -> void:
 	_hud.add_theme_color_override("font_shadow_color", Color.BLACK)
 	layer.add_child(_hud)
 
-	_stamina_bg.position = Vector2(16.0, 92.0)
+	_stamina_bg.position = Vector2(16.0, 64.0)
 	_stamina_bg.size = Vector2(160.0, 6.0)
 	_stamina_bg.color = Color(0.0, 0.0, 0.0, 0.5)
 	_stamina_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1861,8 +1861,10 @@ func _build_hud() -> void:
 
 func _update_hud() -> void:
 	var held := "phone" if player.phone.raised else ("flashlight" if player.flashlight.visible else "empty hands")
-	_hud.text = "Day %d  |  %s  |  %s  |  Battery %d%%  |  In hand: %s\nNext: %s\n[F] light   [Q] phone   [E] interact   [Shift] sprint   [Esc] pause" % [
-		campaign.day, FLOOR_NAMES[_floor_index], daynight.time_text(), roundi(_battery * 100.0), held, campaign.objective()]
+	# Tasks, the timetable and the objective live on the phone (Q, Tab): the HUD keeps what is needed to survive.
+	_hud.text = "Day %d  |  %s  |  %s  |  Battery %d%%  |  In hand: %s\n[F] light   [Q] phone: tasks, map, e-Kréten   [E] interact   [Shift] sprint%s   [Esc] pause" % [
+		campaign.day, FLOOR_NAMES[_floor_index], daynight.time_text(), roundi(_battery * 100.0), held,
+		"   [G] name the entity" if campaign.day > campaign.LAST_SCHOOL_DAY else ""]
 
 
 func _show_message(text: String, seconds := -1.0) -> void:
