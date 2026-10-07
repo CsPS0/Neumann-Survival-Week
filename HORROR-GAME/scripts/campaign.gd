@@ -23,6 +23,7 @@ const LESSONS := 7
 const GRACE := 2.0
 const LAST_BELL := 825.0
 const CARETAKER_DELAY := 30.0
+const NIGHT_FALL := 1080.0
 const NIGHT_OWL := 1080.0
 const CLOSING := 1320.0
 const LAST_SCHOOL_DAY := 3
@@ -35,6 +36,7 @@ const PACE_PRE := 0.5
 const PACE_BREAK := 0.133
 const PACE_SKIPPED := 1.0
 const PACE_FREE := 2.0
+const PACE_HUNT := {4: 3.0, 5: 4.0}   ## Hunt days run faster until nightfall: less time to collect proof.
 const ENCOUNTERS := {
 	1: {1: "glimpse", 4: "glimpse"},
 	2: {0: "glimpse", 2: "chase", 3: "glimpse", 5: "chase"},
@@ -115,6 +117,8 @@ func _pace(phase: String, m := 0.0) -> float:
 		"lesson":
 			var i := lesson_at(m)
 			return PACE_BREAK if i >= 0 and not _resolved[i] and m < lesson_start(i) + GRACE else PACE_SKIPPED
+	if phase == "hunt" and m < NIGHT_FALL:
+		return PACE_HUNT.get(day, PACE_FREE)
 	return PACE_FREE
 
 
@@ -272,7 +276,11 @@ func accuse(id: String) -> bool:
 	return true
 
 
-func ritual_completed() -> void:
+## `destroy`: the possessed teacher is destroyed with the demon instead of being cured.
+func ritual_completed(destroy := false) -> void:
+	if destroy:
+		_end(9)
+		return
 	_end(4 if quiz_ratio() >= 0.8 and clues.size() >= 9 else 2)
 
 

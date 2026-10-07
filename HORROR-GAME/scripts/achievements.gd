@@ -3,6 +3,8 @@ extends Node
 
 signal unlocked(id: String)
 
+const Endings := preload("res://scripts/endings.gd")
+
 const LIST := {
 	"first_day": ["First Day", "Finish day 1 and go home."],
 	"model_student": ["Model Student", "Attend all 7 lessons in one day."],
@@ -20,7 +22,8 @@ const LIST := {
 	"ending_6": ["Dealmaker", "Reach ending 6."],
 	"ending_7": ["Overtime", "Reach ending 7."],
 	"ending_8": ["Wrong Call", "Reach ending 8."],
-	"completionist": ["Completionist", "See all 8 endings."],
+	"ending_9": ["Last Resort", "Reach ending 9."],
+	"completionist": ["Completionist", "See all 9 endings."],
 	"out_of_breath": ["Out of Breath", "Run out of stamina 10 times."],
 	"good_boy": ["Good Boy", "Pet Csoki."],
 	"archivist": ["Archivist", "Read all 12 story pages."],
@@ -45,7 +48,7 @@ func on_event(event_name: String, data: Dictionary) -> void:
 				return
 			profile.mark_ending(id)
 			_unlock("ending_%d" % id)
-			if profile.endings_seen.size() >= 8:
+			if profile.endings_seen.size() >= Endings.COUNT:
 				_unlock("completionist")
 		_:
 			# Only ids that are not triggered by the cases above; ending_* and completionist are not events.
