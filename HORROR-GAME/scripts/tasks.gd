@@ -26,13 +26,18 @@ func lines(day: int) -> Array[String]:
 	var out: Array[String] = []
 	if day == 1:
 		out.append(OPENING)
-		out.append("%s Get the sticker for your student card (it expires tonight)" % _mark("card"))
-		out.append("    ask Mr. Bakó at the Porta; he wants a signed form from a classroom on the 1st floor")
 		if campaign != null and campaign.incident:
 			out.append("[!] An explosion shook Lab 14 and the school is closed")
 			out.append("%s Find out what happened in Lab 14" % _mark("lab"))
 			out.append("    go home through the front door, or stay and risk the caretaker")
+	elif day == 2:
+		out.append("[!] Teachers and students are falling ill")
+		out.append("%s Find out what happened in Lab 14" % _mark("lab"))
 	else:
+		if day == 3:
+			out.append("%s Collect your new student card (it expires tonight)" % _mark("card"))
+			out.append("    ask Mr. Bakó at the Porta; he wants a signed form from a classroom on the 1st floor")
+			out.append("[!] Test day: every lesson is a test, and something is following you")
 		if porta != null and not porta.card_valid:
 			out.append("[!] Card expired: the porter lends nothing")
 		out.append("%s Find out what happened in Lab 14" % _mark("lab"))

@@ -9,12 +9,13 @@ signal caught_stealing
 signal sent_away(seconds: float)   ## main walks the porter to the WC and back.
 signal changed
 
+const CARD_DAY := 3               ## The new student card is handed out on this day and expires at its midnight.
 const FORBIDDEN := "14"
 const RED := "red"
 
 var campaign: Node
 var player: Node
-var card_valid := true            ## False from day 2 on when the sticker was not stamped on day 1.
+var card_valid := true            ## False from day 4 on when the sticker was not stamped on day 3.
 var has_form := false
 var card_renewed := false
 var board_locked_day := 0
@@ -129,12 +130,14 @@ func doze() -> void:
 func on_day_started(day: int) -> void:
 	asleep = false
 	away = false
-	if day >= 2 and not card_renewed:
+	if day > CARD_DAY and not card_renewed:
 		card_valid = false
 	changed.emit()
 
 
 func ask_sticker() -> String:
+	if campaign.day < CARD_DAY:
+		return "New cards are handed out on day %d. Come back then." % CARD_DAY
 	if card_renewed:
 		return "You already have it. Don't push your luck."
 	if not card_valid:

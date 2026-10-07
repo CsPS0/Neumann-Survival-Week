@@ -28,6 +28,7 @@ const CLOSING := 1320.0
 const LAST_SCHOOL_DAY := 3
 const FINAL_DAY := 5
 const SKIP_LIMIT := 6
+const TEST_DAY := 3          ## Every lesson is a 4-question test, and the new student card is handed out.
 const INCIDENT_DAY := 1      ## The explosion in Lab 14 happens on this day ...
 const INCIDENT_BREAK := 2    ## ... when the lesson with this index ends. Everyone is sent home.
 const PACE_PRE := 0.5

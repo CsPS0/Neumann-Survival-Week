@@ -13,16 +13,18 @@ var _index := 0
 var _correct := 0
 var _subject := ""
 var _teacher := ""
+var _test := false
 
 
 func _ready() -> void:
 	choice_ui.chosen.connect(_on_chosen)
 
 
-func run(subject: String, teacher_name: String) -> void:
+func run(subject: String, teacher_name: String, test := false) -> void:
 	_subject = subject
 	_teacher = teacher_name
-	_questions = Lessons.quiz(subject)
+	_test = test
+	_questions = Lessons.quiz(subject, 4 if test else 3)
 	_index = 0
 	_correct = 0
 	visible = true
@@ -32,7 +34,7 @@ func run(subject: String, teacher_name: String) -> void:
 func _ask() -> void:
 	var q: Array = _questions[_index]
 	choice_ui.ask("%s (%d/%d)" % [_subject, _index + 1, _questions.size()],
-			"%s: Pop quiz.\n\n%s" % [_teacher, q[0]], q[1])
+			"%s: %s\n\n%s" % [_teacher, "Today is the test." if _test else "Pop quiz.", q[0]], q[1])
 
 
 func _on_chosen(picked: int) -> void:
