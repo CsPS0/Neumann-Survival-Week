@@ -27,6 +27,7 @@ const PortaScript := preload("res://scripts/porta.gd")
 const PorterScript := preload("res://scripts/porter.gd")
 const TasksScript := preload("res://scripts/tasks.gd")
 const MechaScript := preload("res://scripts/mecha.gd")
+const HauntingScript := preload("res://scripts/haunting.gd")
 const FurnitureScript := preload("res://scripts/furniture.gd")
 const HidingSpotScript := preload("res://scripts/hiding_spot.gd")
 
@@ -94,6 +95,7 @@ var staff_manager := StaffManagerScript.new()
 var finds := FindsScript.new()
 var porta := PortaScript.new()
 var tasks := TasksScript.new()
+var haunting := HauntingScript.new()   ## Day 3: the demon starts pranking the player.
 var mecha := MechaScript.new()   ## The daily neu_mecha chameleon and the phone feed.
 var furniture := FurnitureScript.new()   ## Desks, PCs and WC fixtures; built before the navmesh bake.
 var _table_spots: Array[Vector3] = []    ## Every `_table()` centre: furniture keeps clear of them.
@@ -243,6 +245,8 @@ func _ready() -> void:
 	mecha.campaign = campaign
 	mecha.main = self
 	add_child(mecha)
+	haunting.main = self
+	add_child(haunting)
 	porta.campaign = campaign
 	porta.player = player
 	add_child(porta)
@@ -814,7 +818,7 @@ func _on_lesson_started(i: int) -> void:
 	daynight.running = false
 	player.controls_enabled = false
 	entity.sleep()   # Never let it catch the player mid-quiz.
-	lesson_ui.run(subject, Lessons.TEACHER_NAMES[Lessons.teacher_of(subject, campaign.day)])
+	lesson_ui.run(subject, Lessons.TEACHER_NAMES[Lessons.teacher_of(subject, campaign.day)], campaign.day == CampaignScript.TEST_DAY)
 
 
 func _on_lesson_finished(correct: int, total: int) -> void:

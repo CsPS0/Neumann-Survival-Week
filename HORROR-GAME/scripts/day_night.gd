@@ -21,6 +21,7 @@ var environment: Environment
 var _lamps: Array[SpotLight3D] = []
 var _darkness := 0.0           ## 0 = day, 1 = night.
 var _dusk_announced := false
+var _flicker_left := 0.0
 
 
 func _ready() -> void:
@@ -34,6 +35,11 @@ func register_lamp(lamp: SpotLight3D) -> void:
 func time_text() -> String:
 	var total := int(minutes) % (24 * 60)
 	return "%02d:%02d" % [total / 60, total % 60]
+
+
+## Every lamp stutters for `seconds` (a haunting prank).
+func flicker(seconds: float) -> void:
+	_flicker_left = seconds
 
 
 func skip_to_dusk() -> void:
@@ -66,6 +72,7 @@ func _process(delta: float) -> void:
 	if not is_night and minutes < DUSK:
 		target = 0.0
 	_darkness = move_toward(_darkness, target, delta * 0.5)
+	_flicker_left = maxf(_flicker_left - delta, 0.0)
 	_apply_lighting(delta)
 
 
@@ -93,5 +100,7 @@ func _apply_lighting(delta: float) -> void:
 			energy *= randf_range(0.0, 0.8)
 		elif night_flicker and randf() < 0.01:
 			energy = randf_range(0.12, 0.45)
+		if _flicker_left > 0.0 and randf() < 0.6:
+			energy = 0.0
 		lamp.light_energy = energy
 		lamp.visible = energy > 0.01
