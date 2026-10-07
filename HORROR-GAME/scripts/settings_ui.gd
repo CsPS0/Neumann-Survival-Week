@@ -14,6 +14,7 @@ func setup(profile: Node, on_change: Callable) -> void:
 	_slider("Mouse sensitivity", "sensitivity", 0.001, 0.006, 0.0002)
 	_slider("Field of view", "fov", 60.0, 100.0, 1.0)
 	_slider("Brightness", "brightness", 0.6, 1.6, 0.05)
+	_slider("Graphics quality (0 low, 2 high)", "quality", 0.0, 2.0, 1.0)
 	_check("Invert Y axis", "invert_y")
 	_check("Fullscreen", "fullscreen")
 	_check("Scare flashes", "scare_flash")
