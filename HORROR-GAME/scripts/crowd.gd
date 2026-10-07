@@ -8,6 +8,7 @@ const FloorData := preload("res://scripts/floor_data.gd")
 const Lessons := preload("res://scripts/lessons.gd")
 const CampaignScript := preload("res://scripts/campaign.gd")
 const SoundBank := preload("res://scripts/sound_bank.gd")
+const Outbreak := preload("res://scripts/outbreak.gd")
 
 const MAX_CROWD := 150
 const NEAR := 35.0           ## Only classrooms and corridors within this many metres (and one floor) are drawn.
@@ -134,7 +135,7 @@ func sync_now() -> void:
 		if phase == "lesson" and lesson >= 0:
 			_build_seats(lesson)
 		elif phase == "break":
-			_build_flow(1.0, hash([campaign.day, band]))
+			_build_flow(1.0 - 0.6 * Outbreak.student_rate(campaign.day), hash([campaign.day, band]))   # The ill stay home.
 		elif phase == "pre":
 			_build_flow(0.25, hash([campaign.day, -1]))
 	_dirty = true
@@ -172,8 +173,11 @@ func _seat_class(id: String, room: Array) -> void:
 	var chairs: Array = seats.get("%d:%s" % [room[0], room[1]], [])
 	for chair: Dictionary in chairs.slice(0, wanted):
 		var colour := _shirt(rng)
+		var ill: bool = campaign.day >= Outbreak.FIRST_DAY and rng.randf() < Outbreak.student_rate(campaign.day)
+		if ill:
+			colour = colour.lerp(Color(0.6, 0.75, 0.55), 0.6)
 		if not _blocked(chair["pos"]):
-			list.append({"kind": "seat", "pos": chair["pos"], "yaw": chair["yaw"], "colour": colour})
+			list.append({"kind": "seat", "pos": chair["pos"], "yaw": chair["yaw"], "colour": colour, "sick": ill})
 	if _slots.size() + list.size() <= MAX_CROWD:
 		_slots.append_array(list)
 
@@ -299,7 +303,10 @@ func _apply(list: Array[Dictionary]) -> void:
 		if slot["kind"] == "seat":
 			# On the chair seat (0.45 m): the shortened body from the seat up, the head above it.
 			_body_mm.set_instance_transform(i, Transform3D(facing.scaled(Vector3(1.0, 0.55, 1.0)), pos + Vector3(0.0, 0.86, 0.0)))
-			_head_mm.set_instance_transform(i, Transform3D(facing, pos + Vector3(0.0, 1.38, 0.0)))
+			var head_at := pos + Vector3(0.0, 1.38, 0.0)
+			if slot.get("sick", false):
+				head_at = pos + Vector3(0.0, 1.2, 0.0) + facing * Vector3(0.0, 0.0, -0.15)   # Slumped over the desk.
+			_head_mm.set_instance_transform(i, Transform3D(facing, head_at))
 		else:
 			_body_mm.set_instance_transform(i, Transform3D(facing, pos + Vector3(0.0, 0.75, 0.0)))
 			_head_mm.set_instance_transform(i, Transform3D(facing, pos + Vector3(0.0, 1.62, 0.0)))

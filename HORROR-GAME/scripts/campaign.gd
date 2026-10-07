@@ -13,6 +13,7 @@ signal stats_changed
 
 const Lessons := preload("res://scripts/lessons.gd")
 const Clues := preload("res://scripts/clues.gd")
+const Outbreak := preload("res://scripts/outbreak.gd")
 
 const OPEN := 360.0
 const FIRST_BELL := 450.0
@@ -27,6 +28,8 @@ const CLOSING := 1320.0
 const LAST_SCHOOL_DAY := 3
 const FINAL_DAY := 5
 const SKIP_LIMIT := 6
+const INCIDENT_DAY := 1      ## The explosion in Lab 14 happens on this day ...
+const INCIDENT_BREAK := 2    ## ... when the lesson with this index ends. Everyone is sent home.
 const PACE_PRE := 0.5
 const PACE_BREAK := 0.133
 const PACE_SKIPPED := 1.0
@@ -51,6 +54,8 @@ var right := 0
 var total := 0
 var clues: Array[String] = []
 var blackouts := 0
+var incident := false           ## True once the day-1 explosion has happened.
+var sick: Array[String] = []    ## npc ids of the teachers who are ill today (never the culprit).
 
 var _resolved: Array[bool] = []
 var _ended: Array[bool] = []
@@ -139,6 +144,7 @@ func start_day(n: int) -> void:
 	_day_attended = 0
 	_day_perfect = true
 	_attended_today.clear()
+	sick = Outbreak.sick_teachers(culprit, n)
 	daynight.start_day()
 	daynight.minutes_per_second = _pace("hunt" if n > LAST_SCHOOL_DAY else "pre")
 	day_started.emit(n)
@@ -165,6 +171,8 @@ func _process(_delta: float) -> void:
 
 
 func _tick_school(m: float) -> void:
+	if day == INCIDENT_DAY and not incident and m >= lesson_end(INCIDENT_BREAK):
+		_explode()
 	for i in LESSONS:
 		if not _resolved[i] and m >= lesson_start(i):
 			if m < lesson_start(i) + GRACE and room_check.is_valid() and room_check.call(i):
@@ -191,6 +199,17 @@ func _tick_school(m: float) -> void:
 	if not _caretaker_sent and m >= LAST_BELL + CARETAKER_DELAY:
 		_caretaker_sent = true
 		bell.emit("caretaker", -1)
+
+
+## The explosion: the lessons that are left are cancelled (not skipped) and the clock jumps to the last bell.
+func _explode() -> void:
+	incident = true
+	for i in range(INCIDENT_BREAK + 1, LESSONS):
+		_resolved[i] = true
+		_ended[i] = true
+	daynight.minutes = maxf(daynight.minutes, LAST_BELL)
+	event.emit("explosion", {})
+	stats_changed.emit()
 
 
 func _close_day() -> void:
@@ -286,6 +305,8 @@ func add_clue(text: String) -> void:
 func dialogue(id: String) -> Array[String]:
 	if day > LAST_SCHOOL_DAY and quest:
 		return quest.dialogue(id)
+	if sick.has(id):
+		return Outbreak.sick_lines(id, day)
 	var lines: Array[String] = [Clues.chat(id)]
 	if id == culprit:
 		lines.append(Clues.strange(day))
@@ -322,6 +343,8 @@ func objective() -> String:
 				Lessons.subject_at(day, next), Lessons.room_of(Lessons.subject_at(day, next)), fmt(lesson_start(next))] \
 				if next >= 0 else "Break: search for clues."
 		"after":
+			if incident and day == INCIDENT_DAY:
+				return "An explosion emptied the school. Go home through the front door, or stay and find out what happened in Lab 14."
 			return "School is over. Go home through the front door, or stay and risk being expelled."
 		"hunt":
 			if not hunt_active:

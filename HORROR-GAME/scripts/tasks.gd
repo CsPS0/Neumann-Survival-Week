@@ -1,10 +1,11 @@
 extends Node
 ## The phone's day tasks. Pure state derived from porta and finds; text only.
 
-const OPENING := "You have been here two years. Something happened in the chemistry lab, room 14, and nobody talks about it. Find out."
+const OPENING := "Monday at the Neumann school. A normal morning, a normal timetable. Go to your lessons and enjoy the calm."
 
 var porta: Node
 var finds: Node
+var campaign: Node
 
 
 func _ready() -> void:
@@ -27,8 +28,10 @@ func lines(day: int) -> Array[String]:
 		out.append(OPENING)
 		out.append("%s Get the sticker for your student card (it expires tonight)" % _mark("card"))
 		out.append("    ask Mr. Bakó at the Porta; he wants a signed form from a classroom on the 1st floor")
-		out.append("%s Find out what happened in Lab 14" % _mark("lab"))
-		out.append("    the porter will not lend key 14")
+		if campaign != null and campaign.incident:
+			out.append("[!] An explosion shook Lab 14 and the school is closed")
+			out.append("%s Find out what happened in Lab 14" % _mark("lab"))
+			out.append("    go home through the front door, or stay and risk the caretaker")
 	else:
 		if porta != null and not porta.card_valid:
 			out.append("[!] Card expired: the porter lends nothing")
