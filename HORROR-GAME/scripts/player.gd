@@ -330,8 +330,10 @@ func can_carry() -> bool:
 
 ## Story items are never refused: when everything is full the item ends up in the hand anyway.
 func give_item(id: String, display_name: String, message := "") -> void:
-	items.add(id, display_name, true)
+	var place := items.add(id, display_name, true)
 	item_added.emit(id)
+	if message == "" and InventoryScript.is_key(id):
+		message = "You put the %s in your %s." % [display_name.to_lower(), InventoryScript.place_name(place)]
 	inspected.emit(message if message != "" else "You took the %s." % display_name)
 
 

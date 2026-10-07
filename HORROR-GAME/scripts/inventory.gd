@@ -30,8 +30,12 @@ static func capacity(place: int) -> int:
 		_: return POCKET_SLOTS
 
 
+static func is_key(id: String) -> bool:
+	return id.begins_with("key_") or id == "storage_key" or id == "master_key"
+
+
 static func item_weight(id: String) -> float:
-	if id.begins_with("key_") or id == "storage_key" or id == "master_key":
+	if is_key(id):
 		return KEY_WEIGHT
 	return HEAVY_WEIGHTS.get(id, ITEM_WEIGHT)
 
@@ -41,10 +45,13 @@ func is_reachable(place: int) -> bool:
 
 
 ## Stores an item in the first place with room: the hand, the pockets, then the bag (only while it is worn).
+## Keys are small and go the other way round: a pocket first, then the bag, the hand last.
 ## `force` keeps the item even when everything is full (story items must never be lost): it goes into the hand.
 ## Returns the place used, or -1 when there was no room.
 func add(id: String, display_name: String, force := false) -> int:
-	for place: int in [Place.HAND, Place.POCKET_LEFT, Place.POCKET_RIGHT, Place.BAG]:
+	var order: Array = [Place.POCKET_LEFT, Place.POCKET_RIGHT, Place.BAG, Place.HAND] if is_key(id) \
+			else [Place.HAND, Place.POCKET_LEFT, Place.POCKET_RIGHT, Place.BAG]
+	for place: int in order:
 		if is_reachable(place) and slots[place].size() < capacity(place):
 			return _put(place, id, display_name)
 	if force:
@@ -133,6 +140,14 @@ func bag_weight() -> float:
 ## Factor for the walk and sprint speed: 1.0 without the bag, lower the heavier it is.
 func speed_multiplier() -> float:
 	return 1.0 - minf(bag_weight() * SPEED_PENALTY_PER_KG, MAX_SPEED_PENALTY)
+
+
+static func place_name(place: int) -> String:
+	match place:
+		Place.POCKET_LEFT: return "left pocket"
+		Place.POCKET_RIGHT: return "right pocket"
+		Place.BAG: return "bag"
+		_: return "hand"
 
 
 func label_of(id: String) -> String:

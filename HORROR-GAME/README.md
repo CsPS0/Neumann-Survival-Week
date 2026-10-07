@@ -47,7 +47,7 @@ Notes:
 - You have one active hand, two pockets (one item each) and a bag on your back (8 slots). New items go to the hand, then the pockets, then the bag.
 - The bag weighs 3 kg empty and more with items. Each kg slows you by 3%, up to 30%. Drop it (B) to move at full speed.
 - Items in a dropped bag are out of reach: doors, the porter and the ritual do not see them. Pick the bag up again to use them.
-- If everything is full, ordinary pickups are refused. Keys from the porter and story items are never lost: they go into your hand.
+- If everything is full, ordinary pickups are refused. Keys from the porter and story items are never lost: they go into your hand. Keys prefer a pocket, then the bag.
 - The phone needs the active hand: an item you hold goes into a pocket or the bag when you raise it.
 - One-hand phone: map and tasks only, no zoom or pan, and the light stays on. Two-hand phone: the phone fills the screen with every app, but the light goes out until you lower it or press H.
 
@@ -74,11 +74,14 @@ Seven subjects (Maths, Literature, Programming, Physics, History, English, Netwo
 
 ### Classrooms and keys
 
-The seven lesson classrooms are locked all day. The teacher opens each one 5 minutes before its lesson and locks it again after the lesson, once you are out of it. On hunt days they stay locked. To get in at another time, ask the porter for a key:
+Every classroom, computer room and the gym is locked at the start of each day. The WCs, the Porta and the entrance hall stay shut but unlocked. The teacher opens each of the seven lesson classrooms 5 minutes before its lesson and locks it again after the lesson, once you are out of it. On hunt days they stay locked. To get in at any other room or time, ask the porter for a key:
+
+- The key board in the Porta has a hook for every room number from 1 to 300 in order, then GT1 to GT50. A key hangs only on the hook of a room that exists, and it leaves the hook while you hold it.
+- A key is a physical item. The porter and the board put it in a pocket first, then the bag, and the hand only when both are full. A key in a dropped bag is out of reach, so pick the bag up before you open a door or hand the key back.
 
 - You sign for the key and the porter writes down the time.
 - You hold one signed key at a time. Bring it back before you ask for another.
-- Close the room before you hand the key back. With the key in your pocket, closing an open classroom door also locks it.
+- Close the room before you hand the key back. With the key on you, closing an open door also locks it.
 - The porter never lends key 14.
 
 

@@ -56,6 +56,8 @@ const OUTWARD := {"N": Vector2(0, -1), "S": Vector2(0, 1), "W": Vector2(-1, 0), 
 ## Open rooms that never hold the red room or a note: the fixed story rooms and the lesson rooms.
 const RESERVED_ROOMS := ["5", "14", "24", "33", "229", "205", "GT8", "114", "23", "113", "28", "109", "121", "GT11-12", "GT2"]
 
+const BOARD_COLUMNS := 25
+const KEY_LOCKED_MESSAGE := "Locked. Ask Mr. Bakó at the Porta for the key."
 const CLASS_OPEN_EARLY := 5.0   ## Game minutes before the bell that the teacher opens the classroom.
 
 const AFTER_HOURS_ROOMS := [[2, "205"], [2, "GT8"], [1, "114"]]   ## One per day: locked until the last bell.
@@ -173,6 +175,7 @@ var _strange_object: Node3D                 ## Cracked object in Lab 14 (from da
 var _lab_fire: OmniLight3D                  ## Flickering glow in the wrecked lab on day 1 after the blast.
 var _vial: Node3D                         ## Holy water: needs the hunt and the fuse.
 var _room_doors := {}                     ## "floor:label" -> Door
+var _hook_keys := {}                     ## Room label -> the key mesh on its hook of the Porta board.
 var _room_panels := {}                    ## "floor:label" -> every panel Door of the room (a classroom can have two).
 var _class_open := {}                     ## Classroom label -> its teacher has opened it for the lesson.
 var _class_timer := 0.0
@@ -285,7 +288,6 @@ func _ready() -> void:
 	for i in FloorData.FLOORS.size():
 		_build_floor(FloorData.FLOORS[i], i, stair_holes)
 	_build_stairs()
-	_setup_classrooms()
 	_place_story_objects()
 	_set_story_active(false)
 	var tables: Array[Vector3] = _clue_spots.duplicate()
@@ -614,6 +616,7 @@ func _on_day_started(day: int) -> void:
 		old.queue_free()
 	var card_was_valid: bool = porta.card_valid
 	porta.on_day_started(day)
+	_relock_rooms()
 	_reset_classrooms()
 	if day >= 2:
 		if _lab_fire:
@@ -747,8 +750,12 @@ func _open_key_board(_by: Node) -> void:
 
 func _key_options() -> Array:
 	_porta_labels = porta.lendable_keys()
-	_porta_labels.append(PortaScript.FORBIDDEN)
-	var options := _porta_labels.map(func(l: String) -> String: return "Red room" if l == PortaScript.RED else l)
+	_porta_labels.insert(_porta_labels.size() - 1, PortaScript.FORBIDDEN)   # Before the red room's key (last).
+	_porta_labels.sort_custom(func(a: String, b: String) -> bool:
+		var ka := PortaScript.hook_order(a)
+		var kb := PortaScript.hook_order(b)
+		return ka < kb if ka != kb else a < b)
+	var options := _porta_labels.map(PortaScript.hook_text)
 	options.append("Leave")   # Past the labels: picks nothing, so an accidental E on the board is harmless.
 	return options
 
@@ -821,9 +828,13 @@ func _set_after_hours_lock(room: Array, locked: bool) -> void:
 		if locked:
 			door.set_open(false)
 		door.locked = locked
-		door.key_id = "__after__"
 		door.master_key_ok = locked   # The only door the master key card opens.
-		door.locked_message = "Staff only until the last bell." if locked else ""
+		if locked:
+			door.key_id = "__after__"   # The room's own key does not fit until the last bell.
+			door.locked_message = "Staff only until the last bell."
+		else:
+			door.key_id = door.lock_key
+			door.locked_message = KEY_LOCKED_MESSAGE
 
 
 ## Three clues per school day: a classroom, room 33 (ground floor, same table every day), and a room locked until the last bell.
@@ -890,20 +901,30 @@ func _on_bell(kind: String, index: int) -> void:
 			_spawn_caretaker()
 
 
-## Classrooms are locked all day. Their teacher opens each one CLASS_OPEN_EARLY minutes before the lesson and locks it
-## after, once the player is out of it (never locked in). A key opens one earlier; closing it with the key locks it.
-func _setup_classrooms() -> void:
-	for subject: String in Lessons.SUBJECTS:
-		for door: Node in _room_panels.get("%d:%s" % [Lessons.floor_of(subject), Lessons.room_of(subject)], []):
-			door.lock_key = PortaScript.key_item(Lessons.room_of(subject))
-			door.key_id = door.lock_key
-			door.locked = true
+## Every keyed room (normal, computer, gym) is built shut and locked: its door opens with that room's key from the
+## Porta, and closing the open door with the key locks it again. WCs, the Porta and the entrance hall stay unlocked.
+func _lock_with_key(door: Node, label: String) -> void:
+	door.lock_key = PortaScript.key_item(label)
+	door.key_id = door.lock_key
+	door.locked = true
+	door.locked_message = KEY_LOCKED_MESSAGE
+
+
+## Classrooms: their teacher opens each one CLASS_OPEN_EARLY minutes before the lesson and locks it after, once the
+## player is out of it (never locked in). A key opens one earlier; closing it with the key locks it.
+## A new day starts with every keyed door shut and locked again, whatever was left open the evening before.
+func _relock_rooms() -> void:
+	for panel_key: String in _room_panels:
+		for door: Node in _room_panels[panel_key]:
+			if door.lock_key != "" and not door.locked:
+				door.set_open(false)
+				door.locked = true
 
 
 func _reset_classrooms() -> void:
 	_class_open.clear()
 	for subject: String in Lessons.SUBJECTS:
-		var message := "Locked. Ask Mr. Bakó at the Porta for the key."
+		var message := KEY_LOCKED_MESSAGE
 		if campaign.day <= CampaignScript.LAST_SCHOOL_DAY:
 			message = "Locked. The teacher opens it at %s. Mr. Bakó at the Porta has a key." % CampaignScript.fmt(
 					CampaignScript.lesson_start(Lessons.lesson_of(subject, campaign.day)) - CLASS_OPEN_EARLY)
@@ -1235,6 +1256,10 @@ func _wall_with_door(a: Vector2, b: Vector2, side: String, centre: Vector2, labe
 	if closed:
 		door.key_id = "__demo__"
 		door.locked_message = Rooms.DEMO_MESSAGE
+	elif locked:
+		door.lock_key = QuestScript.KEY_ID   # The red room: its own key, borrowed or stolen at the Porta.
+	elif PortaScript.has_key_lock(label):
+		_lock_with_key(door, label)
 	door.position = Vector3(hinge.x, _y, hinge.y)
 	door.rotation.y = 0.0 if along_x else -PI * 0.5
 	add_child(door)
@@ -1522,6 +1547,7 @@ func _place_story_objects() -> void:
 func _lock_lab_door(door: Node, sealed := false) -> void:
 	door.locked = true
 	door.key_id = "key_14"
+	door.lock_key = "key_14"
 	door.locked_message = "Sealed with tape after the blast. The key for 14 is not on the board." if sealed \
 			else "Locked. The key for 14 is not on the board."
 
@@ -1565,21 +1591,61 @@ func _build_porta() -> void:
 	_desk_position = c + Vector3(1.0, 0.0, 1.05)
 	_select_floor(0)
 	var west := _to_world(454.0, 0.0).x + WALL_THICKNESS * 0.5 + 0.05
-	var board := _box(self, Vector3(west, 1.5, c.z + 0.3), Vector3(0.08, 0.9, 1.3), _door_material, true, InteractableScript)
+	_build_key_board(west, c.z)
+	var wc := _to_world(582.0, 622.0)
+	_wc_point = Vector3(wc.x, 0.0, wc.y)
+
+
+## The board on the Porta's west wall: a hook for every room number from 1 to 300, then GT1 to GT50, in reading order
+## (25 per row, top left first). A key hangs only on the hook of a room that exists. A key the porter lends or the
+## player steals leaves its hook, and the hook is filled again when the key is signed back in.
+func _build_key_board(west: float, centre_z: float) -> void:
+	var board := _box(self, Vector3(west, 1.25, centre_z), Vector3(0.08, 1.8, 3.2), _door_material, true, InteractableScript)
 	board.name = "KeyBoard"
 	board.prompt = "Look at the key board"
 	board.handler = _open_key_board
 	var brass := _make_material(Color(0.8, 0.65, 0.25), 0.35)
-	for i in 12:
-		var key := MeshInstance3D.new()
-		var mesh := BoxMesh.new()
-		mesh.size = Vector3(0.02, 0.09, 0.03)
-		mesh.material = brass
-		key.mesh = mesh
-		key.position = Vector3(0.06, 0.25 - floori(i / 4.0) * 0.25, -0.45 + (i % 4) * 0.3)
-		board.add_child(key)
-	var wc := _to_world(582.0, 622.0)
-	_wc_point = Vector3(wc.x, 0.0, wc.y)
+	var key_mesh := BoxMesh.new()
+	key_mesh.size = Vector3(0.012, 0.05, 0.03)
+	key_mesh.material = brass
+	var hung := {}
+	for label: String in porta.lendable_keys() + [PortaScript.FORBIDDEN]:
+		if label != PortaScript.RED:
+			hung[PortaScript.hook_order(label)] = label
+	var hooks := PortaScript.HOOKS_NUMBERED + PortaScript.HOOKS_COMPUTER + 1   # One more for the gym.
+	for i in hooks:
+		var order := i + 1   # 1 to 300, then 301 to 350 for GT1 to GT50, then 351 for the gym.
+		var text := str(order)
+		if order > PortaScript.HOOKS_NUMBERED:
+			text = "GT%d" % (order - PortaScript.HOOKS_NUMBERED) if order <= hooks - 1 else "Gym"
+		var row := i / BOARD_COLUMNS
+		var col := i % BOARD_COLUMNS
+		var at := Vector3(0.05, 0.86 - row * 0.12, 1.5 - col * 0.125)   # Reading from the door side: +Z is the left.
+		var has_key := hung.has(order)
+		var number := Label3D.new()
+		number.text = text
+		number.font_size = 24
+		number.pixel_size = 0.0014
+		number.outline_size = 2
+		number.modulate = Color(1.0, 0.95, 0.8) if has_key else Color(0.55, 0.52, 0.48)
+		number.position = at + Vector3(0.0, -0.045, 0.0)
+		number.rotation.y = PI * 0.5
+		number.no_depth_test = false
+		board.add_child(number)
+		if has_key:
+			var key := MeshInstance3D.new()
+			key.mesh = key_mesh
+			key.position = at
+			board.add_child(key)
+			_hook_keys[hung[order]] = key
+	porta.key_given.connect(func(label: String) -> void: _show_hook_key(label, false))
+	porta.key_returned.connect(func(label: String) -> void: _show_hook_key(label, true))
+
+
+func _show_hook_key(label: String, hanging: bool) -> void:
+	var key: Node3D = _hook_keys.get(quest.red_room_label if label == PortaScript.RED else label)
+	if key:
+		key.visible = hanging
 
 
 ## One table per find (pages, secrets, cards), per neu_mecha spot and per useful item in a corner of its room, built
