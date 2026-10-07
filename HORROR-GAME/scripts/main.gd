@@ -28,6 +28,7 @@ const PorterScript := preload("res://scripts/porter.gd")
 const TasksScript := preload("res://scripts/tasks.gd")
 const MechaScript := preload("res://scripts/mecha.gd")
 const HauntingScript := preload("res://scripts/haunting.gd")
+const DreamScript := preload("res://scripts/dream.gd")
 const FurnitureScript := preload("res://scripts/furniture.gd")
 const HidingSpotScript := preload("res://scripts/hiding_spot.gd")
 
@@ -95,6 +96,7 @@ var staff_manager := StaffManagerScript.new()
 var finds := FindsScript.new()
 var porta := PortaScript.new()
 var tasks := TasksScript.new()
+var dream := DreamScript.new()   ## Hunt days: the demon follows the player into a nap.
 var haunting := HauntingScript.new()   ## Day 3: the demon starts pranking the player.
 var mecha := MechaScript.new()   ## The daily neu_mecha chameleon and the phone feed.
 var furniture := FurnitureScript.new()   ## Desks, PCs and WC fixtures; built before the navmesh bake.
@@ -141,6 +143,7 @@ var _code_buffer: Array[int] = []
 var _battery := 1.0
 var _floor_index := 0
 var _accusing := false
+var _fate_open := false   ## Set while the cure-or-destroy prompt is open.
 var _deal_kind := ""    ## Set while the altar's pact prompt is open.
 var _porta_kind := ""   ## Set while a Porta list (porter menu, key list, key board) is open.
 var _porta_labels: Array = []
@@ -247,6 +250,8 @@ func _ready() -> void:
 	add_child(mecha)
 	haunting.main = self
 	add_child(haunting)
+	dream.main = self
+	add_child(dream)
 	porta.campaign = campaign
 	porta.player = player
 	add_child(porta)
@@ -475,6 +480,10 @@ func _on_player_caught() -> void:
 	if _game_over or campaign.ending_id != 0:
 		return
 	quest.on_player_caught()
+	if dream.active:
+		entity.sleep()
+		dream.caught()   # A dream never kills: you wake up late.
+		return
 	
 	if NetSession.is_multiplayer_active():
 		player.is_downed = true
@@ -553,6 +562,7 @@ func _on_explosion() -> void:
 func _on_ending(id: int) -> void:
 	_game_over = true
 	_accusing = false
+	_fate_open = false
 	_porta_kind = ""
 	scare.overlay.color.a = 0.0
 	scare.restore()
@@ -638,7 +648,7 @@ func _open_accusation() -> void:
 
 
 func _on_choice_requested(kind: String) -> void:
-	if choice_ui.visible or lesson_ui.visible or _accusing or _game_over or _porta_kind != "":
+	if choice_ui.visible or lesson_ui.visible or _accusing or _game_over or _porta_kind != "" or _fate_open:
 		return
 	player.controls_enabled = false
 	_deal_kind = kind
@@ -652,6 +662,12 @@ func _on_choice_requested(kind: String) -> void:
 func _on_choice(index: int) -> void:
 	if _porta_kind != "":
 		_on_porta_choice(index)
+		return
+	if _fate_open:
+		_fate_open = false
+		choice_ui.close()
+		player.controls_enabled = true
+		campaign.ritual_completed(index == 1)   # Fires the ending, which locks the controls again.
 		return
 	if not _accusing:
 		if _deal_kind == "":
@@ -899,7 +915,10 @@ func _on_ritual_completed() -> void:
 	chime.stream = SoundBank.chime()
 	add_child(chime)
 	chime.play()
-	campaign.ritual_completed()
+	_fate_open = true
+	player.controls_enabled = false
+	choice_ui.ask("The host", "The demon is gone, but %s lies on the floor of the Aula, still breathing. Cure the teacher, or destroy the body so nothing can return?" % Lessons.TEACHER_NAMES[campaign.culprit],
+			["Cure the teacher", "Destroy the host"])
 
 
 func _on_quest_changed() -> void:

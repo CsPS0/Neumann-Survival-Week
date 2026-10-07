@@ -48,7 +48,9 @@ Notes:
 - **Day 1: the explosion.** The morning is calm. After the third lesson Lab 14 explodes, the alarm rings and everyone is sent home. You choose: go home, or stay and find out what happened. The lab door is blown open until the next morning, but the caretaker patrols.
 - **Day 2 onwards: the outbreak.** The chemistry club's strange object has cracked and something left it. Some teachers and students fall ill (green skin, coughing, slumped at their desks). The teacher who hosts the demon never falls ill. Lab 14 is sealed again and the cracked object sits on its table.
 - **Day 3: test day and the haunting.** Every lesson is a 4-question test. The new student card is handed out at the Porta today and expires at midnight. The demon starts to prank you: flickering lights, a knock, a slammed door, a whisper and a short blackout flash. None of it hurts you.
-- **Day 4 and day 5: hunt days.** There are no lessons. You name the teacher you suspect. If you are right, the story quest unlocks and the entity hunts you.
+- **Day 4 and day 5: hunt days.** There are no lessons. You name the teacher you suspect. If you are right, the story quest unlocks and the entity hunts you. The clock runs faster until nightfall (3x on day 4, 4x on day 5), so there is less time to collect proof. You can finish the game on day 4 or day 5: the ritual only needs night.
+- **The dream.** Once a day on the hunt days you fall asleep at your desk and the demon follows you into the dream. Run to the front door within 60 seconds to wake up and keep a new clue. If it catches you or time runs out, you wake up late and lose 40 minutes. A dream never kills you.
+- **Cure or destroy.** When the ritual ends, the possessed teacher lies on the floor of the Aula. You choose to cure them (ending 2 or 4) or destroy the body with the demon (ending 9).
 - **Day and night.** Lamps flicker at dusk. Nights are nearly pitch dark, so the flashlight is the only reliable light.
 
 ### Lessons and quizzes
@@ -86,13 +88,14 @@ All character names in the committed code are invented.
 | # | Ending | How |
 |---|---|---|
 | 1 | Caught | The entity catches you while it hunts. |
-| 2 | Banished | You complete the ritual. |
+| 2 | Banished | You complete the ritual and cure the teacher. |
 | 3 | Expelled | Too many skipped lessons, the caretaker catches you, or a school day closes with you still inside. |
-| 4 | Top student | You complete the ritual with at least 80% quiz score and 9 clues. |
+| 4 | Top student | You complete the ritual and cure the teacher with at least 80% quiz score and 9 clues. |
 | 5 | Ran away | You leave through the front door before the last bell, or on a hunt day. |
 | 6 | Pact | You make the deal at the altar. |
 | 7 | Overtime | Day 5 ends without an answer. |
 | 8 | Wrong person | You accuse the wrong teacher. |
+| 9 | Destroyed | You complete the ritual and destroy the host. |
 
 ## Extras
 
