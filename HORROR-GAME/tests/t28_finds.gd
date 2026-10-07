@@ -112,19 +112,23 @@ func _run() -> void:
 		if p.item_id == "lab1":
 			page = p
 	page.interact(main.player)
-	check(fi.count("page") == 1 and seen.size() >= 1 and seen[-1].contains("S-14"), "page read and counted")
+	check(fi.count("page") == 1 and seen.size() >= 1 and seen[-1].contains(String(Finds.entry("lab1")["text"])), "page read and counted")
 	check(signalled == [["page", "lab1"]], "found_item emitted once: %s" % [signalled])
 	check(not fi.mark("lab1"), "a find is never counted twice")
 	check(fi.count("page") == 1 and signalled.size() == 1, "second mark changes nothing")
-	# Phone page 3 exists and the phone cycles five pages.
+	# One hand opens only the map and tasks pages, two hands open all 7 apps (page 3 is Finds).
 	main.player.phone.set_raised(true)
+	for i in 2:
+		main.player.phone.toggle_page()
+	check(main.player.phone.page == 0, "one hand cycles two pages then back to the map")
+	main.player.phone.set_two_hands(true)
 	for i in 3:
 		main.player.phone.toggle_page()
 	check(main.player.phone.page == 3, "page 3 is the Finds page")
 	await process_frame
-	for i in 2:
+	for i in 4:
 		main.player.phone.toggle_page()
-	check(main.player.phone.page == 0, "five pages then back to the map")
+	check(main.player.phone.page == 0, "seven pages then back to the map")
 	# Achievements.
 	var events: Array = []
 	main.campaign.event.connect(func(n2: String, _d: Dictionary) -> void: events.append(n2))

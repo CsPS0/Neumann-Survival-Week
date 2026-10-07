@@ -10,7 +10,8 @@ func _initialize() -> void:
 	quit(fails)
 
 const CampaignScript := preload("res://scripts/campaign.gd")
-const Staff := preload("res://scripts/staff.gd")
+static var Staff: GDScript = preload("res://scripts/staff_source.gd").roster()
+const SU := preload("res://tests/staff_util.gd")
 const Lessons := preload("res://scripts/lessons.gd")
 const Classes := preload("res://scripts/classes.gd")
 const FloorData := preload("res://scripts/floor_data.gd")

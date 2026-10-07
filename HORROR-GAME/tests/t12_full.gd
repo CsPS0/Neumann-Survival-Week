@@ -1,6 +1,7 @@
 extends SceneTree
 var fails := 0
 var cur: Node
+const QuizUtil := preload("res://tests/quiz_util.gd")
 const PROFILE := "user://neu_test_t12.cfg"
 const Campaign := preload("res://scripts/campaign.gd")
 const Lessons := preload("res://scripts/lessons.gd")
@@ -36,16 +37,14 @@ func _into_room(main: Node, i: int) -> void:
 	var subject: String = Lessons.subject_at(main.campaign.day, i)
 	main.player.global_position = main._room_centre(Lessons.floor_of(subject), Lessons.room_of(subject)) + Vector3(0, 0.1, 0)
 
-## Real quiz flow: stand in the room inside the 2-minute grace window, answer through choice_ui.
+## Real quiz flow: stand in the room inside the 2-minute grace window, answer on the paper sheet.
 func _attend(main: Node, i: int, right := true) -> void:
 	_into_room(main, i)
 	await create_timer(0.1).timeout
 	main.daynight.minutes = Campaign.lesson_start(i) + 0.5
 	await create_timer(0.25).timeout
-	check(main.lesson_ui.visible and main.choice_ui.visible, "day %d lesson %d: quiz opened" % [main.campaign.day, i])
-	for q in 3:
-		var correct: int = main.lesson_ui._questions[main.lesson_ui._index][2]
-		main.choice_ui.chosen.emit(correct if right else (correct + 1) % 4)
+	check(QuizUtil.is_open(main), "day %d lesson %d: quiz opened" % [main.campaign.day, i])
+	QuizUtil.answer_all(main, right)
 	await create_timer(0.15).timeout
 
 func _accuse(main: Node, right := true) -> void:
@@ -70,6 +69,12 @@ func _ritual(main: Node) -> void:
 	main.quest.altar_items = {"salt": true, "vial": true, "bell": true}
 	main.daynight.is_night = true
 	main.quest.altar_interact(main.player)
+
+## The finished ritual asks cure or destroy: 0 cures the teacher (ending 2 or 4), 1 destroys the host (ending 9).
+func _fate(main: Node, pick := 0) -> void:
+	await create_timer(0.3).timeout
+	check(main._fate_open and main.choice_ui.visible, "ritual done: cure or destroy prompt")
+	main.choice_ui.chosen.emit(pick)
 
 func _home(main: Node) -> void:
 	main.get_node("FrontDoor").interact(main.player)
@@ -97,7 +102,7 @@ func _run() -> void:
 	m.entity.sleep()
 	# (c) Lesson 2 on day 1: the campaign's own lesson_end bell starts the glimpse.
 	await _attend(m, 1)
-	check(m.campaign.attended == 2, "lesson 2 attended")
+	check(m.campaign.attended == 2 and not m.campaign.incident, "lesson 2 attended")
 	await create_timer(0.3).timeout   # the bell fires from campaign._process; nobody calls _on_bell
 	check(m.entity.visible, "day-1 glimpse: entity visible")
 	check(m.entity.process_mode == Node.PROCESS_MODE_DISABLED, "day-1 glimpse: entity frozen")
@@ -148,7 +153,15 @@ func _run() -> void:
 	await _ritual(m)
 	check(m.quest.ritual_active, "day 4 ritual started")
 	m.quest.ritual_left = 0.05
+	await _fate(m)
 	await _expect(m, 2, "ritual, low quiz")
+	# 9: the same ritual, but the host is destroyed.
+	m = await _fresh(4)
+	await _accuse(m)
+	await _ritual(m)
+	m.quest.ritual_left = 0.05
+	await _fate(m, 1)
+	await _expect(m, 9, "ritual, destroy the host")
 	# 3: caretaker catch, 22:00 inside, six skips.
 	m = await _fresh()
 	m.campaign._resolved.fill(true)
@@ -166,6 +179,7 @@ func _run() -> void:
 	m.daynight.minutes = 1321.0
 	await _expect(m, 3, "22:00 inside on a school day")
 	m = await _fresh()
+	m.campaign.incident = true   # No day 1 explosion: the lessons have to be skipped for real.
 	m.daynight.minutes = Campaign.lesson_start(5) + 3.0
 	await _expect(m, 3, "six skipped lessons")
 	check(m.campaign.skipped == 6, "six skips counted")
@@ -182,6 +196,7 @@ func _run() -> void:
 	await create_timer(0.1).timeout
 	check(m.quest.ritual_active, "day 5 ritual started")
 	m.quest.ritual_left = 0.05
+	await _fate(m)
 	await _expect(m, 4, "ritual, quiz >= 0.8 and 9 clues")
 	# 5: front door in the middle of the day.
 	m = await _fresh()
@@ -204,14 +219,22 @@ func _run() -> void:
 	await _accuse(m, false)
 	await _expect(m, 8, "wrong accusation")
 
-	# Full-week smoke run: 7 lessons x 3 days with perfect answers, clues by real pickup, accuse, ritual on day 5.
+	# Full-week smoke run with perfect answers, clues by real pickup, accuse, ritual on day 5. Day 1 ends with the
+	# explosion after lesson 3 (4 to 7 are cancelled), day 3 is the test day with 4 questions per lesson.
 	m = await _fresh()
+	var lessons_done := 0
+	var answers_right := 0
 	for d in 3:
 		check(m.campaign.day == d + 1, "smoke: day %d" % (d + 1))
-		for i in 7:
+		var today := 3 if d == 0 else 7
+		for i in today:
 			await _attend(m, i)
 			m.entity.sleep()   # the scripted break chases would otherwise catch the teleporting player
-		check(m.campaign.attended == (d + 1) * 7 and m.campaign.right == (d + 1) * 21, "smoke: day %d quiz totals" % (d + 1))
+		lessons_done += today
+		answers_right += today * (4 if d == 2 else 3)
+		if d == 0:
+			check(m.campaign.incident, "smoke: the explosion happened after lesson 3")
+		check(m.campaign.attended == lessons_done and m.campaign.right == answers_right and m.campaign.total == answers_right, "smoke: day %d quiz totals" % (d + 1))
 		check(m.campaign.skipped == 0 and m.campaign.blackouts == 0, "smoke: nothing skipped or lost")
 		var day_clues := get_nodes_in_group("clue")
 		check(day_clues.size() == 3, "smoke: 3 clues on day %d" % (d + 1))
@@ -230,6 +253,7 @@ func _run() -> void:
 	m.choice_ui.chosen.emit(0)
 	await create_timer(0.1).timeout
 	m.quest.ritual_left = 0.05
+	await _fate(m)
 	await create_timer(0.5).timeout
 	var expected := 4 if m.campaign.clues.size() == 9 and m.campaign.quiz_ratio() >= 0.8 else 2
 	print("SMOKE: clues=%d quiz=%d/%d ending=%d" % [m.campaign.clues.size(), m.campaign.right, m.campaign.total, m.ending_screen.current_id])

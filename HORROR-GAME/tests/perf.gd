@@ -25,15 +25,18 @@ func _measure(m: Node, spot: String) -> void:
 	var phys := 0.0
 	var draw := 0.0
 	var worst := 0.0
+	var last := Time.get_ticks_usec()
 	while t < 5.0:
 		await process_frame
-		var d := get_process_delta_time()
+		var now := Time.get_ticks_usec()
+		var d := (now - last) / 1000000.0
+		last = now
 		t += d
 		frames += 1
 		worst = maxf(worst, d)
 		proc += Performance.get_monitor(Performance.TIME_PROCESS)
 		phys += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)
-		draw += Performance.get_monitor(Performance.RENDER_TOTAL_DRAWCALLS_IN_FRAME)
+		draw += Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)
 	var avg_ms := t / frames * 1000.0
 	var cpu_ms := (proc + phys) / frames * 1000.0
 	print("SPOT %s: fps %d, avg frame %.2f ms (worst %.1f), script+physics %.2f ms (process %.2f, physics %.2f), drawcalls %d | teachers %d ambient %d crowd %d (seated %d flow %d) csoki %d" % [

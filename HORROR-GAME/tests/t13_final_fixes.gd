@@ -24,6 +24,7 @@ func _fresh(resolve := true) -> Node:
 	await create_timer(1.5).timeout
 	main._start_game()
 	await create_timer(0.3).timeout
+	main.campaign.incident = true   # The day 1 explosion would cancel lessons 4 to 7 as soon as the clock jumps past lesson 3.
 	if resolve:
 		main.campaign._resolved.fill(true)
 		main.campaign._ended.fill(true)
@@ -200,11 +201,11 @@ func _run() -> void:
 	p.load_from_disk()
 	check(p.get_setting("volume") == 0.8 and p.get_setting("fov") == 75.0 and is_equal_approx(p.get_setting("brightness"), 1.2), "M10: nan/inf fall back to defaults")
 	check(Array(p.unlocked) == ["first_day", "ending_3"], "M10: unlocked filtered (%s)" % [p.unlocked])
-	check(Array(p.endings_seen) == [3, 8], "M10: endings filtered (%s)" % [p.endings_seen])
+	check(Array(p.endings_seen) == [9, 3, 8], "M10: endings filtered (%s)" % [p.endings_seen])
 	p.mark_ending(0)
 	p.mark_ending(9)
 	p.mark_ending(5)
-	check(Array(p.endings_seen) == [3, 8, 5], "M10: mark_ending accepts only 1..8 (%s)" % [p.endings_seen])
+	check(Array(p.endings_seen) == [9, 3, 8, 5], "M10: mark_ending accepts only 1..9 (%s)" % [p.endings_seen])
 	p.set_setting("volume", INF)
 	p.set_setting("sensitivity", NAN)
 	check(p.get_setting("volume") == 0.8 and p.get_setting("sensitivity") == 0.0025, "M10: set_setting rejects non-finite")

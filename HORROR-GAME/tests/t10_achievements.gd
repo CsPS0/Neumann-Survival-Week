@@ -50,10 +50,10 @@ func _run() -> void:
 	for e in ["model_student", "straight_a", "early_bird", "night_owl", "detective", "right_suspect", "close_call"]:
 		a.on_event(e, {})
 	check(got.size() == 8, "all event achievements unlock")
-	for id in range(1, 9):
+	for id in range(1, 10):
 		a.on_event("ending", {"id": id})
-	check(got.has("ending_1") and got.has("ending_8"), "one achievement per ending")
-	check(got.count("completionist") == 1 and got.size() == 17, "all 8 endings unlock Completionist once")
+	check(got.has("ending_1") and got.has("ending_9"), "one achievement per ending")
+	check(got.count("completionist") == 1 and got.size() == 18, "all 9 endings unlock Completionist once (%d unlocks)" % got.size())
 	var before := got.size()
 	a.on_event("ending", {"id": 3})
 	check(got.size() == before, "nothing unlocks twice")
@@ -61,7 +61,7 @@ func _run() -> void:
 		check(Achievements.LIST[id].size() == 2, id + " has a title and description")
 	check(FileAccess.file_exists(PATH), "unlock persisted via profile.save")
 	var q := _mk()
-	check(q[0].unlocked.size() == 17, "persisted unlocks reload")
+	check(q[0].unlocked.size() == 18, "persisted unlocks reload")
 
 	# --- completionist across two loads ---
 	_rm()
@@ -71,10 +71,10 @@ func _run() -> void:
 	var second := _mk()
 	var got2: Array = []
 	second[1].unlocked.connect(func(id: String) -> void: got2.append(id))
-	for id in range(4, 9):
+	for id in range(4, 10):
 		second[1].on_event("ending", {"id": id})
 	check(got2.count("completionist") == 1, "completionist fires once across two loads: %s" % [got2])
-	check(got2.has("ending_8") and not got2.has("ending_4"), "ending 4 was not re-unlocked")
+	check(got2.has("ending_9") and not got2.has("ending_4"), "ending 4 was not re-unlocked")
 	_rm()
 
 	# --- real emission path through the scene ---
@@ -142,12 +142,12 @@ func _run() -> void:
 	check(seen.has("right_suspect"), "right suspect")
 
 	# endings through the real campaign
-	for id in range(1, 9):
+	for id in range(1, 10):
 		c.ending_id = 0
 		c._end(id)
-	check(seen.has("completionist") and seen.count("completionist") == 1, "endings 1-8 -> completionist")
-	check(main.profile.endings_seen.size() == 8, "profile saw 8 endings")
-	check(seen.size() == 17, "17 distinct unlocks: %d" % seen.size())
+	check(seen.has("completionist") and seen.count("completionist") == 1, "endings 1-9 -> completionist")
+	check(main.profile.endings_seen.size() == 9, "profile saw 9 endings")
+	check(seen.size() == 18, "18 distinct unlocks: %d" % seen.size())
 
 	main.queue_free()
 	await create_timer(0.3).timeout

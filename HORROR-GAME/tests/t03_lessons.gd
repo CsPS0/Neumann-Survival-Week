@@ -11,6 +11,7 @@ func _initialize() -> void:
 
 const Lessons := preload("res://scripts/lessons.gd")
 const Campaign := preload("res://scripts/campaign.gd")
+const QuizUtil := preload("res://tests/quiz_util.gd")
 
 func _run() -> void:
 	for day in 3:
@@ -23,6 +24,14 @@ func _run() -> void:
 		for q: Array in Lessons.SUBJECTS[subject][3]:
 			check(q[1].size() == 4 and q[2] >= 0 and q[2] < 4, subject + " question well-formed")
 		check(Lessons.TEACHER_NAMES.has(Lessons.teacher_of(subject)), subject + " has a known teacher")
+
+	# Typed answers: case, spaces and accents are ignored, extra variants count, empty or wrong text does not.
+	check(Lessons.normalize("  Arany  JÁNOS ") == "aranyjanos" and Lessons.normalize("2x") == "2x", "normalize folds case, spaces and accents")
+	var qa: Array = Lessons.SUBJECTS["Literature"][3][2]
+	check(Lessons.is_correct(qa, "arany janos") and Lessons.is_correct(qa, "Arany") and Lessons.is_correct(qa, "János Arany"), "extra accepted answers match")
+	check(not Lessons.is_correct(qa, "") and not Lessons.is_correct(qa, "Jókai Mór"), "empty and wrong answers fail")
+	var qm: Array = Lessons.SUBJECTS["Maths"][3][1]
+	check(Lessons.is_correct(qm, "x = 11") and Lessons.is_correct(qm, "11") and not Lessons.is_correct(qm, "x = 9"), "maths answers")
 
 	var main: Node = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
@@ -46,7 +55,7 @@ func _run() -> void:
 	check(not paused, "resumed")
 	main.daynight.minutes = 451.0
 	await create_timer(0.3).timeout
-	check(main.lesson_ui.visible and main.choice_ui.visible, "quiz opens when the player is in the room at the bell")
+	check(QuizUtil.is_open(main) and not main.choice_ui.visible, "paper answer sheet opens when the player is in the room at the bell")
 	check(not main.entity.visible, "entity is asleep during the quiz")
 	check(not main.player.controls_enabled, "controls disabled during the quiz")
 	check(not main.daynight.running, "clock stopped during the quiz")
@@ -56,11 +65,12 @@ func _run() -> void:
 	esc.pressed = true
 	main._unhandled_input(esc)
 	check(not paused, "Esc does not pause under the quiz")
-	main.choice_ui.chosen.emit(0)
-	main.choice_ui.chosen.emit(0)
-	main.choice_ui.chosen.emit(0)
+	QuizUtil.answer(main)
+	check(main.lesson_ui.visible and main.answer_sheet.visible, "sheet stays open between questions")
+	QuizUtil.answer(main, false)
+	QuizUtil.answer(main)
 	await create_timer(0.3).timeout
-	check(main.campaign.attended == 1 and main.campaign.total == 3, "quiz result recorded")
+	check(main.campaign.attended == 1 and main.campaign.total == 3 and not main.answer_sheet.visible, "typed result recorded, sheet closed")
 	check(main.daynight.minutes >= Campaign.lesson_end(0), "clock jumped to the end of the lesson")
 	check(not main.choice_ui.visible, "choice ui closed")
 	check(main.player.controls_enabled, "controls enabled after the quiz")

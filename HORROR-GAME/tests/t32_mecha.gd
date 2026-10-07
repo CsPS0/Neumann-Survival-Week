@@ -137,8 +137,9 @@ func _run() -> void:
 	check(main.profile.has("mecha_master"), "achievement unlocked")
 	# Phone page 4 draws without error.
 	main.player.phone.set_raised(true)
+	main.player.phone.set_two_hands(true)   # One hand opens only the map and tasks pages.
 	for i in 4:
 		main.player.phone.toggle_page()
-	check(main.player.phone.page == 4, "feed page is page 4")
+	check(main.player.phone.page == 4, "mecha app is page 4")
 	await create_timer(0.3).timeout
 	_cleanup(main)

@@ -11,7 +11,8 @@ func _initialize() -> void:
 
 const Lessons := preload("res://scripts/lessons.gd")
 const Clues := preload("res://scripts/clues.gd")
-const Staff := preload("res://scripts/staff.gd")
+static var Staff: GDScript = preload("res://scripts/staff_source.gd").roster()
+const SU := preload("res://tests/staff_util.gd")
 
 func _fresh() -> Node:
 	var main: Node = load("res://scenes/main.tscn").instantiate()
@@ -32,11 +33,11 @@ func _run() -> void:
 	check(Lessons.TEACHER_NAMES.size() == 8 and Lessons.SUSPECT_IDS.size() == 8, "8 suspects")
 	var surnames := {}
 	for p: Array in Staff.ROSTER:
-		surnames[Staff.surname(p[0])] = true
+		surnames[SU.surname(p[0])] = true
 	for id: String in Lessons.SUSPECT_IDS:
 		var name: String = Lessons.TEACHER_NAMES[id]
-		check(not Staff.is_real_name(name), "%s is not a roster name" % name)
-		check(not surnames.has(Staff.surname(name)), "%s shares no surname with the roster" % name)
+		check(not SU.is_real_name(name), "%s is not a roster name" % name)
+		check(not surnames.has(SU.surname(name)), "%s shares no surname with the roster" % name)
 		var seen := {}
 		for k in 9:
 			var t := Clues.text(id, k)

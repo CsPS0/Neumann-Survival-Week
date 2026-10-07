@@ -10,7 +10,8 @@ func _initialize() -> void:
 	quit(fails)
 
 const CampaignScript := preload("res://scripts/campaign.gd")
-const Staff := preload("res://scripts/staff.gd")
+static var Staff: GDScript = preload("res://scripts/staff_source.gd").roster()
+const SU := preload("res://tests/staff_util.gd")
 const Lessons := preload("res://scripts/lessons.gd")
 
 func _fresh() -> Node:
@@ -45,7 +46,7 @@ func _run() -> void:
 	check(n > 0 and n <= mgr.MAX_AMBIENT, "ambient teachers in a break, got %d" % n)
 	check(_live() <= 16, "at most 16 teachers alive, got %d" % _live())
 	for t in get_nodes_in_group("ambient_staff"):
-		check(Staff.is_real_name(t.npc_name), "ambient teacher uses a roster name: " + t.npc_name)
+		check(SU.is_real_name(t.npc_name), "ambient teacher uses a roster name: " + t.npc_name)
 		check(not Lessons.TEACHER_NAMES.values().has(t.npc_name), "no suspect among the ambient")
 		check(t.is_in_group("ambient_staff") and not t.is_in_group("teachers"), "separate group from the suspects")
 	var names := {}

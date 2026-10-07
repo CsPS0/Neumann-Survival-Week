@@ -75,8 +75,11 @@ func _passable(d: Array, mask: int) -> bool:
 
 func _collect_doors() -> void:
 	doors.clear()
+	# Classrooms are locked all day now. The doorway geometry is the same, so locked doors count too: a closed door is
+	# not an obstacle in _passable and only NPCs standing in the opening do. Doors of the closed demo rooms never open
+	# for anybody, so nobody walks through them and they are skipped.
 	for door in get_nodes_in_group("doors"):
-		if door.locked:
+		if door.key_id == "__demo__":
 			continue
 		var along: Vector3 = Basis(Vector3.UP, door._closed_yaw) * Vector3.RIGHT
 		var centre: Vector3 = door.global_position + along * (door.width * 0.5)
@@ -138,8 +141,8 @@ func _run() -> void:
 	main.campaign._resolved.fill(true)
 	main.campaign._ended.fill(true)
 	_collect_doors()
-	print("open doors: %d" % doors.size())
-	check(doors.size() > 30, "open doors found")
+	print("doors: %d" % doors.size())
+	check(doors.size() > 30, "doors found")
 
 	# Static rule first: no station or route stop of any NPC kind lies in a doorway.
 	var bad_stops := 0
@@ -169,7 +172,8 @@ func _run() -> void:
 	await _scenario("after hall", CampaignScript.LAST_BELL + 3.0, spots[0][1])
 
 	# Door race: a door closed on an NPC standing in its swing must not hold the NPC.
-	var d: Array = doors[0]
+	var swing_doors: Array = doors.filter(func(x: Array) -> bool: return not x[0].locked)
+	var d: Array = swing_doors[0]
 	var probe := TeacherScript.new()
 	probe.ambient = true
 	probe.npc_name = "Probe"

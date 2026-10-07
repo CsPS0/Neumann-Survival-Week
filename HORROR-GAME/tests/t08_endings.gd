@@ -28,13 +28,17 @@ func _fresh(day := 5) -> Node:
 	cur = main
 	return main
 
-func _ritual(right: int, total: int, clues: int) -> int:
+## The ritual ends in the fate prompt: 0 cures the teacher (ending 2 or 4), 1 destroys the host (ending 9).
+func _ritual(right: int, total: int, clues: int, fate := 0) -> int:
 	var main: Node = await _fresh()
 	main.campaign.right = right
 	main.campaign.total = total
 	for i in clues:
 		main.campaign.clues.append("c")
 	main.quest.ritual_completed.emit()
+	await create_timer(0.1).timeout
+	check(main.choice_ui.visible and main._fate_open and main.campaign.ending_id == 0, "ritual opens the cure or destroy prompt, no ending yet")
+	main.choice_ui.chosen.emit(fate)
 	await create_timer(0.2).timeout
 	return main.ending_screen.current_id
 
@@ -44,16 +48,20 @@ func _run() -> void:
 	check(await _ritual(79, 100, 9) == 2, "0.79: ending 2")
 	check(await _ritual(3, 3, 8) == 2, "8 clues: ending 2")
 	check(await _ritual(0, 0, 0) == 2, "nothing: ending 2")
+	check(await _ritual(3, 3, 9, 1) == 9, "destroy the host: ending 9 whatever the score")
+	check(await _ritual(0, 0, 0, 1) == 9, "destroy the host with nothing: ending 9")
 
 	var main: Node = await _fresh()
 	main.quest.ritual_completed.emit()
+	await create_timer(0.1).timeout
+	main.choice_ui.chosen.emit(0)
 	await create_timer(0.2).timeout
 	check(main.ending_screen.current_id == 2 and main.campaign.ending_id == 2, "ritual: ending 2")
 	main.campaign.right = 3
 	main.campaign.total = 3
 	for i in 9:
 		main.campaign.clues.append("c")
-	main.quest.ritual_completed.emit()
+	main.campaign.ritual_completed()
 	main.campaign.make_deal()
 	await create_timer(0.2).timeout
 	check(main.ending_screen.current_id == 2 and main.campaign.ending_id == 2, "second ending ignored")

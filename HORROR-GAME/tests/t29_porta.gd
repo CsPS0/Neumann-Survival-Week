@@ -26,6 +26,13 @@ func _cleanup(main: Node) -> void:
 const Rooms := preload("res://scripts/rooms.gd")
 const CampaignScript := preload("res://scripts/campaign.gd")
 const Finds := preload("res://scripts/finds.gd")
+const PortaScript := preload("res://scripts/porta.gd")
+
+func _item_count(player: Node) -> int:
+	var n := 0
+	for place: int in player.items.slots:
+		n += player.items.slots[place].size()
+	return n
 
 func _run() -> void:
 	var main: Node = await _fresh()
@@ -33,8 +40,8 @@ func _run() -> void:
 	var p: Node = main.player
 	check(porta != null and main.porter != null and main.get_node_or_null("KeyBoard") != null, "porta, porter and key board exist")
 	check(get_nodes_in_group("porta").size() == 1 and not main.porter.is_in_group("teachers"), "porter is separate from the suspects")
-	check(not main.porter.npc_name.is_empty() and not preload("res://scripts/staff.gd").is_real_name(main.porter.npc_name), "porter name is invented")
-	check(preload("res://scripts/staff.gd").ROSTER.all(func(r: Array) -> bool: return preload("res://scripts/staff.gd").surname(r[0]) != "Bakó"), "no roster surname Bakó")
+	check(not main.porter.npc_name.is_empty() and not preload("res://tests/staff_util.gd").is_real_name(main.porter.npc_name), "porter name is invented")
+	check(preload("res://tests/staff_util.gd").roster().ROSTER.all(func(r: Array) -> bool: return preload("res://tests/staff_util.gd").surname(r[0]) != "Bakó"), "no roster surname Bakó")
 	check(main.porter.path_offset == main._nav_offset, "porter uses the measured nav offset")
 	check(main.porter.is_at_desk(), "porter starts at his desk")
 	main.campaign._resolved.fill(true)
@@ -48,13 +55,21 @@ func _run() -> void:
 	check(porta.borrowed == ["23"], "borrowed list")
 	check(porta.ask_key("14").contains("fourteen") or porta.ask_key("14").contains("Fourteen"), "no key for 14")
 	check(not p.has_item("key_14"), "key 14 is never lent")
-	porta.ask_key("red")
-	check(p.has_item("storage_key"), "the red room's key comes from the porter")
+	check(porta.signed_out.has("23"), "key 23 is signed out with the time")
+	check(porta.ask_key("red").contains("One key at a time") and not p.has_item("storage_key"), "only one key at a time")
+	check(porta.ask_key("23").contains("already"), "the same key is not lent twice")
+	porta.room_closed = func(_l: String) -> bool: return false
+	check(porta.return_key().contains("still open") and p.has_item("key_23"), "an open room blocks the return")
+	porta.room_closed = func(_l: String) -> bool: return true
+	check(porta.return_key().contains("Signed back in") and not p.has_item("key_23") and porta.signed_out.is_empty(), "closed room: key signed back in")
 	var events: Array = []
 	main.campaign.event.connect(func(n: String, _d: Dictionary) -> void: events.append(n))
-	for l in ["24", "28", "33"]:
+	for l in ["red", "24", "28", "33"]:
 		porta.ask_key(l)
+		check(p.has_item(PortaScript.key_item(l)), "borrowed " + l)
+		porta.return_key()
 	check(porta.borrowed.size() == 5 and events.has("key_collector"), "5 different keys: Key Collector")
+	porta.ask_key("23")   # Stays signed out for the rest of the test.
 
 	# Stealing: caught while he is at the desk.
 	porta.away = false
@@ -76,7 +91,7 @@ func _run() -> void:
 	main.campaign.start_day(3)
 	await create_timer(0.3).timeout
 	porta.card_valid = true
-	check(p.has_item("key_14") and p.has_item("storage_key") and p.has_item("key_23"), "keys stay in the inventory across days")   # Review Focus 3
+	check(p.has_item("key_14") and p.has_item("key_23") and porta.signed_out.has("23"), "stolen and signed out keys stay on you across days")   # Review Focus 3
 	check(porta.distract().length() > 0 and porta.away, "distraction sends him away")
 	await create_timer(0.1).timeout
 	porta.away = false
@@ -143,7 +158,7 @@ func _run() -> void:
 			door.interact(p)
 			check(door.locked and not door.is_open, "a demo door stays locked with every Porta key")
 	check(demo_doors > 20, "demo doors checked: %d" % demo_doors)
-	check(not p.inventory.keys().any(func(k: String) -> bool: return k == "__demo__" or k == "__after__"), "Porta never hands out a demo or after-hours key")
+	check(not p.has_item("__demo__") and not p.has_item("__after__"), "Porta never hands out a demo or after-hours key")
 
 	# Review Focus 3: the board locked on the final day does not soft-lock the lab key. At night he dozes off.
 	main.campaign.start_day(5)
@@ -197,21 +212,21 @@ func _run() -> void:
 	porta.board_locked_day = 0   # That pick was a board steal in front of him (caught); reset for the rest of day 1.
 	p.remove_item("key_" + main._porta_labels[0])
 	main.porter.interact(p)
-	main.choice_ui.chosen.emit(3)   # Leave the porter menu.
+	main.choice_ui.chosen.emit(5)   # Leave the porter menu.
 	# "Leave" on both lists: no key, no lock, nothing caught (an accidental E on the board in front of him is harmless).
 	var front: Vector3 = main._room_centre(0, "Porta") + Vector3(-0.6, 0.1, -0.9)   # in the lodge, facing the desk
 	p.global_position = front
 	await create_timer(0.2).timeout
-	var inv_before: int = p.inventory.size()
+	var inv_before: int = _item_count(p)
 	main.get_node("KeyBoard").interact(p)
 	check(main.choice_ui._count == main._porta_labels.size() + 1, "the board list ends with Leave")
 	main.choice_ui.chosen.emit(main._porta_labels.size())
-	check(not main.choice_ui.visible and not porta.is_board_locked() and p.inventory.size() == inv_before and p.controls_enabled, "Leave on the board: no key, no lock")
+	check(not main.choice_ui.visible and not porta.is_board_locked() and _item_count(p) == inv_before and p.controls_enabled, "Leave on the board: no key, no lock")
 	main.porter.interact(p)
 	main.choice_ui.chosen.emit(0)
 	check(main.choice_ui._count == main._porta_labels.size() + 1, "the key list ends with Leave")
 	main.choice_ui.chosen.emit(main._porta_labels.size())
-	check(not main.choice_ui.visible and not porta.is_board_locked() and p.inventory.size() == inv_before, "Leave on the key list: nothing lent")
+	check(not main.choice_ui.visible and not porta.is_board_locked() and _item_count(p) == inv_before, "Leave on the key list: nothing lent")
 
 	var lab_door: Node = main.quest.lab_door
 	check(lab_door.key_id == "key_14" and lab_door.locked, "lab door needs key 14")
@@ -234,7 +249,8 @@ func _run() -> void:
 		waited += 0.25
 	check(not main._porter_sees_player() and porta.away, "he is out of sight within the window (%.1f s)" % waited)
 	main.get_node("KeyBoard").interact(p)
-	main.choice_ui.chosen.emit(main._porta_labels.size() - 1)
+	check(main._porta_labels.back() == "red", "the key board ends with the red room")
+	main.choice_ui.chosen.emit(main._porta_labels.find("14"))
 	check(p.has_item("key_14") and main._message_label.text.contains("pocket"), "stolen from the board on day 1 once he is out of sight")
 	lab_door.interact(p)
 	check(not lab_door.locked, "the stolen key opens Lab 14")
@@ -257,7 +273,7 @@ func _run() -> void:
 	check(porta.distract().contains("leak") and porta.away, "distracted on day 2")
 	await create_timer(0.5).timeout
 	main.get_node("KeyBoard").interact(p)
-	check(main.choice_ui.visible and main._porta_kind == "porta_board" and main._porta_labels.back() == "14", "the key board lists 14 last")
+	check(main.choice_ui.visible and main._porta_kind == "porta_board" and main._porta_labels.has("14") and main._porta_labels.back() == "red", "the key board lists 14 before the red room")
 	main.choice_ui.chosen.emit(main._porta_labels.find("35"))
 	check(not p.has_item("key_35") and main._message_label.text.contains("Mr. Bakó: Put that back") and porta.is_board_locked(), "caught right after the distraction (away is not enough), he says it out loud")
 	main.porter.return_to_desk(true)

@@ -45,13 +45,15 @@ func _run() -> void:
 	check(Classes.PLAYER_CLASS == "11.a", "you are 11.a")
 	check(main.tasks != null, "tasks node")
 	var lines: Array = main.tasks.lines(1)
-	check(lines.size() >= 2 and lines.any(func(l: String) -> bool: return l.contains("sticker")) and lines.any(func(l: String) -> bool: return l.contains("Lab 14")), "day-1 tasks listed")
+	check(lines.size() == 1 and not lines.any(func(l: String) -> bool: return l.contains("sticker") or l.contains("card")), "day 1 lists only the opening until something happens")
+	var day3: Array = main.tasks.lines(3)
+	check(day3.any(func(l: String) -> bool: return l.contains("student card")) and day3.any(func(l: String) -> bool: return l.contains("Lab 14")), "day-3 tasks: the new card and Lab 14")
 	check(not main.tasks.is_done("card") and not main.tasks.is_done("lab"), "nothing done yet")
 	# Extra: the opening is the first message and the first Tasks line.
 	check(main._message_label.text == main.TasksScript.OPENING and lines[0] == main.TasksScript.OPENING, "day-1 opening shown and first on the Tasks page")
 
-	# The sticker chain.
-	check(porta.ask_sticker().contains("form"), "he wants the signed form first")
+	# The sticker chain. New cards are only handed out on day 3, but the form can be picked up from day 1.
+	check(porta.ask_sticker().contains("day 3"), "no sticker before day 3")
 	check(not porta.card_renewed, "not renewed yet")
 	var forms := get_nodes_in_group("form")
 	check(forms.size() == 1, "one form on the school")
@@ -63,6 +65,13 @@ func _run() -> void:
 	check(_reachable(main, form.global_position, main._form_room_floor), "form reachable from the spawn")
 	form.interact(p)
 	check(porta.has_form and p.has_item("form"), "took the form")
+	main.campaign.start_day(3)
+	await create_timer(0.3).timeout
+	check(porta.card_valid and p.has_item("form"), "the card is still valid on day 3 and the form is kept")
+	check(porta.ask_sticker().contains("Stamped") and porta.card_renewed and not p.has_item("form") and not porta.has_form, "sticker given for the form")
+	porta.card_renewed = false
+	porta.has_form = true
+	p.give_item("form", "signed form")
 	# Through the porter's own menu (index 3 = Ask for the sticker).
 	main.porter.interact(p)
 	check(main.choice_ui.visible and main._porta_kind == "porta_menu", "porter menu opens")
@@ -70,9 +79,9 @@ func _run() -> void:
 	check(main._message_label.text.contains("Stamped") and porta.card_renewed and not p.has_item("form"), "sticker given for the form")
 	check(main.tasks.is_done("card"), "card task done")
 	check(porta.ask_sticker().contains("already"), "only once")
-	main.campaign.start_day(2)
+	main.campaign.start_day(4)
 	await create_timer(0.3).timeout
-	check(porta.card_valid, "renewed card stays valid on day 2")
+	check(porta.card_valid, "renewed card stays valid on day 4")
 	check(not main._message_label.text.contains("expired"), "no expiry message with a renewed card")
 
 	# Lab 14: the door needs the stolen key; the three pages complete the lab task.
@@ -109,7 +118,7 @@ func _run() -> void:
 	_cleanup(main)
 	await create_timer(0.3).timeout
 
-	# Missing the sticker: day 2 refuses every key (Review Focus 3: no soft-lock, the steal path still works).
+	# Missing the sticker: the card expires at the end of day 3 and day 4 refuses every key (no soft-lock, the steal path still works).
 	main = await _fresh()
 	porta = main.porta
 	p = main.player
@@ -117,26 +126,29 @@ func _run() -> void:
 	main.campaign._ended.fill(true)
 	main.campaign.start_day(2)
 	await create_timer(0.3).timeout
+	check(porta.card_valid, "the card stays valid on day 2")
+	main.campaign.start_day(3)
+	await create_timer(0.3).timeout
+	check(porta.card_valid and porta.ask_sticker().contains("form"), "day 3: he wants the signed form first")
+	main.campaign.start_day(4)
+	await create_timer(0.3).timeout
 	check(not porta.card_valid, "expired card")
-	check(main._message_label.text.contains("Your student card expired at midnight."), "expiry message on day 2")
+	check(main._message_label.text.contains("Your student card expired at midnight."), "expiry message on day 4")
 	check(porta.ask_key("23").contains("expired") and not main.player.has_item("key_23"), "no lending with an expired card")
 	check(porta.ask_sticker().contains("expired"), "no sticker after the deadline")
-	check(main.tasks.lines(2).any(func(l: String) -> bool: return l.contains("expired")), "tasks page shows the expired card")
+	check(main.tasks.lines(4).any(func(l: String) -> bool: return l.contains("expired")), "tasks page shows the expired card")
 	porta.away = true
 	porta.try_steal("red")
 	check(main.player.has_item("storage_key"), "the red room key can still be stolen")
-	# Extra (Review Focus 3): on day 2 with an expired card the form pickup no longer exists, and the lab key can still be stolen.
-	check(get_nodes_in_group("form").is_empty(), "on day 2 with an expired card the form pickup no longer exists")
+	# Extra (Review Focus 3): on day 4 with an expired card the form pickup no longer exists, and the lab key can still be stolen.
+	check(get_nodes_in_group("form").is_empty(), "on day 4 with an expired card the form pickup no longer exists")
 	check(porta.ask_sticker().contains("expired") and not porta.card_renewed and not porta.card_valid, "a late form does not renew the card")
 	porta.try_steal("14")
 	check(p.has_item("key_14"), "key 14 can be stolen with an expired card")
 	main.quest.lab_door.interact(p)
 	check(not main.quest.lab_door.locked, "the lab still opens: the story stays completable")
-	main.campaign.start_day(3)
+	main.campaign.start_day(5)
 	await create_timer(0.3).timeout
-	check(not porta.card_valid and porta.ask_key("23").contains("expired"), "still expired on day 3")
-	main.campaign.start_day(4)
-	await create_timer(0.3).timeout
-	check(not porta.card_valid and porta.ask_key("red").contains("expired"), "hunt day: no lending either")
+	check(not porta.card_valid and porta.ask_key("red").contains("expired"), "still expired on day 5")
 	check(p.has_item("storage_key") and p.has_item("key_14"), "stolen keys survive the day rollovers")
 	_cleanup(main)

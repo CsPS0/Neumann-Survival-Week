@@ -6,10 +6,12 @@ var samples := 0
 var max_teachers := 0
 var max_crowd := 0
 var max_ambient := 0
+const QuizUtil := preload("res://tests/quiz_util.gd")
 const Campaign := preload("res://scripts/campaign.gd")
 const Lessons := preload("res://scripts/lessons.gd")
 const FloorData := preload("res://scripts/floor_data.gd")
-const Staff := preload("res://scripts/staff.gd")
+static var Staff: GDScript = preload("res://scripts/staff_source.gd").roster()
+const SU := preload("res://tests/staff_util.gd")
 
 func check(cond: bool, msg: String) -> void:
 	if not cond:
@@ -78,19 +80,18 @@ func _attend(main: Node, i: int) -> void:
 	await create_timer(0.1).timeout
 	main.daynight.minutes = Campaign.lesson_start(i) + 0.5
 	await create_timer(0.25).timeout
-	check(main.lesson_ui.visible and main.choice_ui.visible, "lesson %d quiz opened" % i)
-	for q in 3:
-		main.choice_ui.chosen.emit(main.lesson_ui._questions[main.lesson_ui._index][2])
+	check(QuizUtil.is_open(main), "lesson %d quiz opened" % i)
+	QuizUtil.answer_all(main)
 	await create_timer(0.15).timeout
 
 func _run() -> void:
 	# Names policy, re-asserted.
 	var surnames := {}
 	for p: Array in Staff.ROSTER:
-		surnames[Staff.surname(p[0])] = true
+		surnames[SU.surname(p[0])] = true
 	for id: String in Lessons.SUSPECT_IDS:
 		var n: String = Lessons.TEACHER_NAMES[id]
-		check(not Staff.is_real_name(n) and not surnames.has(Staff.surname(n)), "%s not in the roster, no shared surname" % n)
+		check(not SU.is_real_name(n) and not surnames.has(SU.surname(n)), "%s not in the roster, no shared surname" % n)
 	# The culprit is always a suspect over 20 fresh campaigns.
 	for k in 20:
 		var c := Campaign.new()
@@ -104,7 +105,7 @@ func _run() -> void:
 	m.daynight.minutes = 400.0
 	await create_timer(1.2).timeout
 	_sample(m, "pre-school")
-	for i in 7:
+	for i in 3:   # Day 1 ends with the explosion after lesson 3: lessons 4 to 7 are cancelled.
 		await _attend(m, i)
 		if i != 1:
 			m.entity.sleep()   # scripted break chases would catch the teleporting player
@@ -125,7 +126,7 @@ func _run() -> void:
 			check(m.crowd.shown_count() >= during, "crowd not smaller after the glimpse (%d vs %d)" % [m.crowd.shown_count(), during])
 		await create_timer(1.2).timeout
 		_sample(m, "after lesson %d" % i)
-	check(m.campaign.attended == 7 and m.campaign.skipped == 0, "all 7 lessons attended")
+	check(m.campaign.attended == 3 and m.campaign.skipped == 0 and m.campaign.incident, "3 lessons attended, then the explosion")
 
 	# Clock sweep every 10 game minutes over the school day (lessons resolved so the clock may jump).
 	m = await _fresh()

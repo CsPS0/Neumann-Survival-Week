@@ -11,6 +11,7 @@ func _initialize() -> void:
 	print("PASS" if fails == 0 else "FAILS: %d" % fails)
 	quit(fails)
 
+const QuizUtil := preload("res://tests/quiz_util.gd")
 const Campaign := preload("res://scripts/campaign.gd")
 const Lessons := preload("res://scripts/lessons.gd")
 const Rooms := preload("res://scripts/rooms.gd")
@@ -89,14 +90,23 @@ func _attend(main: Node, i: int) -> void:
 	check(main._player_in_room(subject), "in the room of %s" % subject)
 	main.daynight.minutes = Campaign.lesson_start(i) + 0.5
 	await create_timer(0.25).timeout
-	check(main.lesson_ui.visible and main.choice_ui.visible, "day %d lesson %d: quiz opened" % [main.campaign.day, i])
-	for q in 3:
-		main.choice_ui.chosen.emit(main.lesson_ui._questions[main.lesson_ui._index][2])
+	check(QuizUtil.is_open(main), "day %d lesson %d: quiz opened" % [main.campaign.day, i])
+	QuizUtil.answer_all(main)
 	await create_timer(0.15).timeout
+
+## KNOWN GAME BUG (see t37_inventory_full.gd): a full inventory (11 slots) refuses every pickup, story items and clues
+## included, and nothing can be discarded. A real week collects more than 11 things, so this run drops the items it
+## has already used (read clues and finds) before it picks up the next story item. Remove once the game handles it.
+func _make_room(main: Node) -> void:
+	var p: Node = main.player
+	for id: String in p.items.names.keys():
+		if p.has_item(id) and (id.begins_with("clue_") or main.finds.found.has(id)):
+			p.remove_item(id)
 
 func _take_clues(main: Node) -> void:
 	for c in get_nodes_in_group("clue"):
 		if not c.is_queued_for_deletion():
+			_make_room(main)
 			c.interact(main.player)
 
 func _home(main: Node) -> void:
@@ -124,6 +134,7 @@ func _steal(main: Node, label: String) -> bool:
 func _hunt(main: Node, borrow: bool) -> void:
 	var p: Node = main.player
 	var quest: Node = main.quest
+	_make_room(main)
 	check(main.choice_ui.visible and main._accusing, "day 4: accusation opens")
 	main.choice_ui.chosen.emit(main.TEACHER_ORDER.find(main.campaign.culprit))
 	await create_timer(0.3).timeout
@@ -197,23 +208,18 @@ func _run() -> void:
 	await create_timer(2.5).timeout
 	check(p.stamina > low + 10.0, "stamina refills after resting (%.1f -> %.1f)" % [low, p.stamina])
 	p.global_position = main._spawn_point
-	# The sticker: ask, find the form, give it.
+	# New student cards are only handed out on day 3.
 	main.porter.interact(p)
 	main.choice_ui.chosen.emit(3)
-	check(main._message_label.text.contains("signed form") and main._message_label.text.contains("1st floor"), "the porter wants the signed form from the 1st floor")
-	check(main.tasks.lines(1).any(func(l: String) -> bool: return l.contains("1st floor")), "tasks say where the form is")
+	check(main._message_label.text.contains("day 3"), "day 1: new cards come on day 3")
 	check(main.quest.hint().contains("Ask the porter"), "valid card: ask the porter for the red key")
 	var form: Node = get_nodes_in_group("form")[0]
 	check(Rooms.is_open(main._form_room_label), "form in an open room")
-	form.interact(p)
-	main.porter.interact(p)
-	main.choice_ui.chosen.emit(3)
-	check(porta.card_renewed and main.tasks.is_done("card"), "card renewed with the form")
-	# Take a key.
+	# Take a key: the room stays shut, the key is signed out with the time and has to come back before the next one.
 	main.porter.interact(p)
 	main.choice_ui.chosen.emit(0)
 	main.choice_ui.chosen.emit(main._porta_labels.find("23"))
-	check(p.has_item("key_23"), "borrowed key 23")
+	check(p.has_item("key_23") and porta.signed_out.has("23") and main._message_label.text.contains("Signed at"), "borrowed key 23, signed out")
 	# Lessons 1-2; the break-2 bell starts the day-1 glimpse and sends the porter to the WC.
 	await _attend(main, 0)
 	main.entity.sleep()
@@ -271,11 +277,11 @@ func _run() -> void:
 	main.get_node("KeyBoard").interact(p)
 	main.choice_ui.chosen.emit(main._porta_labels.find("35"))
 	check(main._message_label.text.contains("Put that back") and porta.is_board_locked() and not p.has_item("key_35"), "caught at the board")
-	# The rest of the day's lessons.
-	for i in range(2, 7):
-		await _attend(main, i)
-		main.entity.sleep()
-	check(main.campaign.attended == 7 and main.campaign.skipped == 0, "day 1: all seven lessons attended")
+	# Lesson 3, then the explosion in Lab 14 cancels lessons 4 to 7 and the clock jumps to the last bell.
+	await _attend(main, 2)
+	main.entity.sleep()
+	check(main.campaign.incident and main.campaign.attended == 3 and main.campaign.skipped == 0, "day 1: three lessons, then the explosion")
+	check(main.daynight.minutes >= Campaign.LAST_BELL, "the explosion jumps the clock to the last bell")
 	_take_clues(main)
 	await _home(main)
 
@@ -286,16 +292,30 @@ func _run() -> void:
 	_invariants(main, "day 2")
 	for d in [2, 3]:
 		check(main.campaign.day == d, "day %d" % d)
+		if d == 3:
+			# The new card: the porter wants the signed form first, the form lies in a classroom on the 1st floor.
+			main.player.global_position = main._spawn_point
+			main.porter.interact(p)
+			main.choice_ui.chosen.emit(3)
+			check(main._message_label.text.contains("signed form") and main._message_label.text.contains("1st floor"), "day 3: the porter wants the signed form from the 1st floor")
+			check(main.tasks.lines(3).any(func(l: String) -> bool: return l.contains("1st floor")), "tasks say where the form is")
+			_make_room(main)
+			form.interact(p)
+			main.porter.interact(p)
+			main.choice_ui.chosen.emit(3)
+			check(porta.card_renewed and main.tasks.is_done("card"), "card renewed with the form")
 		for i in 7:
 			await _attend(main, i)
 			main.entity.sleep()
 		_take_clues(main)
 		await _home(main)
 	check(main.campaign.day == 4 and main.campaign.clues.size() == 9, "day 4 with %d clues" % main.campaign.clues.size())
-	check(main.campaign.skipped == 0 and main.campaign.attended == 21, "21 lessons attended")
+	check(porta.card_valid, "day 4: the renewed card is still valid")
+	check(main.campaign.skipped == 0 and main.campaign.attended == 17, "17 lessons attended (3 + 7 + 7)")
 	check(p.stamina > 0.0 and not p.exhausted, "not exhausted at day 4")
 
 	# --- Day 4 hunt, day 5 ritual --------------------------------------------------
+	check(porta.return_key().contains("Signed back in") and porta.signed_out.is_empty(), "key 23 signed back in before the red key")
 	await _hunt(main, true)
 	main.daynight.minutes = 1321.0
 	await create_timer(0.4).timeout
@@ -308,6 +328,9 @@ func _run() -> void:
 	await create_timer(0.1).timeout
 	check(main.quest.ritual_active, "ritual started")
 	main.quest.ritual_left = 0.05
+	await create_timer(0.3).timeout
+	check(main._fate_open and main.choice_ui.visible, "ritual done: cure or destroy prompt")
+	main.choice_ui.chosen.emit(0)
 	await create_timer(0.5).timeout
 	var expected := 4 if main.campaign.clues.size() == 9 and main.campaign.quiz_ratio() >= 0.8 else 2
 	check(main.ending_screen.current_id == expected and main.campaign.ending_id == expected, "ending %d (got %d)" % [expected, main.ending_screen.current_id])
@@ -316,30 +339,31 @@ func _run() -> void:
 	_cleanup(main)
 	await create_timer(0.3).timeout
 
-	# --- Second run: no sticker. Day 2 refuses, stealing still finishes the story ----------
+	# --- Second run: no sticker. The card expires on day 4, stealing still finishes the story ----------
 	main = await _fresh()
 	p = main.player
 	porta = main.porta
 	main.campaign._resolved.fill(true)
 	main.campaign._ended.fill(true)
 	await _home(main)
-	check(main.campaign.day == 2 and not porta.card_valid, "day 2: card expired without the sticker")
-	check(main._message_label.text.contains("expired"), "day 2 expiry message")
-	main.campaign._resolved.fill(true)
-	main.campaign._ended.fill(true)
-	check(porta.ask_key("23").contains("expired") and porta.ask_key("red").contains("expired"), "no lending on day 2")
-	check(porta.ask_sticker().contains("expired"), "no sticker on day 2")
+	check(main.campaign.day == 2 and porta.card_valid, "day 2: the card is still valid")
+	await _home(main)
+	check(main.campaign.day == 3 and porta.card_valid, "day 3: the card is still valid, the sticker is the task")
+	await _home(main)
+	check(main.campaign.day == 4 and not porta.card_valid, "day 4: card expired without the sticker")
+	check(main._message_label.text.contains("expired"), "day 4 expiry message")
+	main.choice_ui.close()   # The accusation opens at the start of day 4; the steals below come first.
+	main._accusing = false
+	p.controls_enabled = true
+	check(porta.ask_key("23").contains("expired") and porta.ask_key("red").contains("expired"), "no lending on day 4")
+	check(porta.ask_sticker().contains("expired"), "no sticker on day 4")
 	check(main.quest.hint().contains("board"), "expired card: the hint points to the board, not the porter")
 	main.porter.interact(p)
 	main.choice_ui.chosen.emit(1)   # "There is a leak in the WC"
 	check(porta.away, "distraction works without a card")
 	check(await _steal(main, "red"), "stole the red room key")
 	check(porta.try_steal("14").contains("pocket") and p.has_item("key_14"), "stole key 14")
-	await _home(main)
-	main.campaign._resolved.fill(true)
-	main.campaign._ended.fill(true)
-	await _home(main)
-	check(main.campaign.day == 4 and not porta.card_valid, "day 4, card still expired")
+	main._open_accusation()
 	await _hunt(main, false)
 	main.daynight.minutes = 1321.0
 	await create_timer(0.4).timeout
@@ -349,6 +373,8 @@ func _run() -> void:
 	main.choice_ui.chosen.emit(0)
 	await create_timer(0.1).timeout
 	main.quest.ritual_left = 0.05
+	await create_timer(0.3).timeout
+	main.choice_ui.chosen.emit(0)   # Cure the teacher.
 	await create_timer(0.5).timeout
 	check(main.campaign.ending_id in [2, 4], "run 2 ends with the ritual (ending %d)" % main.campaign.ending_id)
 	_cleanup(main)
