@@ -1,5 +1,6 @@
 extends Node3D
-## Student crowd: ONE MultiMeshInstance3D pair (bodies and heads), no per-student node, no collision, no navigation.
+## Student crowd: ONE MultiMeshInstance3D pair (bodies and heads), no per-student node, no navigation.
+## Collision: a small pool of capsule bodies follows the students closest to the player, so nobody can be walked through.
 ## In a lesson the classes near the player sit in their classrooms; in a break they walk the corridors (corridor flow, culling and panic).
 ## Polls the campaign clock twice a second. Hunt days, after hours and the far side of the school show nobody.
 
@@ -18,6 +19,13 @@ const PLAYER_CLEAR := 1.0    ## Nobody is seated within this radius of the playe
 const TABLE_CLEAR := 0.9     ## ... or of a clue table.
 const FLOW_SPEED := Vector2(1.1, 1.8)
 const PANIC_RADIUS := 25.0
+const FLOW_CLEAR := 0.5      ## A walker closer than this to the camera is not drawn (the collision keeps students further out).
+const COLLIDE_LAYER := 128   ## Layer 8: only the player's mask contains it, so rays, the entity and the navmesh ignore it.
+const COLLIDE_POOL := 8      ## Capsule bodies shared by all students; the closest ones to the player get one.
+const COLLIDE_RANGE := 2.5   ## Metres: only students this close (horizontally) need a body.
+const COLLIDE_RADIUS := 0.28
+const COLLIDE_HEIGHT := 1.5
+const PARKED := Vector3(0.0, -1000.0, 0.0)
 
 var player: Node3D
 var entity: Node3D
@@ -43,6 +51,7 @@ var _moving := false
 var _panicked := 0
 var _screamed := false
 var _scream := AudioStreamPlayer3D.new()
+var _bodies: Array[StaticBody3D] = []
 
 
 func _ready() -> void:
@@ -60,8 +69,40 @@ func _ready() -> void:
 	_body_mm.visible_instance_count = 0
 	_scream.max_distance = 40.0
 	add_child(_scream)
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = COLLIDE_RADIUS
+	capsule.height = COLLIDE_HEIGHT
+	for i in COLLIDE_POOL:
+		var body := StaticBody3D.new()
+		body.collision_layer = COLLIDE_LAYER
+		body.collision_mask = 0
+		var shape := CollisionShape3D.new()
+		shape.shape = capsule
+		body.add_child(shape)
+		add_child(body)
+		body.global_position = PARKED
+		_bodies.append(body)
 
 
+## Gives the students nearest to the player a capsule body, parks the rest. Only the drawn students count.
+func _physics_process(_delta: float) -> void:
+	var here := player.global_position if player != null else PARKED
+	var near: Array[Dictionary] = []
+	if player != null and not hidden:
+		for slot: Dictionary in _drawn:
+			var pos: Vector3 = slot["pos"]
+			var flat := Vector2(pos.x - here.x, pos.z - here.z).length()
+			if flat <= COLLIDE_RANGE and absf(pos.y - here.y) < FLOOR_HEIGHT * 0.5:
+				near.append({"pos": pos, "flat": flat})
+		if near.size() > COLLIDE_POOL:
+			near.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["flat"] < b["flat"])
+	for i in COLLIDE_POOL:
+		if i < near.size():
+			var pos: Vector3 = near[i]["pos"]
+			var floor_y := roundf(pos.y / FLOOR_HEIGHT) * FLOOR_HEIGHT   # Seat positions are chair height; the body stands on the floor.
+			_bodies[i].global_position = Vector3(pos.x, floor_y + COLLIDE_HEIGHT * 0.5, pos.z)
+		else:
+			_bodies[i].global_position = PARKED
 
 
 func _process(delta: float) -> void:
@@ -249,7 +290,7 @@ func _advance(delta: float) -> void:
 		var pos: Vector3 = slot["pos"]
 		if slot["kind"] == "flow":
 			var gap := pos.distance_to(here)
-			if gap > NEAR * 1.3 or gap < PLAYER_CLEAR:   # too far, or about to walk through the camera
+			if gap > NEAR * 1.3 or gap < FLOW_CLEAR:   # too far, or inside the camera
 				continue
 		if panic and pos.distance_to(entity.global_position) < PANIC_RADIUS:
 			_panicked += 1

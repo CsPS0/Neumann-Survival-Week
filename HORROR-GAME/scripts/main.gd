@@ -131,6 +131,8 @@ var _stone_material := _make_material(Color(0.4, 0.38, 0.36), 0.95)
 
 var _hud_layer := CanvasLayer.new()
 var _hud := Label.new()
+var _inventory_panel := PanelContainer.new()   ## Tab: hand, pockets and bag, one per line.
+var _inventory_label := Label.new()
 var _stamina_bg := ColorRect.new()
 var _stamina_bar: ColorRect
 var _stamina_tween: Tween
@@ -403,6 +405,7 @@ func _connect_signals() -> void:
 	player.prompt_changed.connect(func(text: String) -> void: _prompt_label.text = text)
 	player.item_added.connect(func(_id: String) -> void: _update_hud())
 	player.inventory_changed.connect(_update_hud)
+	player.inventory_panel_toggled.connect(_show_inventory_panel)
 	player.phone_mode_changed.connect(func(_two: bool) -> void: _update_hud())
 	daynight.dusk_started.connect(_on_dusk)
 	daynight.night_fell.connect(_on_night)
@@ -1907,6 +1910,13 @@ func _build_hud() -> void:
 	_hud.add_theme_color_override("font_shadow_color", Color.BLACK)
 	layer.add_child(_hud)
 
+	_inventory_panel.position = Vector2(16.0, 150.0)
+	_inventory_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_inventory_label.add_theme_font_size_override("font_size", 20)
+	_inventory_panel.add_child(_inventory_label)
+	_inventory_panel.visible = false
+	layer.add_child(_inventory_panel)
+
 	_stamina_bg.position = Vector2(16.0, 112.0)
 	_stamina_bg.size = Vector2(160.0, 6.0)
 	_stamina_bg.color = Color(0.0, 0.0, 0.0, 0.5)
@@ -1949,14 +1959,21 @@ func _build_hud() -> void:
 	_update_hud()
 
 
+func _show_inventory_panel(open: bool) -> void:
+	_inventory_panel.visible = open
+	_update_hud()
+
+
 func _update_hud() -> void:
+	if _inventory_panel.visible:
+		_inventory_label.text = player.items.detail()
 	var held := "empty hands"
 	if player.phone.raised:
 		held = "phone (two hands)" if player.phone_two_hands else "phone (one hand)"
 	elif player.flashlight.visible:
 		held = "flashlight"
 	# Tasks, the timetable and the objective live on the phone (Q, Tab): the HUD keeps what is needed to survive.
-	_hud.text = "Day %d  |  %s  |  %s  |  Battery %d%%  |  In hand: %s\n[F] light   [Q] phone (H: one or two hands)   [E] interact   [Shift] sprint%s   [Esc] pause\n%s\n[B] drop or pick up the bag   [X] switch hand   [V] stow or take out" % [
+	_hud.text = "Day %d  |  %s  |  %s  |  Battery %d%%  |  In hand: %s\n[F] light   [Q] phone (H: one or two hands)   [E] interact   [Shift] sprint%s   [Esc] pause\n%s\n[Tab] inventory   [B] drop or pick up the bag   [X] switch hand   [V] stow or take out" % [
 		campaign.day, FLOOR_NAMES[_floor_index], daynight.time_text(), roundi(_battery * 100.0), held,
 		"   [G] name the entity" if campaign.day > campaign.LAST_SCHOOL_DAY else "", player.items.summary()]
 

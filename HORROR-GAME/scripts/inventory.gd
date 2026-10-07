@@ -158,6 +158,23 @@ func summary() -> String:
 	return "   |   ".join(parts)
 
 
+## Every place on its own line, for the inventory panel (Tab).
+func detail() -> String:
+	var hand := hand_item()
+	var lines: Array[String] = ["INVENTORY", "",
+			"%s hand: %s" % ["Left" if left_handed else "Right", label_of(hand) if hand != "" else "empty"]]
+	for place: int in [Place.POCKET_LEFT, Place.POCKET_RIGHT]:
+		var side := "Left" if place == Place.POCKET_LEFT else "Right"
+		lines.append("%s pocket: %s" % [side, label_of(slots[place][0]) if not slots[place].is_empty() else "empty"])
+	if bag_worn:
+		lines.append("Bag (%d/%d, %.1f kg):" % [slots[Place.BAG].size(), BAG_SLOTS, bag_weight()])
+	else:
+		lines.append("Bag: on the floor, out of reach (%d items)" % slots[Place.BAG].size())
+	for id: String in slots[Place.BAG]:
+		lines.append("   %s" % label_of(id))
+	return "\n".join(lines)
+
+
 func _put(place: int, id: String, display_name: String) -> int:
 	slots[place].append(id)
 	names[id] = display_name
