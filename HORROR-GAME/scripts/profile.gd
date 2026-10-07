@@ -2,6 +2,7 @@ extends Node
 ## Settings, unlocked achievements and seen endings, stored in user://profile.cfg. Applies settings to the game.
 
 const Achievements := preload("res://scripts/achievements.gd")
+const Endings := preload("res://scripts/endings.gd")
 const DEFAULTS := {"volume": 0.8, "sensitivity": 0.0025, "invert_y": false, "fov": 75.0, "brightness": 1.0, "fullscreen": false, "easy_map": false, "scare_flash": true}
 ## Slider ranges, kept in step with settings_ui.gd. Hand-edited values are clamped into them.
 const RANGES := {"volume": [0.0, 1.0], "sensitivity": [0.001, 0.006], "fov": [60.0, 100.0], "brightness": [0.6, 1.6]}
@@ -37,7 +38,7 @@ func has(id: String) -> bool:
 
 
 func mark_ending(id: int) -> void:
-	if id >= 1 and id <= 8 and not endings_seen.has(id):
+	if id >= 1 and id <= Endings.COUNT and not endings_seen.has(id):
 		endings_seen.append(id)
 		save()
 
@@ -70,7 +71,7 @@ func load_from_disk() -> void:
 	var seen: Variant = file.get_value("progress", "endings", [])
 	if seen is Array:
 		for id: Variant in seen:
-			if id is int and id >= 1 and id <= 8 and not endings_seen.has(id):
+			if id is int and id >= 1 and id <= Endings.COUNT and not endings_seen.has(id):
 				endings_seen.append(id)
 
 
