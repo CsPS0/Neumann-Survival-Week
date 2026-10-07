@@ -106,6 +106,7 @@ var ending_screen := EndingScreen.new()
 var profile := preload("res://scripts/profile.gd").new()
 var achievements := preload("res://scripts/achievements.gd").new()
 var choice_ui := preload("res://scripts/choice_ui.gd").new()
+var answer_sheet := preload("res://scripts/answer_sheet.gd").new()
 var lesson_ui := preload("res://scripts/lesson_ui.gd").new()
 
 var _menu_camera := Camera3D.new()
@@ -220,7 +221,10 @@ func _ready() -> void:
 	add_child(campaign)
 	add_child(ending_screen)
 	add_child(choice_ui)
+	add_child(answer_sheet)
 	lesson_ui.choice_ui = choice_ui
+	lesson_ui.sheet = answer_sheet
+	lesson_ui.typed = not XRManager.is_xr_active()
 	add_child(lesson_ui)
 	daynight.environment = $WorldEnvironment.environment
 	quest.player = player
@@ -356,7 +360,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().reload_current_scene()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G and not menu.is_open():
 		_open_accusation()
-	elif event.is_action_pressed(&"ui_cancel") and not _game_over and not menu.is_open() and not choice_ui.visible:
+	elif event.is_action_pressed(&"ui_cancel") and not _game_over and not menu.is_open() and not choice_ui.visible \
+			and not lesson_ui.visible:
 		get_tree().paused = true
 		_hud_layer.visible = false
 		menu.show_pause()
@@ -569,6 +574,7 @@ func _on_ending(id: int) -> void:
 	if _code_open:
 		_close_code_lock()
 	choice_ui.close()
+	answer_sheet.close()
 	entity.sleep()
 	player.controls_enabled = false
 	ending_screen.show_ending(id, campaign.stats())
