@@ -229,6 +229,42 @@ static func locker_door() -> AudioStreamWAV:
 		return _make(out))
 
 
+## Two short chesty coughs.
+static func cough() -> AudioStreamWAV:
+	return _cached("cough", func() -> AudioStreamWAV:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 21
+		var length := int(RATE * 0.7)
+		var out := PackedFloat32Array()
+		out.resize(length)
+		var smooth := 0.0
+		for i in length:
+			var t := float(i) / RATE
+			smooth += (rng.randf_range(-1.0, 1.0) - smooth) * 0.3
+			var burst := exp(-pow((t - 0.08) * 22.0, 2.0)) + 0.8 * exp(-pow((t - 0.4) * 18.0, 2.0))
+			out[i] = (smooth * 0.8 + sin(TAU * 140.0 * t) * 0.3) * burst * 0.8
+		return _make(out))
+
+
+## A deep blast with falling rumble, played when Lab 14 explodes.
+static func explosion() -> AudioStreamWAV:
+	return _cached("explosion", func() -> AudioStreamWAV:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 14
+		var length := int(RATE * 3.0)
+		var out := PackedFloat32Array()
+		out.resize(length)
+		var smooth := 0.0
+		for i in length:
+			var t := float(i) / RATE
+			smooth += (rng.randf_range(-1.0, 1.0) - smooth) * 0.08
+			var boom := sin(TAU * (70.0 - 30.0 * minf(t, 1.0)) * t) * exp(-t * 2.2)
+			var crack := rng.randf_range(-1.0, 1.0) * exp(-t * 14.0)
+			var rumble := smooth * exp(-t * 1.4)
+			out[i] = clampf((boom * 0.9 + crack * 0.7 + rumble * 1.4) * minf(t / 0.003, 1.0), -1.0, 1.0)
+		return _make(out))
+
+
 static func _cached(key: String, builder: Callable) -> AudioStreamWAV:
 	if not _cache.has(key):
 		_cache[key] = builder.call()
