@@ -86,6 +86,8 @@ func return_key() -> String:
 	if signed_out.is_empty():
 		return "You have no key signed out."
 	var label: String = signed_out.keys()[0]
+	if not player.has_item(key_item(label)):
+		return "You do not have the key on you. Pick up your bag first."
 	if room_closed.is_valid() and not room_closed.call(label):
 		return "%s is still open. Close and lock it first, then bring the key back." % _room_name(label)
 	var since: float = signed_out[label]

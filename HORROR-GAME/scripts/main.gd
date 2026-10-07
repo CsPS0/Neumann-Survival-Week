@@ -395,6 +395,8 @@ func _connect_signals() -> void:
 	player.inspected.connect(_show_message)
 	player.prompt_changed.connect(func(text: String) -> void: _prompt_label.text = text)
 	player.item_added.connect(func(_id: String) -> void: _update_hud())
+	player.inventory_changed.connect(_update_hud)
+	player.phone_mode_changed.connect(func(_two: bool) -> void: _update_hud())
 	daynight.dusk_started.connect(_on_dusk)
 	daynight.night_fell.connect(_on_night)
 	quest.changed.connect(_on_quest_changed)
@@ -1817,7 +1819,7 @@ func _build_hud() -> void:
 	_hud.add_theme_color_override("font_shadow_color", Color.BLACK)
 	layer.add_child(_hud)
 
-	_stamina_bg.position = Vector2(16.0, 64.0)
+	_stamina_bg.position = Vector2(16.0, 112.0)
 	_stamina_bg.size = Vector2(160.0, 6.0)
 	_stamina_bg.color = Color(0.0, 0.0, 0.0, 0.5)
 	_stamina_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1860,11 +1862,15 @@ func _build_hud() -> void:
 
 
 func _update_hud() -> void:
-	var held := "phone" if player.phone.raised else ("flashlight" if player.flashlight.visible else "empty hands")
+	var held := "empty hands"
+	if player.phone.raised:
+		held = "phone (two hands)" if player.phone_two_hands else "phone (one hand)"
+	elif player.flashlight.visible:
+		held = "flashlight"
 	# Tasks, the timetable and the objective live on the phone (Q, Tab): the HUD keeps what is needed to survive.
-	_hud.text = "Day %d  |  %s  |  %s  |  Battery %d%%  |  In hand: %s\n[F] light   [Q] phone: tasks, map, e-Kréten   [E] interact   [Shift] sprint%s   [Esc] pause" % [
+	_hud.text = "Day %d  |  %s  |  %s  |  Battery %d%%  |  In hand: %s\n[F] light   [Q] phone (H: one or two hands)   [E] interact   [Shift] sprint%s   [Esc] pause\n%s\n[B] drop or pick up the bag   [X] switch hand   [V] stow or take out" % [
 		campaign.day, FLOOR_NAMES[_floor_index], daynight.time_text(), roundi(_battery * 100.0), held,
-		"   [G] name the entity" if campaign.day > campaign.LAST_SCHOOL_DAY else ""]
+		"   [G] name the entity" if campaign.day > campaign.LAST_SCHOOL_DAY else "", player.items.summary()]
 
 
 func _show_message(text: String, seconds := -1.0) -> void:

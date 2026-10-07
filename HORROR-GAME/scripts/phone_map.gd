@@ -20,6 +20,7 @@ const LOGICAL_WIDTH := 300.0     ## Pages 1+ are laid out for 300x560 and scaled
 const BAR := 24.0                ## Height of the app bar at the bottom (logical units).
 const PAGE_COUNT := 7
 const APP_NAMES := ["MAP", "TASKS", "CLUES", "FINDS", "MECHA", "e-KRÉTEN", "NOTICES"]
+const ONE_HAND_APPS := 2         ## One hand opens the first two apps: map and tasks.
 const MAX_ZOOM := 6.0
 const ZOOM_STEP := 1.5
 
@@ -37,6 +38,7 @@ var pan := Vector2.ZERO          ## Map pan in plan pixels, added to the focus (
 var section := 0                 ## Section of the open app (e-Kréten tab).
 var scroll := 0                  ## First visible row of a list page.
 var easy := false
+var two_hands := false           ## Two hands: all apps. One hand: map and tasks only.
 var _time := 0.0
 var _bulletin_key := ""
 var _bulletin_posts: Array = []
@@ -135,8 +137,8 @@ func _draw() -> void:
 	var titles := ["FLOOR %d" % floor_view, "TASKS", "CLUES", "FINDS", "NEU_MECHA", "e-Kréten", "Diákhirdetmények"]
 	draw_string(font, Vector2(14.0, 40.0), titles[page], HORIZONTAL_ALIGNMENT_LEFT, -1, 16,
 			Color.WHITE if page >= 5 else Color(0.4, 0.9, 1.0))
-	draw_string(font, Vector2(LOGICAL_WIDTH - 100.0, 20.0), "TAB: next",
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.7, 0.7, 0.75))
+	draw_string(font, Vector2(LOGICAL_WIDTH - 130.0, 20.0), "TAB: next  H: %s" % ("1 hand" if two_hands else "2 hands"),
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.7, 0.7, 0.75))
 	_draw_app_bar(font)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_interference(player)
@@ -149,10 +151,11 @@ func _draw_app_bar(font: Font) -> void:
 	var cell := LOGICAL_WIDTH / PAGE_COUNT
 	for i in PAGE_COUNT:
 		var active := i == page
+		var open := two_hands or i < ONE_HAND_APPS
 		if active:
 			draw_rect(Rect2(i * cell + 2.0, top + 2.0, cell - 4.0, BAR - 4.0), Color(0.12, 0.2, 0.34))
 		draw_string(font, Vector2(i * cell, top + 15.0), APP_NAMES[i], HORIZONTAL_ALIGNMENT_CENTER, cell, 8,
-				Color(0.9, 0.95, 1.0) if active else Color(0.5, 0.55, 0.65))
+				Color(0.9, 0.95, 1.0) if active else (Color(0.5, 0.55, 0.65) if open else Color(0.28, 0.3, 0.36)))
 
 
 ## Page 0: the whole floor `floor_view`, fitted to the screen. The player marker, key/altar markers and the

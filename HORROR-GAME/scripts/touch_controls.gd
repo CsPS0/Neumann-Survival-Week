@@ -27,6 +27,10 @@ func _ready() -> void:
 	$Buttons/BtnQ.pressed.connect(func(): bridge.trigger_phone())
 	$Buttons/BtnE.pressed.connect(func(): bridge.trigger_interact())
 	$Buttons/BtnTab.pressed.connect(func(): bridge.trigger_phone_tab())
+	$Buttons/BtnHands.pressed.connect(func(): bridge.trigger_phone_hands())
+	$Buttons/BtnBag.pressed.connect(func(): bridge.trigger_bag())
+	$Buttons/BtnSwap.pressed.connect(func(): bridge.trigger_swap_hand())
+	$Buttons/BtnStow.pressed.connect(func(): bridge.trigger_stow())
 	$Buttons/BtnEsc.pressed.connect(func(): bridge.trigger_pause())
 
 func _input(event: InputEvent) -> void:

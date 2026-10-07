@@ -1,14 +1,18 @@
 class_name Player
 extends CharacterBody3D
 ## First-person controller: WASD + sprint, mouse-look, head bob with footsteps, battery-limited
-## flashlight (F), phone map (Q), RayCast interaction (E).
+## flashlight (F), phone (Q, H for one or two hands), bag (B), active hand (X), stow or take (V), RayCast interaction (E).
 
 const SoundBank := preload("res://scripts/sound_bank.gd")
+const InventoryScript := preload("res://scripts/inventory.gd")
+const DroppedBag := preload("res://scripts/dropped_bag.gd")
 
 signal inspected(text: String)          ## Messages for the HUD (inspect text, "Locked", ...).
 signal flashlight_toggled(is_on: bool)
 signal battery_changed(percent: float)  ## 0.0 - 1.0
 signal item_added(item_id: String)
+signal inventory_changed                ## Anything moved between the hand, the pockets and the bag, or the bag was dropped.
+signal phone_mode_changed(two_hands: bool)
 signal prompt_changed(text: String)     ## What E would do on the object under the crosshair ("" = nothing).
 signal stamina_changed(fraction: float)
 signal exhausted_changed(is_exhausted: bool)
@@ -51,6 +55,10 @@ const ACTION_KEYS := {
 	&"phone_view_down": KEY_K,
 	&"phone_view_left": KEY_J,
 	&"phone_view_right": KEY_L,
+	&"phone_hands": KEY_H,
+	&"bag": KEY_B,
+	&"swap_hand": KEY_X,
+	&"stow": KEY_V,
 	&"hold_breath": KEY_SPACE,
 }
 
@@ -62,6 +70,8 @@ const ACTION_KEYS := {
 @onready var phone: Node3D = $Head/Camera3D/Phone
 
 const PHONE_ZOOM_STEP := 1.5   ## Map zoom per key press or wheel notch.
+const BAG_REACH := 2.2          ## Metres from which a dropped bag can be picked up with B.
+const BAG_DROP_DISTANCE := 0.8  ## Metres in front of the player where the bag lands.
 const STAMINA_MAX := 100.0
 const STAMINA_DRAIN := 20.0     ## About 5 s of sprint.
 const STAMINA_REGEN := 12.5     ## About 8 s to refill.
@@ -76,7 +86,8 @@ var _stamina_delay := 0.0
 var _breath := AudioStreamPlayer.new()
 var controls_enabled := true
 var invert_y := false
-var inventory := {}
+var items := InventoryScript.new()   ## Hand, pockets and bag. Use has_item / give_item / remove_item from other scripts.
+var phone_two_hands := false        ## False: phone in the active hand, torch in the other. True: both hands, no torch.
 var is_downed := false
 var is_hiding := false
 var is_holding_breath := false
@@ -97,6 +108,9 @@ var _look_target: Node3D
 var _light_before_phone := true
 var _last_prompt := ""
 var _torch_tween: Tween
+var _dropped_bag: Node3D
+var _torch_home: Vector3
+var _flashlight_home: Vector3
 
 
 
@@ -104,6 +118,9 @@ func _ready() -> void:
 	add_to_group("player")  # The entity looks the player up by this group.
 	_register_actions()
 	_flashlight_base_energy = flashlight.light_energy
+	_torch_home = torch.position
+	_flashlight_home = flashlight.position
+	items.changed.connect(func() -> void: inventory_changed.emit())
 	_step_audio.volume_db = -9.0
 	add_child(_step_audio)
 	_breath.stream = SoundBank.breath()
@@ -139,17 +156,23 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotate_x(-event.relative.y * mouse_sensitivity * (-1.0 if invert_y else 1.0))
 		head.rotation.x = clampf(head.rotation.x, deg_to_rad(-85.0), deg_to_rad(85.0))
 	elif event.is_action_pressed(&"flashlight"):
-		if phone.raised:
-			_lower_phone()  # One thing in hand at a time: grabbing the torch puts the phone away.
-			set_flashlight(true)
+		if phone.raised and phone_two_hands:
+			inspected.emit("Both hands hold the phone. Put it away or switch to one hand (H) to use the light.")
 		else:
 			set_flashlight(not flashlight.visible)
 	elif event.is_action_pressed(&"phone"):
 		if phone.raised:
 			_lower_phone()
-			set_flashlight(_light_before_phone)
 		else:
 			_raise_phone()
+	elif event.is_action_pressed(&"phone_hands"):
+		toggle_phone_hands()
+	elif event.is_action_pressed(&"bag"):
+		toggle_bag()
+	elif event.is_action_pressed(&"swap_hand"):
+		swap_active_hand()
+	elif event.is_action_pressed(&"stow"):
+		stow_or_take()
 	elif event.is_action_pressed(&"phone_page") and phone.raised:
 		phone.toggle_page()
 	elif event.is_action_pressed(&"phone_floor_prev") and phone.raised:
@@ -206,7 +229,7 @@ func _physics_process(delta: float) -> void:
 	var direction := (global_basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
 	var moving := direction.length() > 0.1
 	var sprinting := wants_sprint and moving and not exhausted
-	var speed := sprint_speed if sprinting else walk_speed
+	var speed := (sprint_speed if sprinting else walk_speed) * items.speed_multiplier()
 	_update_stamina(delta, sprinting, wants_sprint and moving)
 
 	velocity.x = move_toward(velocity.x, direction.x * speed, acceleration * delta)
@@ -295,18 +318,118 @@ func add_battery(amount: float) -> void:
 	battery_changed.emit(battery / battery_max)
 
 
+## True for an item in the hand, a pocket or the worn bag. Items in a dropped bag are out of reach.
 func has_item(id: String) -> bool:
-	return inventory.has(id)
+	return items.has(id)
 
 
+## False when the hand, both pockets and the bag are full (or the bag is on the floor).
+func can_carry() -> bool:
+	return items.can_add()
+
+
+## Story items are never refused: when everything is full the item ends up in the hand anyway.
 func give_item(id: String, display_name: String, message := "") -> void:
-	inventory[id] = display_name
+	items.add(id, display_name, true)
 	item_added.emit(id)
 	inspected.emit(message if message != "" else "You took the %s." % display_name)
 
 
 func remove_item(id: String) -> void:
-	inventory.erase(id)
+	items.remove(id)
+
+
+## B: drop the bag where you stand, or pick a dropped bag up again when it is within reach.
+func toggle_bag() -> void:
+	if is_hiding or not controls_enabled:
+		return
+	if items.bag_worn:
+		_dropped_bag = DroppedBag.new()
+		get_parent().add_child(_dropped_bag)
+		var forward := -global_basis.z
+		forward.y = 0.0
+		_dropped_bag.global_position = global_position + forward.normalized() * BAG_DROP_DISTANCE + Vector3.UP * 0.25
+		items.set_bag_worn(false)
+		inspected.emit("You drop the bag. Nothing in it is within reach until you pick it up again (B).")
+	elif _dropped_bag != null and is_instance_valid(_dropped_bag):
+		if global_position.distance_to(_dropped_bag.global_position) <= BAG_REACH:
+			pick_up_bag(_dropped_bag)
+		else:
+			inspected.emit("Your bag is too far away.")
+
+
+func pick_up_bag(bag: Node) -> void:
+	if items.bag_worn:
+		return
+	if bag != null and is_instance_valid(bag):
+		bag.queue_free()
+	_dropped_bag = null
+	items.set_bag_worn(true)
+	inspected.emit("You put the bag on. It is heavy.")
+
+
+## X: switch the active hand. The phone and the torch swap sides with it.
+func swap_active_hand() -> void:
+	if is_hiding or not controls_enabled:
+		return
+	if phone.raised:
+		inspected.emit("Put the phone away before you switch hands.")
+		return
+	items.swap_hand()
+	_apply_hand_side()
+	inspected.emit("Active hand: %s." % ("left" if items.left_handed else "right"))
+
+
+## V: put the item in the active hand into a pocket or the bag, or take the next stored item into the empty hand.
+func stow_or_take() -> void:
+	if is_hiding or not controls_enabled:
+		return
+	if phone.raised:
+		inspected.emit("The phone is in your hand. Put it away first.")
+	elif items.hand_item() != "":
+		var label := items.label_of(items.hand_item())
+		if items.stow_hand():
+			inspected.emit("You put the %s away." % label)
+		else:
+			inspected.emit("No room: both pockets are full and the bag is full or on the floor.")
+	else:
+		var id := items.take_to_hand()
+		if id != "":
+			inspected.emit("You take the %s in your %s hand." % [items.label_of(id), "left" if items.left_handed else "right"])
+		else:
+			inspected.emit("Nothing to take out.")
+
+
+## H: one hand (phone in the active hand, torch stays in the other, limited apps) or two hands (the phone fills
+## the screen with every app, but the torch goes away). Works with the phone up or down.
+func toggle_phone_hands() -> void:
+	if is_hiding or not controls_enabled:
+		return
+	phone_two_hands = not phone_two_hands
+	phone_mode_changed.emit(phone_two_hands)
+	if phone.raised:
+		_apply_phone_hands()
+	inspected.emit("Phone: two hands, full screen, no light." if phone_two_hands else "Phone: one hand, limited apps, light stays on.")
+
+
+func _apply_phone_hands() -> void:
+	if phone_two_hands:
+		_light_before_phone = flashlight.visible
+		set_flashlight(false)
+		_move_torch(true)
+	else:
+		_move_torch(false)
+		set_flashlight(_light_before_phone)
+	phone.set_two_hands(phone_two_hands)
+
+
+## Mirrors the torch, its light and the phone when the active hand is the right one.
+func _apply_hand_side() -> void:
+	var side := 1.0 if items.left_handed else -1.0
+	torch.position.x = _torch_home.x * side
+	torch.scale.x = side
+	flashlight.position.x = _flashlight_home.x * side
+	phone.set_left_handed(items.left_handed)
 
 
 ## Resets the player after being caught (inventory is kept).
@@ -338,17 +461,25 @@ func on_caught(source: Node3D = null) -> void:
 
 
 func _raise_phone() -> void:
+	# The phone needs the active hand: whatever is held goes into a pocket or the bag first.
+	if items.hand_item() != "" and not items.stow_hand():
+		inspected.emit("Your hand is full and there is no room to stow it. Free a pocket first.")
+		return
 	_light_before_phone = flashlight.visible
-	set_flashlight(false)
-	_move_torch(true)
+	phone.set_two_hands(phone_two_hands)
 	phone.set_raised(true)
+	if phone_two_hands:
+		set_flashlight(false)
+		_move_torch(true)
 
 
 func _lower_phone() -> void:
 	if not phone.raised:
 		return
 	phone.set_raised(false)
-	_move_torch(false)
+	if phone_two_hands:
+		_move_torch(false)
+		set_flashlight(_light_before_phone)
 
 
 func _move_torch(away: bool) -> void:
