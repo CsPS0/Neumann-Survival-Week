@@ -57,7 +57,15 @@ Notes:
 
 Seven subjects (Maths, Literature, Programming, Physics, History, English, Networks), each with its own room, teacher and question pool. The timetable changes every school day. You type each answer on the sheet and press Enter. Case, spaces and accents do not matter, and some questions accept more than one wording. Decisions (the accusation, the altar, the Porta lists) still use the numbered choice list, and VR keeps the choice list for quiz questions too. Your quiz score counts towards the best ending.
 
-### Deduction
+### Classrooms and keys
+
+The seven lesson classrooms are locked all day. The teacher opens each one 5 minutes before its lesson and locks it again after the lesson, once you are out of it. On hunt days they stay locked. To get in at another time, ask the porter for a key:
+
+- You sign for the key and the porter writes down the time.
+- You hold one signed key at a time. Bring it back before you ask for another.
+- Close the room before you hand the key back. With the key in your pocket, closing an open classroom door also locks it.
+- The porter never lends key 14.
+
 
 One of eight invented teachers is the entity, picked at random each run. Teachers talk when you press E. Clues hidden around the school each point to exactly one teacher, and the culprit lets more strange lines slip each day. Read the clues on your phone, then press G to accuse.
 
@@ -78,7 +86,7 @@ On day 5 the altar also offers a deal with the demon.
 - **Teachers:** follow daily routines, stand in their rooms during lessons and leave the building at dusk. Background teachers fill the corridors on school days.
 - **The caretaker:** patrols after hours. If he catches you, you are expelled.
 - **Csoki:** the caretaker's dog. It barks when the entity or the caretaker is near. A dog biscuit makes it follow you.
-- **The porter:** stands behind the Porta desk, lends keys and checks student cards.
+- **The porter:** stands behind the Porta desk, lends keys against a signature, takes them back once the room is closed, and checks student cards.
 - **Students:** a crowd sits in classrooms during lessons and walks the corridors during breaks.
 
 All character names in the committed code are invented.

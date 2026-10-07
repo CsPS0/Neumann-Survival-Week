@@ -64,6 +64,11 @@ static func subject_at(day: int, lesson: int) -> String:
 	return TIMETABLES[clampi(day, 1, 3) - 1][lesson]
 
 
+## Index (0..6) of the lesson that teaches `subject` on `day`.
+static func lesson_of(subject: String, day: int) -> int:
+	return TIMETABLES[clampi(day, 1, 3) - 1].find(subject)
+
+
 static func room_of(subject: String) -> String:
 	return SUBJECTS[subject][0]
 

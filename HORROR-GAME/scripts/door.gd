@@ -16,6 +16,7 @@ signal unlocked
 @export var locked := false
 @export var key_id := "storage_key"                  ## Inventory item that unlocks it.
 @export var locked_message := "Locked. You need a key."  ## Shown when the player has no matching key.
+@export var lock_key := ""                           ## Classrooms: closing the open door with this key locks it again.
 @export var master_key_ok := false                   ## Only today's locked after-hours door: the master key card opens it.
 
 var is_open := false
@@ -66,6 +67,11 @@ func interact(by: Node = null) -> void:
 		unlocked.emit()
 		by.inspected.emit("The card beeps. The door clicks open.")
 		set_open(true)
+		return
+	if is_open and lock_key != "" and by and by.has_item(lock_key):
+		set_open(false)
+		locked = true
+		by.inspected.emit("You close the door and lock it.")
 		return
 	if locked:
 		if by and by.has_item(key_id):

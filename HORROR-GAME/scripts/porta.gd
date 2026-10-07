@@ -7,6 +7,7 @@ const FloorData := preload("res://scripts/floor_data.gd")
 signal key_given(label: String)
 signal caught_stealing
 signal sent_away(seconds: float)   ## main walks the porter to the WC and back.
+signal key_returned(label: String)
 signal changed
 
 const CARD_DAY := 3               ## The new student card is handed out on this day and expires at its midnight.
@@ -24,6 +25,8 @@ var away := false
 var asleep := false               ## Night: he dozes at the desk, the board is unguarded (no soft-lock on day 5).
 var borrowed: Array[String] = []
 var stolen_14 := false
+var signed_out := {}              ## Label -> game minute it was signed for. At most one key is lent at a time.
+var room_closed := Callable()     ## (label) -> bool, set by main: is that room's door closed (and locked)?
 
 
 static func key_item(label: String) -> String:
@@ -60,14 +63,49 @@ func ask_key(label: String) -> String:
 		return "The board is locked for today."
 	if not lendable_keys().has(label):
 		return "I have no key for that one."
-	if player.has_item(key_item(label)):
+	if signed_out.has(label) or player.has_item(key_item(label)):
 		return "You already have that one."
+	if not signed_out.is_empty():
+		return "You still have the key for %s signed out. One key at a time. Bring it back first." % _room_name(signed_out.keys()[0])
 	_give(label)
+	signed_out[label] = campaign.daynight.minutes
 	if not borrowed.has(label):
 		borrowed.append(label)
 		if borrowed.size() == 5:
 			campaign.event.emit("key_collector", {})
-	return "Here. Bring it back some day." if label != RED else "The storage room? Fine. Don't lose it."
+	var opening := "Here." if label != RED else "The storage room? Fine. Don't lose it."
+	return "%s Signed at %s. Close the room before you bring the key back." % [opening, campaign.fmt(signed_out[label])]
+
+
+## Hands the signed key back. The room has to be closed first.
+func return_key() -> String:
+	if asleep:
+		return "Mr. Bakó is asleep at his desk."
+	if away:
+		return "Nobody is at the desk."
+	if signed_out.is_empty():
+		return "You have no key signed out."
+	var label: String = signed_out.keys()[0]
+	if room_closed.is_valid() and not room_closed.call(label):
+		return "%s is still open. Close and lock it first, then bring the key back." % _room_name(label)
+	var since: float = signed_out[label]
+	signed_out.erase(label)
+	player.remove_item(key_item(label))
+	key_returned.emit(label)
+	changed.emit()
+	return "Signed back in at %s. It was out since %s." % [campaign.fmt(campaign.daynight.minutes), campaign.fmt(since)]
+
+
+## The phone's task line for the key the player still has to bring back (empty when none).
+func key_line() -> String:
+	if signed_out.is_empty():
+		return ""
+	var label: String = signed_out.keys()[0]
+	return "[ ] Return the key for %s (signed at %s): close the room first" % [_room_name(label), campaign.fmt(signed_out[label])]
+
+
+func _room_name(label: String) -> String:
+	return "the storage room" if label == RED else "room " + label
 
 
 ## `seen`: main's check that the porter is within 6 m with a clear line of sight. Away alone is not enough.
