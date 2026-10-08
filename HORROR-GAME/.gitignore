@@ -11,6 +11,12 @@ docs/floor-plans/
 scripts/staff.gd
 scripts/staff.gd.uid
 
+# Photos and names of two real students (see scripts/student_faces_source.gd): a clone needs its own local copies to show
+# them, and falls back to scripts/student_faces_placeholder.gd without.
+assets/faces_local/
+scripts/student_faces_local.gd
+scripts/student_faces_local.gd.uid
+
 # Export output (the exe is about 109 MB); rebuild with the "Windows Desktop" preset.
 build/windows/
 *.zip

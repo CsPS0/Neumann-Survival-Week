@@ -14,6 +14,7 @@ const NECK := 6       ## Skin (neck, head, nose).
 const HAIR := 7
 const EYE := 8
 const LONG_HAIR := 9  ## Hidden for short-haired looks.
+const NOSE := 10      ## Skin. Hidden for named students (photo_student.gd), whose photo face covers the front of the head.
 
 const HIP_Y := 0.92
 const KNEE_Y := 0.46
@@ -21,6 +22,9 @@ const KNEE_Y := 0.46
 const SHADER := """
 shader_type spatial;
 render_mode cull_back;
+
+uniform vec4 skin_override : source_color = vec4(0.0);   // alpha 1: a named student's own skin and hair colour.
+uniform vec4 hair_override : source_color = vec4(0.0);
 
 varying vec3 tint;
 
@@ -87,6 +91,9 @@ void vertex() {
 	if (part == 9.0 && look < 0.45) {
 		pos = vec3(0.0, 1.5, 0.0);   // Short hair: the long back piece collapses.
 	}
+	if (part == 10.0 && skin_override.a > 0.5) {
+		pos = vec3(0.0, 1.5, 0.0);   // Named student: the nose would poke through the photo.
+	}
 
 	if (part < 3.0 || part >= 6.0) {
 		float lean = -(0.1 * seated + 0.35 * sick * (0.5 + 0.5 * seated));
@@ -103,12 +110,15 @@ void vertex() {
 	NORMAL = nrm;
 
 	vec3 skin = SKIN[int(hash11(look * 3.0) * 5.99)];
+	if (skin_override.a > 0.5) {
+		skin = skin_override.rgb;
+	}
 	if (sick > 0.5) {
 		skin = mix(skin, vec3(0.6, 0.75, 0.52), 0.45);
 	}
 	if (part < 2.0) {
 		tint = COLOR.rgb;
-	} else if (part == 2.0 || part == 6.0) {
+	} else if (part == 2.0 || part == 6.0 || part == 10.0) {
 		tint = skin;
 	} else if (part == 3.0 || part == 4.0) {
 		tint = TROUSERS[int(hash11(look * 5.0) * 3.99)];
@@ -117,7 +127,7 @@ void vertex() {
 	} else if (part == 8.0) {
 		tint = vec3(0.05, 0.04, 0.04);
 	} else {
-		tint = HAIR[int(hash11(look * 7.0) * 6.99)];
+		tint = hair_override.a > 0.5 ? hair_override.rgb : HAIR[int(hash11(look * 7.0) * 6.99)];
 	}
 }
 
@@ -146,6 +156,14 @@ static func material() -> ShaderMaterial:
 	return _material
 
 
+## A material of its own for a named student: the crowd shader with fixed skin and hair colours.
+static func named_material(skin: Color, hair: Color) -> ShaderMaterial:
+	var result := material().duplicate() as ShaderMaterial
+	result.set_shader_parameter("skin_override", Color(skin, 1.0))
+	result.set_shader_parameter("hair_override", Color(hair, 1.0))
+	return result
+
+
 static func _build() -> ArrayMesh:
 	var acc := {"v": [], "n": [], "u": [], "i": []}   # Plain arrays: packed ones are copied out of a dictionary.
 	for side in [-1.0, 1.0]:
@@ -162,7 +180,7 @@ static func _build() -> ArrayMesh:
 	_add(acc, _box(Vector3(0.38, 0.36, 0.21)), Vector3(0.0, 1.29, 0.0), Vector3.ONE, TORSO)
 	_add(acc, _cylinder(0.05, 0.05, 0.1), Vector3(0.0, 1.52, 0.0), Vector3.ONE, NECK)
 	_add(acc, _sphere(0.11), Vector3(0.0, 1.67, 0.0), Vector3(1.0, 1.14, 1.02), NECK)
-	_add(acc, _box(Vector3(0.022, 0.045, 0.03)), Vector3(0.0, 1.66, -0.113), Vector3.ONE, NECK)
+	_add(acc, _box(Vector3(0.022, 0.045, 0.03)), Vector3(0.0, 1.66, -0.113), Vector3.ONE, NOSE)
 	_add(acc, _sphere(0.118), Vector3(0.0, 1.715, 0.024), Vector3(1.04, 0.74, 1.0), HAIR)
 	_add(acc, _box(Vector3(0.22, 0.3, 0.06)), Vector3(0.0, 1.58, 0.09), Vector3.ONE, LONG_HAIR)
 	var arrays := []
