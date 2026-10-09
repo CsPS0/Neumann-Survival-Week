@@ -138,7 +138,7 @@ All character names in the committed code are invented.
 
 These features exist in the code but are early and untested on real hardware:
 
-- **Touch controls (Android):** an on-screen joystick, a look area and buttons for F, Q, E, Tab, Esc, H, bag, hand and stow. Mobile devices use a lower render scale.
+- **Touch controls (Android):** the overlay shows by itself on Android and hides while a menu, dialog or the safe keypad is open, or when a physical keyboard or mouse is used. Left half of the screen: floating stick (push to the edge to sprint). Right half: look. Buttons: E, F, Q, Tab, Hands, Bag, Swap, Stow, Pause (the Back button also pauses), Name (day 4), Ping (co-op), hold breath while hiding, and on the phone: floor, zoom and pan. The answer sheet has a Hand in button, the safe has a keypad and the ending card has a Play again button. Try it on a desktop with `godot --path . -- --touch`. Mobile devices use a lower render scale and the game runs in landscape.
 - **Co-op (up to 4 players):** Host Co-op and Join Co-op in the main menu, with a lobby, a ping marker (middle mouse button) and proximity voice. Join currently connects to the same computer only (127.0.0.1).
 - **VR (OpenXR):** the game switches to VR when an OpenXR runtime is present, otherwise it runs in standard mode.
 

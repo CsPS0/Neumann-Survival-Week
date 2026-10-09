@@ -12,6 +12,8 @@ var _heading := Label.new()
 var _question := Label.new()
 var _hint := Label.new()
 var _line := LineEdit.new()
+var _paper := PanelContainer.new()
+var _hand_in := Button.new()   ## Touch only: the on-screen keyboard has no reliable Enter.
 
 
 func _ready() -> void:
@@ -22,7 +24,7 @@ func _ready() -> void:
 	shade.color = Color(0.0, 0.0, 0.0, 0.7)
 	add_child(shade)
 
-	var paper := PanelContainer.new()
+	var paper := _paper
 	paper.set_anchors_preset(Control.PRESET_CENTER)
 	paper.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	paper.grow_vertical = Control.GROW_DIRECTION_BOTH
@@ -64,6 +66,11 @@ func _ready() -> void:
 	box.add_child(_line)
 	_style(_hint, 16, Color(INK, 0.6))
 	box.add_child(_hint)
+	_hand_in.text = "Hand in"
+	_hand_in.add_theme_font_size_override("font_size", 24)
+	_hand_in.custom_minimum_size = Vector2(0.0, 52.0)
+	_hand_in.pressed.connect(func() -> void: submitted.emit(_line.text))
+	box.add_child(_hand_in)
 
 
 func _style(label: Label, size: int, colour: Color) -> void:
@@ -76,6 +83,14 @@ func ask(heading: String, teacher_line: String, question: String, hint: String) 
 	_question.text = "%s\n\n%s" % [teacher_line, question]
 	_hint.text = hint
 	_line.text = ""
+	var bridge := get_tree().get_first_node_in_group("input_bridge")
+	var touch: bool = bridge != null and bridge.is_touch()
+	_hand_in.visible = touch
+	if touch:   # The sheet sits at the top so the on-screen keyboard does not cover it.
+		_hint.text = "Type the answer, then tap Hand in."
+		_paper.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		_paper.offset_top = 16.0
+		_paper.grow_vertical = Control.GROW_DIRECTION_END
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_line.grab_focus.call_deferred()
@@ -84,4 +99,5 @@ func ask(heading: String, teacher_line: String, question: String, hint: String) 
 func close() -> void:
 	visible = false
 	_line.release_focus()
+	DisplayServer.virtual_keyboard_hide()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED

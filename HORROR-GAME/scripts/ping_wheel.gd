@@ -10,16 +10,20 @@ func _ready() -> void:
 	
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_MIDDLE:
-		if NetSession.is_multiplayer_active():
-			var main = get_tree().current_scene
-			if main and main.name == "Main" and main.player:
-				var target = main.player.interact_ray.get_collider()
-				var pos = main.player.interact_ray.get_collision_point()
-				if main.player.interact_ray.is_colliding():
-					var msg = "Ping!"
-					if target and target.has_method("interact"):
-						msg = "Item here!"
-					rpc("spawn_ping", pos, msg)
+		ping_at_crosshair()
+
+## Middle mouse button, or the Ping button of the touch overlay.
+func ping_at_crosshair() -> void:
+	if NetSession.is_multiplayer_active():
+		var main = get_tree().current_scene
+		if main and main.name == "Main" and main.player:
+			var target = main.player.interact_ray.get_collider()
+			var pos = main.player.interact_ray.get_collision_point()
+			if main.player.interact_ray.is_colliding():
+				var msg = "Ping!"
+				if target and target.has_method("interact"):
+					msg = "Item here!"
+				rpc("spawn_ping", pos, msg)
 
 @rpc("any_peer", "call_local")
 func spawn_ping(pos: Vector3, msg: String) -> void:
