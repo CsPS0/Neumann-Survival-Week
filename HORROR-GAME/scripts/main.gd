@@ -28,6 +28,7 @@ const PorterScript := preload("res://scripts/porter.gd")
 const TasksScript := preload("res://scripts/tasks.gd")
 const MechaScript := preload("res://scripts/mecha.gd")
 const HauntingScript := preload("res://scripts/haunting.gd")
+const AulaPhotoScript := preload("res://scripts/aula_photo.gd")
 const DreamScript := preload("res://scripts/dream.gd")
 const FurnitureScript := preload("res://scripts/furniture.gd")
 const HidingSpotScript := preload("res://scripts/hiding_spot.gd")
@@ -1544,6 +1545,7 @@ func _place_story_objects() -> void:
 	_build_find_tables()
 	_build_form_table()
 	_build_altar()
+	_build_aula_photo()
 	_place_batteries()
 
 
@@ -1760,6 +1762,14 @@ func _build_altar() -> void:
 		candle.visible = false
 		_altar.add_child(candle)
 		_altar_candles.append(candle)
+
+
+## Framed photo on the Aula's west wall (the east face of rooms 23 and 24), between their two doors.
+func _build_aula_photo() -> void:
+	_select_floor(0)
+	var wall := _to_world(313.0, 352.0)
+	var at := Vector3(wall.x + WALL_THICKNESS * 0.5 + 0.03, 1.7, wall.y)
+	AulaPhotoScript.build(self, at, Vector3.RIGHT, 1.3)
 
 
 ## Front door in the entrance hall: interact to go home (after the last bell on days 1-3) or leave for good.

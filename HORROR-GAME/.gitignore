@@ -27,3 +27,6 @@ docs/specs/
 docs/handoff/
 docs/data/
 build/
+
+# Local-only photo of real people (see scripts/aula_photo.gd): a clone shows an empty frame without it.
+assets/photos_local/
