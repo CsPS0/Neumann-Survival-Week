@@ -1,5 +1,7 @@
 extends Node3D
 ## Student crowd: ONE MultiMeshInstance3D pair (bodies and heads), no per-student node, no navigation.
+## The named students of scripts/student_faces_source.gd (two, with a photo face) are the exception: each takes one seat
+## of the player's class in lessons and one walking slot in breaks, and is drawn by its own photo_student.gd node.
 ## Collision: a small pool of capsule bodies follows the students closest to the player, so nobody can be walked through.
 ## In a lesson the classes near the player sit in their classrooms; in a break they walk the corridors (corridor flow, culling and panic).
 ## Polls the campaign clock twice a second. Hunt days, after hours and the far side of the school show nobody.
@@ -11,6 +13,8 @@ const CampaignScript := preload("res://scripts/campaign.gd")
 const SoundBank := preload("res://scripts/sound_bank.gd")
 const Outbreak := preload("res://scripts/outbreak.gd")
 const StudentModel := preload("res://scripts/student_model.gd")
+const PhotoStudentScript := preload("res://scripts/photo_student.gd")
+static var Faces: GDScript = preload("res://scripts/student_faces_source.gd").roster()
 
 const MAX_CROWD := 150
 const NEAR := 35.0           ## Only classrooms and corridors within this many metres (and one floor) are drawn.
@@ -26,6 +30,8 @@ const COLLIDE_RANGE := 2.5   ## Metres: only students this close (horizontally) 
 const COLLIDE_RADIUS := 0.28
 const COLLIDE_HEIGHT := 1.5
 const PARKED := Vector3(0.0, -1000.0, 0.0)
+const NAMED_CHAIRS := [6, 13]   ## Chair indices (front rows first) of the player's class that the named students take.
+const NAMED_WALKERS := [3, 9]   ## Walking slot indices that the named students take in a break.
 
 var player: Node3D
 var entity: Node3D
@@ -52,6 +58,8 @@ var _panicked := 0
 var _screamed := false
 var _scream := AudioStreamPlayer3D.new()
 var _bodies: Array[StaticBody3D] = []
+var _named: Array[PhotoStudentScript] = []   ## One photo_student.gd node per roster entry.
+var _last_awake := false
 
 
 func _ready() -> void:
@@ -69,6 +77,11 @@ func _ready() -> void:
 	_body_mm.visible_instance_count = 0
 	_scream.max_distance = 40.0
 	add_child(_scream)
+	for entry: Dictionary in Faces.STUDENTS:
+		var named := PhotoStudentScript.new()
+		named.setup(entry)
+		add_child(named)
+		_named.append(named)
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = COLLIDE_RADIUS
 	capsule.height = COLLIDE_HEIGHT
@@ -199,14 +212,21 @@ func _seat_class(id: String, room: Array) -> void:
 	var look := RandomNumberGenerator.new()   # Own generator: the look never shifts the colours and sick rolls above.
 	look.seed = hash([id, "look"])
 	var chairs: Array = seats.get("%d:%s" % [room[0], room[1]], [])
+	var chair_index := -1
 	for chair: Dictionary in chairs.slice(0, wanted):
+		chair_index += 1
 		var colour := _shirt(rng)
 		var ill: bool = campaign.day >= Outbreak.FIRST_DAY and rng.randf() < Outbreak.student_rate(campaign.day)
 		if ill:
 			colour = colour.lerp(Color(0.6, 0.75, 0.55), 0.6)
-		if not _blocked(chair["pos"]):
-			list.append({"kind": "seat", "pos": chair["pos"], "yaw": chair["yaw"], "colour": colour, "sick": ill,
-					"look": look.randf()})
+		if _blocked(chair["pos"]):
+			continue
+		var slot := {"kind": "seat", "pos": chair["pos"], "yaw": chair["yaw"], "colour": colour, "sick": ill, "look": look.randf()}
+		var who: int = NAMED_CHAIRS.find(chair_index) if id == Classes.PLAYER_CLASS else -1
+		if who >= 0 and who < _named.size():
+			slot["who"] = who   # Never ill: the named students stay in class.
+			slot["sick"] = false
+		list.append(slot)
 	if _slots.size() + list.size() <= MAX_CROWD:
 		_slots.append_array(list)
 
@@ -257,10 +277,14 @@ func _build_flow(density: float, seed_value: int) -> void:
 			if _slots.size() >= MAX_CROWD:
 				return
 			var dir := 1.0 if rng.randf() < 0.5 else -1.0
-			_slots.append({"kind": "flow", "line": line, "s": rng.randf() * float(line["length"]),
+			var slot := {"kind": "flow", "line": line, "s": rng.randf() * float(line["length"]),
 					"dir": dir, "speed": rng.randf_range(FLOW_SPEED.x, FLOW_SPEED.y),
 					"lane": dir * rng.randf_range(0.2, 0.6), "colour": _shirt(rng), "pos": Vector3.ZERO, "yaw": 0.0,
-					"look": fposmod(float(hash([seed_value, _slots.size()])), 997.0) / 997.0})
+					"look": fposmod(float(hash([seed_value, _slots.size()])), 997.0) / 997.0}
+			var who: int = NAMED_WALKERS.find(_slots.size())
+			if who >= 0 and who < _named.size():
+				slot["who"] = who
+			_slots.append(slot)
 			_moving = true
 
 
@@ -270,7 +294,9 @@ func _advance(delta: float) -> void:
 		_apply([])
 		return
 	var panic := _entity_awake()
-	if not (_dirty or _moving or panic or _panicked > 0):
+	var awake_changed := panic != _last_awake   # The named students change expression with it.
+	_last_awake = panic
+	if not (_dirty or _moving or panic or _panicked > 0 or awake_changed):
 		return
 	_dirty = false
 	_visible.clear()
@@ -326,19 +352,35 @@ func _point_on(points: Array, s: float) -> Array:
 func _apply(list: Array[Dictionary]) -> void:
 	_drawn = list
 	_shown = mini(list.size(), MAX_CROWD)
+	for named in _named:
+		named.hide_student()
+	var index := 0
 	for i in _shown:
 		var slot: Dictionary = list[i]
 		var pos: Vector3 = slot["pos"]
 		var look: float = slot["look"]
+		if slot.has("who"):
+			_place_named(slot)
+			continue
 		var sick: bool = slot.get("sick", false)
 		var height := lerpf(0.92, 1.05, fposmod(look * 11.0, 1.0))
 		var basis := Basis(Vector3.UP, slot["yaw"]).scaled(Vector3(1.0, height, 1.0))
 		if slot["kind"] == "seat":
 			# Hips on the chair seat (0.45 m): the model is 0.42 m lower and the shader folds the legs.
-			_body_mm.set_instance_transform(i, Transform3D(basis, pos + Vector3(0.0, -0.42 * height, 0.0)))
-			_body_mm.set_instance_custom_data(i, Color(look + (2.0 if sick else 0.0), 1.0, 0.0, 0.0))
+			_body_mm.set_instance_transform(index, Transform3D(basis, pos + Vector3(0.0, -0.42 * height, 0.0)))
+			_body_mm.set_instance_custom_data(index, Color(look + (2.0 if sick else 0.0), 1.0, 0.0, 0.0))
 		else:
-			_body_mm.set_instance_transform(i, Transform3D(basis, pos))
-			_body_mm.set_instance_custom_data(i, Color(look, 0.0, look * TAU, slot["speed"]))
-		_body_mm.set_instance_color(i, slot["colour"])
-	_body_mm.visible_instance_count = _shown
+			_body_mm.set_instance_transform(index, Transform3D(basis, pos))
+			_body_mm.set_instance_custom_data(index, Color(look, 0.0, look * TAU, slot["speed"]))
+		_body_mm.set_instance_color(index, slot["colour"])
+		index += 1
+	_body_mm.visible_instance_count = index
+
+
+## A named student: the same height spread as the crowd, calm in a lesson, friendly in a break, sad once the entity is awake.
+func _place_named(slot: Dictionary) -> void:
+	var named := _named[slot["who"]]
+	var look: float = named.look
+	var height := lerpf(0.92, 1.05, fposmod(look * 11.0, 1.0))
+	var expression := "sad" if _entity_awake() else ("smile" if slot["kind"] == "flow" else "neutral")
+	named.show_at(slot["pos"], slot["yaw"], height, slot["kind"] == "seat", slot.get("speed", 0.0), expression)

@@ -15,6 +15,7 @@ Status: playable demo. Rooms marked "Not available in the demo." stay closed.
 
 Notes:
 - A fresh clone runs as is. The staff roster falls back to `scripts/staff_placeholder.gd`, which holds invented names only.
+- Two named students (in the player's class during lessons, in the corridors during breaks) show a face wrapped over the head with three expressions: neutral in lessons, smile in breaks, sad once the entity is awake. The real names and photos are gitignored (`scripts/student_faces_local.gd` and `assets/faces_local/`). A fresh clone falls back to `scripts/student_faces_placeholder.gd`, which holds invented names and generated faces.
 - On Windows the renderer uses Direct3D 12. Other platforms use Godot's default driver.
 - Export presets and builds are not committed (`export_presets.cfg` and `build/` are gitignored). Create your own export preset in Godot to build an executable or APK.
 
