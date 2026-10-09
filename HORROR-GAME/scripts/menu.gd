@@ -16,6 +16,12 @@ const CONTROLS := "WASD  move        Shift  sprint        Mouse  look\n" \
 		+ "F  flashlight        Q  phone (Tab: apps)        E  interact\n" \
 		+ "G  name the entity (day 4)        Esc  pause"
 
+const TOUCH_CONTROLS := "Left half of the screen: drag to move, push to the edge to sprint\n" \
+		+ "Right half: drag to look around\n" \
+		+ "E use or interact   F flashlight   Q phone   Tab apps or inventory\n" \
+		+ "Hands, Bag, Swap, Stow: what you hold and carry   Name: name the entity (day 4)\n" \
+		+ "Pause (or the Back button) opens the menu"
+
 var profile: Node
 var on_settings_changed := Callable()
 
@@ -36,7 +42,8 @@ func _ready() -> void:
 	_build_page("achievements", "ACHIEVEMENTS", _ach_label)
 	_build_page("endings", "ENDINGS", _list_label)
 	var how := Label.new()
-	how.text = CONTROLS
+	var bridge := get_tree().get_first_node_in_group("input_bridge")
+	how.text = TOUCH_CONTROLS if bridge != null and bridge.is_touch() else CONTROLS
 	_build_page("how", "HOW TO PLAY", how)
 	_build_lobby_page()
 	show_title()

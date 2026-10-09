@@ -144,6 +144,7 @@ var _message_label := Label.new()
 var _flash := ColorRect.new()
 var _code_panel := PanelContainer.new()
 var _code_label := Label.new()
+var _code_keypad := VBoxContainer.new()   ## Touch only: the digits, Del, OK and Cancel for the safe.
 var _message_tween: Tween
 var _flash_tween: Tween
 var _hud_timer := 0.0
@@ -2029,7 +2030,12 @@ func _build_hud() -> void:
 	_code_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_code_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_code_label.add_theme_font_size_override("font_size", 34)
-	_code_panel.add_child(_code_label)
+	var code_box := VBoxContainer.new()
+	code_box.add_theme_constant_override("separation", 10)
+	code_box.add_child(_code_label)
+	code_box.add_child(_code_keypad)
+	_code_panel.add_child(code_box)
+	_build_code_keypad()
 	_code_panel.visible = false
 	layer.add_child(_code_panel)
 	_update_hud()
@@ -2049,9 +2055,13 @@ func _update_hud() -> void:
 	elif player.flashlight.visible:
 		held = "flashlight"
 	# Tasks, the timetable and the objective live on the phone (Q, Tab): the HUD keeps what is needed to survive.
-	_hud.text = "Day %d  |  %s  |  %s  |  Battery %d%%  |  In hand: %s\n[F] light   [Q] phone (H: one or two hands)   [E] interact   [Shift] sprint%s   [Esc] pause\n%s\n[Tab] inventory   [B] drop or pick up the bag   [X] switch hand   [V] stow or take out" % [
-		campaign.day, FLOOR_NAMES[_floor_index], daynight.time_text(), roundi(_battery * 100.0), held,
-		"   [G] name the entity" if campaign.day > campaign.LAST_SCHOOL_DAY else "", player.items.summary()]
+	var status := "Day %d  |  %s  |  %s  |  Battery %d%%  |  In hand: %s" % [
+		campaign.day, FLOOR_NAMES[_floor_index], daynight.time_text(), roundi(_battery * 100.0), held]
+	if _touch_mode():   # The buttons are labelled, so the key lines would only take room.
+		_hud.text = "%s\n%s" % [status, player.items.summary()]
+		return
+	_hud.text = "%s\n[F] light   [Q] phone (H: one or two hands)   [E] interact   [Shift] sprint%s   [Esc] pause\n%s\n[Tab] inventory   [B] drop or pick up the bag   [X] switch hand   [V] stow or take out" % [
+		status, "   [G] name the entity" if campaign.day > campaign.LAST_SCHOOL_DAY else "", player.items.summary()]
 
 
 func _show_message(text: String, seconds := -1.0) -> void:
@@ -2086,6 +2096,7 @@ func _open_code_lock() -> void:
 	_code_buffer.clear()
 	player.controls_enabled = false
 	_code_panel.visible = true
+	_code_keypad.visible = _touch_mode()
 	_refresh_code_label()
 
 
@@ -2099,14 +2110,51 @@ func _refresh_code_label() -> void:
 	var digits: Array[String] = []
 	for i in 4:
 		digits.append(str(_code_buffer[i]) if i < _code_buffer.size() else "_")
-	_code_label.text = "SAFE\n%s\n\nnotes found: %s\nEnter: confirm   Esc: cancel" % [" ".join(digits), quest.code_progress()]
+	_code_label.text = "SAFE\n%s\n\nnotes found: %s%s" % [" ".join(digits), quest.code_progress(),
+			"" if _touch_mode() else "\nEnter: confirm   Esc: cancel"]
+
+
+func _touch_mode() -> bool:
+	var bridge := get_tree().get_first_node_in_group("input_bridge")
+	return bridge != null and bridge.is_touch()
+
+
+## Phone keypad for the safe: every button feeds the same key handler the keyboard uses.
+func _build_code_keypad() -> void:
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	var keys := [["1", KEY_1], ["2", KEY_2], ["3", KEY_3], ["4", KEY_4], ["5", KEY_5], ["6", KEY_6], ["7", KEY_7],
+			["8", KEY_8], ["9", KEY_9], ["Del", KEY_BACKSPACE], ["0", KEY_0], ["OK", KEY_ENTER]]
+	for entry: Array in keys:
+		grid.add_child(_keypad_button(entry[0], entry[1]))
+	_code_keypad.add_theme_constant_override("separation", 8)
+	_code_keypad.add_child(grid)
+	_code_keypad.add_child(_keypad_button("Cancel", KEY_ESCAPE))
+	_code_keypad.visible = false
+
+
+func _keypad_button(text: String, key: int) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = Vector2(110.0, 56.0)
+	button.add_theme_font_size_override("font_size", 26)
+	button.pressed.connect(func() -> void: _code_key(key))
+	return button
 
 
 func _handle_code_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
 		return
 	get_viewport().set_input_as_handled()
-	var key: int = event.keycode
+	_code_key(event.keycode)
+
+
+func _code_key(key: int) -> void:
+	if not _code_open:
+		return
 	if key == KEY_ESCAPE:
 		_close_code_lock()
 	elif key == KEY_BACKSPACE and not _code_buffer.is_empty():

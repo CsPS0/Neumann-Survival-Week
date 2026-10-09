@@ -137,6 +137,8 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not controls_enabled:
 		return
+	if event is InputEventMouseMotion and event.device == InputEvent.DEVICE_ID_EMULATION:
+		return   # A finger on a touch screen: the touch overlay feeds the look through the input bridge.
 	if is_hiding:
 		if event.is_action_pressed(interact_action):
 			exit_hiding()
