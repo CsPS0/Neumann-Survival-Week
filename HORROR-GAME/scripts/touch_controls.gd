@@ -11,7 +11,7 @@ const REPEAT_EVERY := 0.12
 const GAP := 10.0
 const PAD := 24.0
 ## Keys that tell the overlay a physical keyboard is in use (the Back and volume keys do not count).
-const HARDWARE_KEYS: Array[int] = [KEY_W, KEY_A, KEY_S, KEY_D, KEY_E, KEY_F, KEY_Q, KEY_TAB, KEY_SPACE, KEY_SHIFT,
+const HARDWARE_KEYS: Array[int] = [KEY_W, KEY_A, KEY_S, KEY_D, KEY_E, KEY_F, KEY_T, KEY_Q, KEY_TAB, KEY_SPACE, KEY_SHIFT,
 		KEY_ESCAPE, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_ENTER]
 
 var bridge: Node
@@ -72,6 +72,7 @@ func _build_buttons() -> void:
 	# Bottom right: use, light, phone. While hiding: exit and hold breath.
 	_add("E", "E\nUse", "br", Vector2(PAD, PAD), Vector2(120.0, 120.0), bridge.trigger_interact, Callable())
 	_add("F", "F\nLight", "br", Vector2(PAD + 136.0, PAD), Vector2(84.0, 84.0), bridge.trigger_flashlight, playing)
+	_add("T", "T\nFlash", "br", Vector2(PAD + 118.0, PAD + 100.0), Vector2(84.0, 84.0), bridge.trigger_flash, playing)
 	_add("Q", "Q\nPhone", "br", Vector2(PAD + 18.0, PAD + 136.0), Vector2(84.0, 84.0), bridge.trigger_phone, playing)
 	_add("Breath", "Hold\nbreath", "br", Vector2(PAD + 136.0, PAD), Vector2(100.0, 100.0), Callable(), hiding, &"hold_breath")
 	# Top right: pause, inventory and hands.

@@ -42,6 +42,7 @@ enum State { IDLE, PATROL, CHASE, ATTACK }
 @export var step_distance := 1.6        ## Metres travelled per footstep (faster movement = faster cadence).
 @export var chase_step_boost_db := 6.0
 
+const BLIND_AFTER_STUN := 3.0   ## Seconds it cannot see or hear the player once the stun ends.
 const SIGHT_TARGET_HEIGHT := 1.4
 const REPATH_INTERVAL := 0.15
 const STUCK_CHECK_INTERVAL := 1.0
@@ -70,6 +71,8 @@ var _stuck_timer := 0.0
 var _stuck_reference := Vector3.ZERO
 var _jumpscare := AudioStreamPlayer.new()
 var _encounter_id := 0
+var _stun_time := 0.0
+var _blind_time := 0.0
 
 
 func _ready() -> void:
@@ -94,6 +97,10 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _stun_time > 0.0:
+		_tick_stun(delta)
+		return
+	_blind_time = maxf(_blind_time - delta, 0.0)
 	_state_time += delta
 	_sees_player = _can_see_player()
 
@@ -109,10 +116,39 @@ func _physics_process(delta: float) -> void:
 	_tick_footsteps(delta)
 
 
+# --- Stun ------------------------------------------------------------------
+
+## The player's torch flash: it freezes for `seconds`, then loses the player and wanders off.
+## Ignored while it is already biting (the catch has happened) or asleep.
+func stun(seconds: float) -> void:
+	if state == State.ATTACK or process_mode == Node.PROCESS_MODE_DISABLED:
+		return
+	_stun_time = seconds
+	velocity = Vector3.ZERO
+	model.set_aggressive(false)
+
+
+func is_stunned() -> bool:
+	return _stun_time > 0.0
+
+
+func _tick_stun(delta: float) -> void:
+	_stun_time -= delta
+	velocity.x = 0.0
+	velocity.z = 0.0
+	if not is_on_floor():
+		velocity.y -= _gravity * delta
+	move_and_slide()
+	if _stun_time <= 0.0:
+		_stun_time = 0.0
+		_blind_time = BLIND_AFTER_STUN
+		_set_state(State.PATROL)
+
+
 # --- State logic -----------------------------------------------------------
 
 func _tick_idle() -> void:
-	if _sees_player or force_hunt:
+	if _locked_on():
 		_set_state(State.CHASE)
 	elif _hears_player():
 		_investigate(player.global_position)
@@ -121,7 +157,7 @@ func _tick_idle() -> void:
 
 
 func _tick_patrol(delta: float) -> void:
-	if _sees_player or force_hunt:
+	if _locked_on():
 		_set_state(State.CHASE)
 		return
 	if _hears_player() and _last_known_position.distance_to(player.global_position) > 4.0:
@@ -141,7 +177,7 @@ func _tick_patrol(delta: float) -> void:
 
 
 func _tick_chase(delta: float) -> void:
-	if _sees_player or force_hunt:
+	if _locked_on():
 		_last_known_position = player.global_position
 		_time_since_seen = 0.0
 		if global_position.distance_to(player.global_position) <= attack_range:
@@ -162,6 +198,11 @@ func _tick_chase(delta: float) -> void:
 func _tick_attack() -> void:
 	if _state_time >= attack_duration:
 		_set_state(State.CHASE)
+
+
+## True while it knows where the player is. A flash blinds it even during the ritual hunt.
+func _locked_on() -> bool:
+	return _sees_player or (force_hunt and _blind_time <= 0.0)
 
 
 func _investigate(target: Vector3) -> void:
@@ -253,7 +294,7 @@ func _pick_roam_target() -> Vector3:
 # --- Perception ------------------------------------------------------------
 
 func _hears_player() -> bool:
-	if player == null:
+	if player == null or _blind_time > 0.0:
 		return false
 	if player.get("is_hiding"):
 		if not player.get("is_holding_breath"):
@@ -268,7 +309,7 @@ func _hears_player() -> bool:
 
 
 func _can_see_player() -> bool:
-	if player == null:
+	if player == null or _blind_time > 0.0:
 		return false
 	if player.get("is_hiding"):
 		return false

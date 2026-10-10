@@ -1711,14 +1711,23 @@ func _place_form() -> void:
 
 
 func _place_lockers() -> void:
+	# Lockers stand flat against corridor walls, between the classroom doors, and face into the corridor.
+	# Each is [floor, plan x, plan y, yaw]. Yaw PI/2 faces east, -PI/2 west, 0 south, PI north.
 	var spots := [
-		[0, 107.0, 280.0, PI * 0.5],
-		[0, 735.0, 300.0, -PI * 0.5],
-		[0, 260.0, 150.0, 0.0],
-		[1, 107.0, 320.0, PI * 0.5],
-		[1, 735.0, 350.0, -PI * 0.5],
-		[2, 107.0, 300.0, PI * 0.5],
-		[2, 735.0, 280.0, -PI * 0.5],
+		[0, 92.0, 280.0, PI * 0.5],      # West corridor, west wall.
+		[0, 92.0, 433.0, PI * 0.5],
+		[0, 140.0, 131.0, 0.0],          # North corridor, between the doors of 19 and GT11-12.
+		[0, 230.0, 162.0, PI],           # Planter block facing the north corridor.
+		[0, 750.0, 250.0, -PI * 0.5],    # East corridor, gym wall.
+		[0, 729.0, 480.0, PI * 0.5],     # East corridor, planter block.
+		[1, 310.0, 256.0, PI * 0.5],     # West corridor, between 107 and 108.
+		[1, 310.0, 624.0, PI * 0.5],
+		[1, 770.0, 321.0, -PI * 0.5],    # East corridor, between 127 and 128.
+		[1, 770.0, 558.0, -PI * 0.5],
+		[2, 310.0, 321.0, PI * 0.5],
+		[2, 310.0, 623.0, PI * 0.5],
+		[2, 770.0, 256.0, -PI * 0.5],
+		[2, 770.0, 687.0, -PI * 0.5],
 	]
 	for sp in spots:
 		_select_floor(sp[0])
