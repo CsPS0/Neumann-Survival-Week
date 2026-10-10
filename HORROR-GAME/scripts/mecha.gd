@@ -113,12 +113,11 @@ static func build_model() -> Node3D:
 	var root := Node3D.new()
 	var green := StandardMaterial3D.new()
 	green.albedo_color = Color(0.2, 0.85, 0.35)
-	green.emission_enabled = true
-	green.emission = Color(0.1, 0.6, 0.2)
-	green.emission_energy_multiplier = 0.5
+	green.roughness = 0.6
 	var steel := StandardMaterial3D.new()
 	steel.albedo_color = Color(0.6, 0.62, 0.68)
-	steel.metallic = 0.9
+	steel.metallic = 0.5
+	steel.roughness = 0.4
 	var body := MeshInstance3D.new()
 	var capsule := CapsuleMesh.new()
 	capsule.radius = 0.04

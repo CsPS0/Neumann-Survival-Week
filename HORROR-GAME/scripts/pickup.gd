@@ -16,6 +16,8 @@ var prompt := "Take"
 
 var _model := Node3D.new()
 
+static var _paper_cache := {}   ## seed -> ImageTexture, shared by every paper pickup.
+
 
 func _ready() -> void:
 	add_to_group("pickup")
@@ -31,18 +33,6 @@ func _ready() -> void:
 
 	add_child(_model)
 	_build_model()
-
-	var glow := OmniLight3D.new()
-	glow.light_color = _glow_colour()
-	glow.light_energy = 0.7
-	glow.omni_range = 3.0
-	add_child(glow)
-
-
-func _process(delta: float) -> void:
-	if kind not in ["note", "page", "card", "form", "key_card"]:
-		_model.rotation.y += delta * (0.5 if kind == "mecha" else 1.4)
-	_model.position.y = sin(Time.get_ticks_msec() * 0.003) * 0.03
 
 
 func interact(by: Node = null) -> void:
@@ -73,25 +63,8 @@ func interact(by: Node = null) -> void:
 	queue_free()
 
 
-func _glow_colour() -> Color:
-	match kind:
-		"vial": return Color(0.3, 0.6, 1.0)
-		"salt": return Color(0.9, 0.9, 1.0)
-		"battery": return Color(0.4, 1.0, 0.4)
-		"fuse": return Color(1.0, 0.4, 0.2)
-		"note": return Color(1.0, 1.0, 0.8)
-		"page": return Color(1.0, 0.95, 0.75)
-		"secret": return Color(0.2, 0.9, 0.8)
-		"card": return Color(1.0, 0.8, 0.3)
-		"form": return Color(1.0, 0.9, 0.85)
-		"key_card": return Color(0.2, 0.9, 0.85)
-		"biscuit": return Color(0.85, 0.55, 0.25)
-		"mecha": return Color(0.3, 1.0, 0.45)
-		_: return Color(1.0, 0.8, 0.3)
-
-
 func _build_model() -> void:
-	var gold := _material(Color(1.0, 0.8, 0.25), 0.9, 0.3, Color(1.0, 0.7, 0.1), 0.6)
+	var brass := _material(Color(0.78, 0.6, 0.2), 0.6, 0.4)
 	match kind:
 		"mecha":
 			_model.add_child(Mecha.build_model())
@@ -99,16 +72,17 @@ func _build_model() -> void:
 			var ring := TorusMesh.new()
 			ring.inner_radius = 0.03
 			ring.outer_radius = 0.07
-			_add(ring, Vector3.ZERO, Vector3(90, 0, 0), gold)
-			_cylinder(0.012, 0.22, Vector3(0, 0, 0.15), Vector3(90, 0, 0), gold)
+			_add(ring, Vector3.ZERO, Vector3(90, 0, 0), brass)
+			_cylinder(0.012, 0.22, Vector3(0, 0, 0.15), Vector3(90, 0, 0), brass)
 			for z in [0.22, 0.18]:
-				_box(Vector3(0.05, 0.02, 0.025), Vector3(0.03, 0, z), gold)
+				_box(Vector3(0.05, 0.02, 0.025), Vector3(0.03, 0, z), brass)
 		"salt":
 			_cylinder(0.07, 0.16, Vector3.ZERO, Vector3.ZERO, _material(Color(0.92, 0.92, 0.95), 0.0, 0.6))
 			_cylinder(0.072, 0.05, Vector3(0, 0.02, 0), Vector3.ZERO, _material(Color(0.2, 0.3, 0.7), 0.0, 0.6))
-			_cylinder(0.05, 0.03, Vector3(0, 0.1, 0), Vector3.ZERO, _material(Color(0.6, 0.6, 0.65), 0.8, 0.3))
+			_cylinder(0.05, 0.03, Vector3(0, 0.1, 0), Vector3.ZERO, _material(Color(0.6, 0.6, 0.65), 0.5, 0.4))
 		"vial":
-			var glass := _material(Color(0.3, 0.6, 1.0), 0.0, 0.1, Color(0.2, 0.5, 1.0), 2.0)
+			var glass := _material(Color(0.55, 0.7, 0.85, 0.75), 0.0, 0.1)
+			glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 			_cylinder(0.045, 0.14, Vector3.ZERO, Vector3.ZERO, glass)
 			_cylinder(0.02, 0.07, Vector3(0, 0.1, 0), Vector3.ZERO, glass)
 			_cylinder(0.025, 0.03, Vector3(0, 0.15, 0), Vector3.ZERO, _material(Color(0.4, 0.25, 0.1), 0.0, 0.8))
@@ -117,32 +91,33 @@ func _build_model() -> void:
 			bell.top_radius = 0.025
 			bell.bottom_radius = 0.1
 			bell.height = 0.16
-			_add(bell, Vector3.ZERO, Vector3.ZERO, gold)
+			_add(bell, Vector3.ZERO, Vector3.ZERO, brass)
 			var clapper := SphereMesh.new()
 			clapper.radius = 0.025
 			clapper.height = 0.05
-			_add(clapper, Vector3(0, -0.09, 0), Vector3.ZERO, gold)
+			_add(clapper, Vector3(0, -0.09, 0), Vector3.ZERO, brass)
 		"note":
-			_box(Vector3(0.18, 0.003, 0.24), Vector3.ZERO, _material(Color(0.95, 0.92, 0.8), 0.0, 0.9, Color(0.4, 0.4, 0.3), 0.3))
+			_box(Vector3(0.18, 0.003, 0.24), Vector3.ZERO, _paper_material(Color(0.95, 0.92, 0.8), 1))
 			_model.rotation.y = randf() * TAU
 		"page":
-			_box(Vector3(0.18, 0.003, 0.24), Vector3.ZERO, _material(Color(0.98, 0.93, 0.7), 0.0, 0.9, Color(0.45, 0.42, 0.25), 0.3))
-			_box(Vector3(0.14, 0.004, 0.012), Vector3(0, 0, -0.1), _material(Color(0.1, 0.1, 0.12), 0.0, 0.9))
+			_box(Vector3(0.18, 0.003, 0.24), Vector3.ZERO, _paper_material(Color(0.97, 0.95, 0.88), 2))
+			_box(Vector3(0.18, 0.001, 0.003), Vector3(0, 0.002, 0.118), _material(Color(0.55, 0.5, 0.42), 0.0, 0.9))
 			_model.rotation.y = randf() * TAU
 		"form":
-			_box(Vector3(0.21, 0.003, 0.29), Vector3.ZERO, _material(Color(0.97, 0.97, 0.95), 0.0, 0.9, Color(0.4, 0.4, 0.4), 0.3))
-			_box(Vector3(0.05, 0.004, 0.05), Vector3(0.06, 0, 0.1), _material(Color(0.8, 0.08, 0.08), 0.0, 0.7))
+			_box(Vector3(0.21, 0.003, 0.29), Vector3.ZERO, _paper_material(Color(0.97, 0.97, 0.95), 3))
+			_box(Vector3(0.05, 0.004, 0.05), Vector3(0.06, 0, 0.1), _material(Color(0.7, 0.1, 0.1), 0.0, 0.7))
 			_model.rotation.y = randf() * TAU
 		"secret":
-			_box(Vector3(0.12, 0.04, 0.08), Vector3.ZERO, _material(Color(0.1, 0.6, 0.55), 0.2, 0.4, Color(0.1, 0.9, 0.8), 1.2))
+			_build_secret()
 		"card":
-			_box(Vector3(0.09, 0.003, 0.13), Vector3.ZERO, gold)
-			_box(Vector3(0.078, 0.004, 0.118), Vector3.ZERO, _material(Color(0.92, 0.9, 0.85), 0.0, 0.8))
+			_box(Vector3(0.09, 0.003, 0.13), Vector3.ZERO, brass)
+			_box(Vector3(0.078, 0.004, 0.118), Vector3.ZERO, _paper_material(Color(0.93, 0.91, 0.86), 4))
 			_model.rotation.y = randf() * TAU
 		"key_card":
-			_box(Vector3(0.09, 0.003, 0.055), Vector3.ZERO, _material(Color(0.95, 0.95, 0.95), 0.0, 0.5, Color(0.2, 0.9, 0.85), 0.4))
-			_box(Vector3(0.09, 0.004, 0.012), Vector3(0, 0, -0.015), _material(Color(0.8, 0.08, 0.08), 0.0, 0.6))
-			_box(Vector3(0.016, 0.005, 0.014), Vector3(-0.025, 0, 0.01), gold)
+			_box(Vector3(0.09, 0.003, 0.055), Vector3.ZERO, _material(Color(0.9, 0.9, 0.88), 0.0, 0.5))
+			_box(Vector3(0.09, 0.004, 0.012), Vector3(0, 0, -0.015), _material(Color(0.12, 0.12, 0.14), 0.0, 0.6))
+			_box(Vector3(0.016, 0.005, 0.014), Vector3(-0.025, 0, 0.01), brass)
+			_model.rotation.y = randf() * TAU
 		"biscuit":
 			var brown := _material(Color(0.6, 0.38, 0.18), 0.0, 0.9)
 			_cylinder(0.018, 0.1, Vector3.ZERO, Vector3(0, 0, 90), brown)
@@ -151,25 +126,87 @@ func _build_model() -> void:
 				knob.radius = 0.03
 				knob.height = 0.06
 				_add(knob, Vector3(x, 0, 0), Vector3.ZERO, brown)
+			_model.rotation.y = randf() * TAU
 		"fuse":
-			var body := _material(Color(0.8, 0.8, 0.82), 0.5, 0.4)
+			var body := _material(Color(0.8, 0.8, 0.82), 0.4, 0.4)
 			_cylinder(0.025, 0.1, Vector3.ZERO, Vector3(0, 0, 90), _material(Color(0.9, 0.9, 0.85), 0.0, 0.6))
 			_cylinder(0.03, 0.02, Vector3(0.055, 0, 0), Vector3(0, 0, 90), body)
 			_cylinder(0.03, 0.02, Vector3(-0.055, 0, 0), Vector3(0, 0, 90), body)
 		"battery":
-			_cylinder(0.04, 0.14, Vector3.ZERO, Vector3(90, 0, 0), _material(Color(0.1, 0.5, 0.15), 0.3, 0.5, Color(0.1, 0.6, 0.1), 0.4))
-			_cylinder(0.02, 0.03, Vector3(0, 0, -0.085), Vector3(90, 0, 0), gold)
+			_cylinder(0.04, 0.14, Vector3.ZERO, Vector3(90, 0, 0), _material(Color(0.12, 0.38, 0.17), 0.3, 0.5))
+			_cylinder(0.041, 0.04, Vector3(0, 0, 0.03), Vector3(90, 0, 0), _material(Color(0.1, 0.1, 0.1), 0.2, 0.6))
+			_cylinder(0.02, 0.03, Vector3(0, 0, -0.085), Vector3(90, 0, 0), _material(Color(0.7, 0.7, 0.72), 0.7, 0.35))
+			_model.rotation.y = randf() * TAU
 
 
-func _material(colour: Color, metallic: float, roughness: float, emission := Color.BLACK, emission_energy := 0.0) -> StandardMaterial3D:
+## The five secrets each get their own object (item_id from Finds.SECRETS), all plain and unlit.
+func _build_secret() -> void:
+	match item_id:
+		"toy":
+			var rubber := _material(Color(0.7, 0.12, 0.1), 0.0, 0.55)
+			_cylinder(0.018, 0.14, Vector3.ZERO, Vector3(0, 0, 90), rubber)
+			for x in [-0.07, 0.07]:
+				for z in [-0.018, 0.018]:
+					var knob := SphereMesh.new()
+					knob.radius = 0.028
+					knob.height = 0.056
+					_add(knob, Vector3(x, 0, z), Vector3.ZERO, rubber)
+		"tape":
+			_box(Vector3(0.1, 0.014, 0.065), Vector3.ZERO, _material(Color(0.12, 0.12, 0.13), 0.1, 0.6))
+			_box(Vector3(0.07, 0.002, 0.03), Vector3(0, 0.007, -0.005), _paper_material(Color(0.9, 0.88, 0.8), 5))
+		"drawing":
+			_box(Vector3(0.14, 0.002, 0.1), Vector3.ZERO, _paper_material(Color(0.95, 0.94, 0.9), 6))
+		"mirror":
+			_cylinder(0.055, 0.008, Vector3.ZERO, Vector3.ZERO, _material(Color(0.75, 0.78, 0.8), 0.5, 0.25))
+			_cylinder(0.062, 0.006, Vector3(0, -0.002, 0), Vector3.ZERO, _material(Color(0.25, 0.22, 0.2), 0.2, 0.6))
+		"photo":
+			_box(Vector3(0.13, 0.002, 0.1), Vector3.ZERO, _material(Color(0.93, 0.91, 0.86), 0.0, 0.6))
+			_box(Vector3(0.11, 0.003, 0.08), Vector3.ZERO, _material(Color(0.32, 0.3, 0.27), 0.0, 0.5))
+		_:
+			_box(Vector3(0.12, 0.04, 0.08), Vector3.ZERO, _material(Color(0.45, 0.4, 0.35), 0.1, 0.6))
+	_model.rotation.y = randf() * TAU
+
+
+## Cream paper with faint ruled lines and ink dashes standing in for writing. `seed_value` varies the lines per item.
+static func _paper_texture(seed_value: int) -> ImageTexture:
+	if not _paper_cache.has(seed_value):
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		var size := 64
+		var img := Image.create(size, size, false, Image.FORMAT_RGB8)
+		img.fill(Color.WHITE)
+		for y in size:
+			var ruled := y % 8 == 7
+			for x in size:
+				var shade := 1.0 - 0.04 * rng.randf()
+				if ruled:
+					shade -= 0.1
+				var edge := minf(minf(x, size - 1 - x), minf(y, size - 1 - y))
+				shade -= 0.1 * clampf(1.0 - edge / 3.0, 0.0, 1.0)
+				img.set_pixel(x, y, Color(shade, shade, shade))
+		for line in 7:
+			var x := 6
+			while x < size - 8:
+				var length := rng.randi_range(3, 9)
+				for dx in length:
+					img.set_pixel(mini(x + dx, size - 4), line * 8 + 4, Color(0.35, 0.35, 0.4))
+				x += length + 3
+		img.generate_mipmaps()
+		_paper_cache[seed_value] = ImageTexture.create_from_image(img)
+	return _paper_cache[seed_value]
+
+
+func _paper_material(tint: Color, seed_value: int) -> StandardMaterial3D:
+	var mat := _material(tint, 0.0, 0.9)
+	mat.albedo_texture = _paper_texture(seed_value)
+	return mat
+
+
+func _material(colour: Color, metallic: float, roughness: float) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = colour
 	mat.metallic = metallic
 	mat.roughness = roughness
-	if emission_energy > 0.0:
-		mat.emission_enabled = true
-		mat.emission = emission
-		mat.emission_energy_multiplier = emission_energy
 	return mat
 
 
