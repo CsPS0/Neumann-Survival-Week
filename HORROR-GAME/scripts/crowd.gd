@@ -32,6 +32,7 @@ const COLLIDE_HEIGHT := 1.5
 const PARKED := Vector3(0.0, -1000.0, 0.0)
 const NAMED_CHAIRS := [6, 13]   ## Chair indices (front rows first) of the player's class that the named students take.
 const NAMED_WALKERS := [3, 9]   ## Walking slot indices that the named students take in a break.
+const AULA_START := [Vector2(415.0, 410.0), Vector2(500.0, 410.0)]   ## Ground-floor plan pixels: north of the altar, clear of the doors and the patrol line.
 
 var player: Node3D
 var entity: Node3D
@@ -46,7 +47,7 @@ var avoid: Array[Vector3] = []   ## Table positions to keep seats away from (mai
 var seats := {}   ## "floor:label" -> chairs of that classroom ({pos, yaw}), from main's furniture.
 
 var _body_mm := MultiMesh.new()   ## Body, clothes, head and hair in one mesh, animated by the shader.
-var _slots: Array[Dictionary] = []   ## {kind: "seat"|"flow", pos: Vector3, yaw: float, colour: Color, ...}
+var _slots: Array[Dictionary] = []   ## {kind: "seat"|"flow"|"stand", pos: Vector3, yaw: float, colour: Color, ...}
 var _drawn: Array[Dictionary] = []   ## The subset actually drawn this frame (counts read this).
 var _shown := 0
 var _timer := 0.0
@@ -176,7 +177,9 @@ func sync_now() -> void:
 		elif phase == "break":
 			_build_flow(1.0 - 0.6 * Outbreak.student_rate(campaign.day), hash([campaign.day, band]))   # The ill stay home.
 		elif phase == "pre":
-			_build_flow(0.25, hash([campaign.day, -1]))
+			_build_flow(0.25, hash([campaign.day, -1]), campaign.day != 1)
+			if campaign.day == 1:
+				_build_aula_start()
 	_dirty = true
 	_advance(0.0)
 
@@ -247,7 +250,8 @@ func _shirt(rng: RandomNumberGenerator) -> Color:
 
 ## Walkers on the corridor polylines of the floors near the player: `density` scales how many (0..1).
 ## Corridors are separate polylines (not one connected network), so each student walks its own line back to front.
-func _build_flow(density: float, seed_value: int) -> void:
+## `named_walk`: false keeps the named students out of the corridors (they stand in the Aula instead).
+func _build_flow(density: float, seed_value: int, named_walk := true) -> void:
 	var budget := int(MAX_CROWD * density)
 	var lines: Array[Dictionary] = []
 	var total := 0.0
@@ -282,10 +286,22 @@ func _build_flow(density: float, seed_value: int) -> void:
 					"lane": dir * rng.randf_range(0.2, 0.6), "colour": _shirt(rng), "pos": Vector3.ZERO, "yaw": 0.0,
 					"look": fposmod(float(hash([seed_value, _slots.size()])), 997.0) / 997.0}
 			var who: int = NAMED_WALKERS.find(_slots.size())
-			if who >= 0 and who < _named.size():
+			if named_walk and who >= 0 and who < _named.size():
 				slot["who"] = who
 			_slots.append(slot)
 			_moving = true
+
+
+## The start of the game (day 1 before the first bell): the named students wait in the Aula, facing the entrance.
+## The usual schedule (seats, corridors) takes over from the first lesson.
+func _build_aula_start() -> void:
+	var data := FloorData.GROUND
+	var origin: Vector2 = data["origin"]
+	var scale: float = data["scale"]
+	for i in mini(_named.size(), AULA_START.size()):
+		var w: Vector2 = (AULA_START[i] - origin) * scale
+		_slots.append({"kind": "stand", "pos": Vector3(w.x, 0.0, w.y), "yaw": PI, "colour": Color.WHITE,
+				"look": _named[i].look, "who": i})
 
 
 ## Move the walkers, hide those too far from the player or near an awake entity, then redraw.
