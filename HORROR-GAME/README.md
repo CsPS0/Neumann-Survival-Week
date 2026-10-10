@@ -17,7 +17,7 @@ Notes:
 - A fresh clone runs as is. The staff roster falls back to `scripts/staff_placeholder.gd`, which holds invented names only.
 - Two named students (in the player's class during lessons, in the corridors during breaks) show a face wrapped over the head with three expressions: neutral in lessons, smile in breaks, sad once the entity is awake. The real names and photos are gitignored (`scripts/student_faces_local.gd` and `assets/faces_local/`). A fresh clone falls back to `scripts/student_faces_placeholder.gd`, which holds invented names and generated faces.
 - On Windows the renderer uses Direct3D 12. Other platforms use Godot's default driver.
-- Export presets and builds are not committed (`export_presets.cfg` and `build/` are gitignored). Create your own export preset in Godot to build an executable or APK.
+- Export presets and builds are not committed (`export_presets.cfg` and `build/` are gitignored). Create your own export preset in Godot to build an executable or APK. Tagged releases are built by GitHub Actions, see Releases below.
 
 ## Controls
 
@@ -159,3 +159,17 @@ These features exist in the code but are early and untested on real hardware:
 | `scripts/menu.gd`, `settings_ui.gd`, `profile.gd`, `achievements.gd` | Menus, settings and saved profile. |
 | `scripts/staff_source.gd` | Loads the gitignored `scripts/staff.gd` when present, else the committed placeholder. |
 | `scripts/net_session.gd`, `input_bridge.gd`, `touch_controls.gd`, `xr_manager.gd` | Co-op, touch and VR. |
+
+## Releases
+
+Pushing a tag that starts with `demo` or `v` builds the game and publishes a GitHub Release. Branch pushes and pull requests never start a build. Git tags cannot contain spaces, so use `demo-1.0` instead of `demo 1.0`.
+
+```
+git tag demo-1.0
+git push origin demo-1.0
+```
+
+- The workflow is `.github/workflows/release.yml`. It uses the CI export presets in `.github/godot/export_presets.ci.cfg`.
+- Linux, Windows and Windows VR zips are always built. Tags that start with `demo` are marked as pre-releases.
+- The build uses the committed placeholder roster and student faces, never real names.
+- Android and Quest APKs need three repository secrets: `ANDROID_KEYSTORE_BASE64` (the release keystore encoded with base64), `ANDROID_KEYSTORE_USER` (the key alias) and `ANDROID_KEYSTORE_PASSWORD`. Without them those two builds are skipped.
