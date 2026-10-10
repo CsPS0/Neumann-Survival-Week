@@ -8,37 +8,72 @@ const SIZE := 256
 static var _cache := {}
 
 
-## Cream plaster above real school wall tiles. Tile = 4 m, so the dado lines up on every floor.
-static func wall() -> StandardMaterial3D:
-	return _cached("wall", func() -> StandardMaterial3D:
+const WALL_FLOOR_HEIGHT := 4.0   ## Floor-to-floor distance (main.gd FLOOR_HEIGHT), so the tile line repeats on every floor.
+const WALL_TILE_HEIGHT := 1.6    ## Tiles cover the lower half of a 3.2 m wall, plain white wall above.
+
+const WALL_SHADER := """
+shader_type spatial;
+
+uniform sampler2D tile_texture : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float tile_scale = 3.0;
+uniform float tile_height = 1.6;
+uniform float floor_height = 4.0;
+uniform vec3 plaster : source_color = vec3(0.93, 0.92, 0.89);
+uniform vec3 trim : source_color = vec3(0.22, 0.2, 0.18);
+
+varying vec3 world_pos;
+varying vec3 world_normal;
+
+void vertex() {
+	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+}
+
+void fragment() {
+	vec3 w = pow(abs(world_normal), vec3(4.0));
+	w /= (w.x + w.y + w.z);
+	vec3 tiles = texture(tile_texture, world_pos.zy * tile_scale).rgb * w.x
+			+ texture(tile_texture, world_pos.xz * tile_scale).rgb * w.y
+			+ texture(tile_texture, world_pos.xy * tile_scale).rgb * w.z;
+	float h = mod(world_pos.y + 0.02, floor_height) - 0.02;
+	float band = smoothstep(tile_height, tile_height + 0.01, h);
+	float line = step(tile_height, h) * (1.0 - step(tile_height + 0.04, h));
+	vec3 col = mix(tiles, plaster, band);
+	ALBEDO = mix(col, trim, line);
+	ROUGHNESS = mix(0.55, 0.9, band);
+}
+"""
+
+
+## Real school wall tiles on the lower half of the wall, plain white plaster on the upper half.
+static func wall() -> ShaderMaterial:
+	if not _cache.has("wall"):
+		var mat := ShaderMaterial.new()
+		var shader := Shader.new()
+		shader.code = WALL_SHADER
+		mat.shader = shader
+		mat.set_shader_parameter("tile_height", WALL_TILE_HEIGHT)
+		mat.set_shader_parameter("floor_height", WALL_FLOOR_HEIGHT)
 		if ResourceLoader.exists("res://textures/wall_real.jpg"):
-			var mat := StandardMaterial3D.new()
-			mat.albedo_texture = load("res://textures/wall_real.jpg")
-			mat.uv1_triplanar = true
-			mat.uv1_world_triplanar = true
-			mat.uv1_scale = Vector3.ONE * 3.0
-			mat.roughness = 0.8
-			mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-			return mat
-		var noise := _noise(0.03, 11).get_seamless_image(SIZE, SIZE)
-		var fine := _noise(0.25, 12).get_seamless_image(SIZE, SIZE)
-		var img := Image.create(SIZE, SIZE, false, Image.FORMAT_RGB8)
-		var bump := Image.create(SIZE, SIZE, false, Image.FORMAT_L8)
-		for y in SIZE:
-			var height_m := (1.0 - float(y) / SIZE) * 4.0
-			for x in SIZE:
-				var base := Color(0.8, 0.76, 0.64)
-				if height_m < 1.15:
-					base = Color(0.2, 0.34, 0.3)
-				elif height_m < 1.25:
-					base = Color(0.1, 0.1, 0.1)
-				var grime := noise.get_pixel(x, y).r
-				var speck := fine.get_pixel(x, y).r
-				var shade := 0.88 + grime * 0.16 + (speck - 0.5) * 0.08
-				shade *= 0.8 + 0.2 * smoothstep(0.0, 1.5, height_m)  # Dirtier near the floor.
-				img.set_pixel(x, y, Color(base.r * shade, base.g * shade, base.b * shade))
-				bump.set_pixel(x, y, Color(speck, speck, speck))
-		return _material(img, bump, 0.25, 0.6, 0.9))
+			mat.set_shader_parameter("tile_texture", load("res://textures/wall_real.jpg"))
+		else:
+			mat.set_shader_parameter("tile_texture", _tile_fallback())
+		_cache["wall"] = mat
+	return _cache["wall"]
+
+
+## Green glazed tiles with grout lines, used when the photo texture is missing.
+static func _tile_fallback() -> ImageTexture:
+	var noise := _noise(0.08, 11).get_seamless_image(SIZE, SIZE)
+	var img := Image.create(SIZE, SIZE, false, Image.FORMAT_RGB8)
+	for y in SIZE:
+		for x in SIZE:
+			var grout := x % 128 < 3 or y % 64 < 3
+			var shade := 0.85 + noise.get_pixel(x, y).r * 0.2
+			var base := Color(0.7, 0.7, 0.66) if grout else Color(0.2, 0.34, 0.3)
+			img.set_pixel(x, y, Color(base.r * shade, base.g * shade, base.b * shade))
+	img.generate_mipmaps()
+	return ImageTexture.create_from_image(img)
 
 
 ## Square tiles with grout and per-tile variation. Tile = 2 m (4x4 tiles of 0.5 m).

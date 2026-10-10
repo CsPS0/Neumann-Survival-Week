@@ -74,6 +74,7 @@ const ITEM_SPOTS := [
 	{"id": "battery_gt5", "kind": "battery", "room": "GT5", "floor": 2, "slot": 1},
 	{"id": "battery_gym", "kind": "battery", "room": "Tornaterem", "floor": 0, "slot": 1},
 ]
+const HIDE_STYLES := ["drawer", "desk", "floor", "drawer", "desk"]   ## Picked per find id in `_hide_spot`.
 const ITEM_INFO := {   ## kind -> [inventory id, name, pickup message]
 	"key_card": ["master_key", "Master key card", "A master key card. It should open one staff-only door."],
 	"biscuit": ["biscuit", "Dog biscuit", "A dog biscuit. Csoki would follow you anywhere for this."],
@@ -172,6 +173,7 @@ var _clue_rooms: Array = []               ## Classrooms picked for the open clue
 var _clue_spots: Array[Vector3] = []      ## Pickup positions on the clue tables, index = clue number.
 var _find_spots := {}                     ## Find id -> pickup position on its table.
 var _item_spots := {}                     ## ITEM_SPOTS id -> pickup position on its table.
+var _drawers := {}                        ## Find or item id -> the drawer front (Interactable) its pickup hides in.
 var _form_spot := Vector3.ZERO            ## The signed form's table (day-1 sticker task).
 var _form_room_label := ""
 var _form_room_floor := -1
@@ -1657,12 +1659,98 @@ func _show_hook_key(label: String, hanging: bool) -> void:
 ## One table per find (pages, secrets, cards), per neu_mecha spot and per useful item in a corner of its room, built
 ## before the navmesh bake like the clue tables.
 func _build_find_tables() -> void:
-	for f: Dictionary in FindsScript.all() + FindsScript.MECHA:
-		var spot := FindsScript.spot_position(f["floor"], f["room"], f["slot"])
-		_find_spots[f["id"]] = spot + Vector3(0.0, _table(spot) - spot.y + 0.03, 0.0)
+	for f: Dictionary in FindsScript.all():
+		_find_spots[f["id"]] = _hide_spot(f["id"], f["floor"], f["room"], f["slot"], true)
+	for f: Dictionary in FindsScript.MECHA:
+		_find_spots[f["id"]] = _hide_spot(f["id"], f["floor"], f["room"], f["slot"], false)
 	for f: Dictionary in ITEM_SPOTS:
-		var spot := FindsScript.spot_position(f["floor"], f["room"], f["slot"])
-		_item_spots[f["id"]] = spot + Vector3(0.0, _table(spot) - spot.y + 0.03, 0.0)
+		_item_spots[f["id"]] = _hide_spot(f["id"], f["floor"], f["room"], f["slot"], true)
+
+
+## Builds the hiding place for one collectible in a room corner and returns the pickup position. The style follows
+## the id: a closed desk drawer (E opens it), the floor under a desk, or the bare floor beside a cardboard box.
+## Drawers need `allow_drawer`: the neu_mecha chameleon must be in plain sight of the photo, and WC and gym floors
+## have no desks.
+func _hide_spot(id: String, floor_index: int, label: String, slot: int, allow_drawer: bool) -> Vector3:
+	var spot := FindsScript.spot_position(floor_index, label, slot)
+	_table_spots.append(spot)
+	var to_centre := _room_centre(floor_index, label) - spot
+	var front := Vector3(signf(to_centre.x), 0.0, 0.0) if absf(to_centre.x) > absf(to_centre.z) \
+			else Vector3(0.0, 0.0, signf(to_centre.z))
+	if front == Vector3.ZERO:
+		front = Vector3.BACK
+	var side := Vector3(-front.z, 0.0, front.x)
+	var oriented := func(along: float, height: float, depth: float) -> Vector3:
+		return Vector3(depth, height, along) if front.x != 0.0 else Vector3(along, height, depth)
+	var style: String = HIDE_STYLES[absi(id.hash()) % HIDE_STYLES.size()]
+	if label in ["WC", "Tornaterem"]:
+		style = "floor"
+	elif style == "drawer" and not allow_drawer:
+		style = "desk"
+	var wood := _make_material(Color(0.42, 0.3, 0.19), 0.85)
+	match style:
+		"drawer":
+			var body := spot - front * 0.2
+			_box(_region, body + Vector3(0.0, 0.375, 0.0), oriented.call(0.9, 0.75, 0.55), _door_material, true)
+			var face := body + front * 0.29 + Vector3(0.0, 0.55, 0.0)
+			var drawer := _box(_region, face, oriented.call(0.7, 0.2, 0.03), wood, true, InteractableScript)
+			var handle := MeshInstance3D.new()
+			var handle_mesh := BoxMesh.new()
+			handle_mesh.size = oriented.call(0.18, 0.025, 0.03)
+			handle_mesh.material = _metal_material
+			handle.mesh = handle_mesh
+			handle.position = front * 0.03
+			drawer.add_child(handle)
+			var tray := MeshInstance3D.new()   # Slides out with the front and carries the pickup.
+			var tray_mesh := BoxMesh.new()
+			tray_mesh.size = oriented.call(0.64, 0.03, 0.34)
+			tray_mesh.material = wood
+			tray.mesh = tray_mesh
+			tray.position = -front * 0.17 + Vector3(0.0, -0.07, 0.0)
+			drawer.add_child(tray)
+			drawer.prompt = "Open drawer"
+			drawer.set_meta("closed_at", drawer.position)
+			drawer.set_meta("open_at", drawer.position + front * 0.32)
+			drawer.set_meta("rest", drawer.position + front * 0.32 - front * 0.17 + Vector3(0.0, -0.07 + 0.015 + 0.03, 0.0))
+			_drawers[id] = drawer
+			return body + Vector3(0.0, 0.55, 0.0)
+		"desk":
+			var desk := spot - front * 0.1
+			_box(_region, desk + Vector3(0.0, 0.73, 0.0), oriented.call(0.9, 0.04, 0.6), _door_material, true)
+			_box(_region, desk - front * 0.27 + Vector3(0.0, 0.5, 0.0), oriented.call(0.9, 0.4, 0.03), _door_material, true)
+			for along in [-0.4, 0.4]:
+				for depth in [-0.26, 0.26]:
+					_box(_region, desk + side * along + front * depth + Vector3(0.0, 0.355, 0.0), Vector3(0.05, 0.71, 0.05),
+							_metal_material, false)
+			return desk + front * 0.12 + Vector3(0.0, 0.045, 0.0)
+		_:
+			_box(_region, spot + Vector3(0.0, 0.2, 0.0), Vector3(0.5, 0.4, 0.5), _make_material(Color(0.55, 0.42, 0.28), 0.95), true)
+			var flip := 1.0 if id.hash() % 2 == 0 else -1.0
+			return spot + side * flip * 0.55 + Vector3(0.0, 0.045, 0.0)
+
+
+## Opens or closes a drawer. The pickup inside only shows (and takes the interact ray) while the drawer is open.
+func _toggle_drawer(drawer: Node3D, item: Node3D) -> void:
+	if drawer.get_meta("busy", false):
+		return
+	drawer.set_meta("busy", true)
+	var opening: bool = not drawer.get_meta("open", false)
+	var sound := AudioStreamPlayer3D.new()
+	sound.stream = SoundBank.click()
+	_region.add_child(sound)
+	sound.global_position = drawer.global_position
+	sound.finished.connect(sound.queue_free)
+	sound.play()
+	if opening and is_instance_valid(item):
+		item.position = drawer.get_meta("rest")
+	var tween := create_tween()
+	tween.tween_property(drawer, "position", drawer.get_meta("open_at") if opening else drawer.get_meta("closed_at"), 0.35)
+	await tween.finished
+	drawer.set_meta("open", opening)
+	drawer.set_meta("busy", false)
+	drawer.prompt = "Close drawer" if opening else "Open drawer"
+	if is_instance_valid(item):
+		_set_item_active(item, opening)
 
 
 func find_spot(id: String) -> Vector3:
@@ -1683,6 +1771,16 @@ func _place_finds() -> void:
 		var item := _item(kind, id, f["title"], _find_spots[id], text, false)
 		item.add_to_group("find")
 		item.taken.connect(func(_id: String) -> void: finds.mark(id))
+		_attach_drawer(id, item)
+
+
+## A pickup whose spot is a drawer stays hidden until E opens the drawer.
+func _attach_drawer(id: String, item: Node3D) -> void:
+	if not _drawers.has(id):
+		return
+	var drawer: Node3D = _drawers[id]
+	_set_item_active(item, false)
+	drawer.handler = func(_by: Node) -> void: _toggle_drawer(drawer, item)
 
 
 ## The useful items (group "item", not finds): counted only as the Finds page's "Items" line.
@@ -1691,6 +1789,7 @@ func _place_items() -> void:
 		var info: Array = ITEM_INFO[f["kind"]]
 		var item := _item(f["kind"], info[0], info[1], _item_spots[f["id"]], info[2], false)
 		item.add_to_group("item")
+		_attach_drawer(f["id"], item)
 	var item_nodes := get_tree().get_nodes_in_group("item")
 	finds.items_total = item_nodes.size()
 	for item: Node in item_nodes:
