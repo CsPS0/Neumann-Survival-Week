@@ -35,6 +35,12 @@ signal caught                           ## Fired by on_caught() (called by the e
 @export var battery_drain_per_sec := 0.3
 @export var flicker_threshold := 0.2    ## Below this battery fraction the light flickers.
 
+@export_group("Flash")
+@export var flash_cost := 15.0          ## Battery spent by one flash burst.
+@export var flash_cooldown := 12.0      ## Seconds before the next burst.
+@export var flash_range := 9.0          ## Metres. The entity must be inside this and in front of the player.
+@export var flash_stun := 3.0           ## Seconds the entity stands still. It stays blind for a while after that.
+
 @export_group("Interaction")
 @export var interact_action := &"interact"
 
@@ -45,6 +51,7 @@ const ACTION_KEYS := {
 	&"move_right": KEY_D,
 	&"sprint": KEY_SHIFT,
 	&"flashlight": KEY_F,
+	&"flash": KEY_T,
 	&"interact": KEY_E,
 	&"phone": KEY_Q,
 	&"phone_page": KEY_TAB,
@@ -113,6 +120,8 @@ var _torch_tween: Tween
 var _dropped_bag: Node3D
 var _torch_home: Vector3
 var _flashlight_home: Vector3
+var _flash_cooldown_left := 0.0
+var _flash_glow := 0.0
 
 
 
@@ -164,6 +173,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			inspected.emit("Both hands hold the phone. Put it away or switch to one hand (H) to use the light.")
 		else:
 			set_flashlight(not flashlight.visible)
+	elif event.is_action_pressed(&"flash"):
+		flash_burst()
 	elif event.is_action_pressed(&"phone"):
 		if phone.raised:
 			_lower_phone()
@@ -293,6 +304,8 @@ func _process(delta: float) -> void:
 					head.rotate_x(-look_delta.y * mouse_sensitivity * (-1.0 if invert_y else 1.0))
 					head.rotation.x = clampf(head.rotation.x, deg_to_rad(-85.0), deg_to_rad(85.0))
 				
+	_flash_cooldown_left = maxf(_flash_cooldown_left - delta, 0.0)
+	_flash_glow = maxf(_flash_glow - delta, 0.0)
 	if not flashlight.visible:
 		return
 	battery = maxf(battery - battery_drain_per_sec * delta, 0.0)
@@ -306,7 +319,45 @@ func _process(delta: float) -> void:
 		# Random dropouts, more frequent as the battery approaches zero.
 		if randf() < (1.0 - fraction / flicker_threshold) * 0.25 + 0.03:
 			energy *= randf_range(0.0, 0.4)
+	if _flash_glow > 0.0:
+		energy = _flashlight_base_energy * (1.0 + 7.0 * _flash_glow / 0.3)
 	flashlight.light_energy = energy
+
+
+## Counterplay: a bright burst of the torch. It stuns the entity when it is close and in front of the player.
+## It costs battery and has a cooldown, so it can be used only a few times a night.
+func flash_burst() -> void:
+	if is_hiding or is_downed:
+		return
+	if not flashlight.visible:
+		inspected.emit("The torch is off. Turn it on to flash.")
+		return
+	if _flash_cooldown_left > 0.0:
+		inspected.emit("The torch is still recharging (%d s)." % ceili(_flash_cooldown_left))
+		return
+	if battery < flash_cost:
+		inspected.emit("Not enough battery for a flash.")
+		return
+	battery -= flash_cost
+	battery_changed.emit(battery / battery_max)
+	_flash_cooldown_left = flash_cooldown
+	_flash_glow = 0.3
+	var entity := get_tree().get_first_node_in_group("entity") as Node3D
+	if entity == null or not entity.has_method(&"stun") or not entity.visible:
+		return
+	if entity.process_mode == Node.PROCESS_MODE_DISABLED:
+		return
+	var eye := camera.global_position
+	var target := entity.global_position + Vector3.UP * 1.2
+	var to_entity := target - eye
+	if to_entity.length() > flash_range:
+		return
+	if (-camera.global_basis.z).angle_to(to_entity) > deg_to_rad(35.0):
+		return
+	var query := PhysicsRayQueryParameters3D.create(eye, target, 1, [get_rid()])
+	if not get_world_3d().direct_space_state.intersect_ray(query).is_empty():
+		return   # A wall is in the way.
+	entity.stun(flash_stun)
 
 
 ## Turns the light on/off. Refuses to turn on with an empty battery.

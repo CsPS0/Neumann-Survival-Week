@@ -27,6 +27,7 @@ Notes:
 | Shift | Sprint (limited stamina, refills when you stop) |
 | Mouse | Look |
 | F | Flashlight (battery-limited) |
+| T | Flash burst: stuns the entity for 3 s when it is within 9 m and in front of you. Costs 15 battery, 12 s cooldown |
 | Q | Phone |
 | H | Phone mode: one hand (map and tasks, the light stays on) or two hands (full screen, every app, no light) |
 | B | Drop the bag, or pick a dropped bag up again within 2.2 m (E on the bag works too) |

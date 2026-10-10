@@ -62,6 +62,9 @@ func trigger_interact() -> void:
 func trigger_flashlight() -> void:
 	_trigger_action(&"flashlight")
 
+func trigger_flash() -> void:
+	_trigger_action(&"flash")
+
 func trigger_phone() -> void:
 	_trigger_action(&"phone")
 
