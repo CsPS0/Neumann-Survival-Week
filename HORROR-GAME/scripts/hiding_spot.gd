@@ -96,7 +96,7 @@ func interact(by: Node = null) -> void:
 		return
 	if occupant == by:
 		exit(by)
-	elif occupant == null:
+	elif occupant == null and not by.get("seeker_mode"):
 		enter(by)
 
 

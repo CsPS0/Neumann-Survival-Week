@@ -48,6 +48,7 @@ func _ready() -> void:
 	_build_lobby_page()
 	_build_join_page()
 	NetSession.connection_failed.connect(_on_join_failed)
+	Match.start_rejected.connect(func(reason: String) -> void: _lobby_notice.text = reason)
 	show_title()
 
 
@@ -187,6 +188,7 @@ func _build_settings_page() -> void:
 var _lobby_code_label := Label.new()
 var _lobby_address_label := Label.new()
 var _lobby_players_label := Label.new()
+var _lobby_notice := Label.new()   ## Why a match did not start.
 var _lobby_error := ""
 var _join_input := LineEdit.new()
 var _join_status := Label.new()
@@ -203,6 +205,12 @@ func _build_lobby_page() -> void:
 	_lobby_players_label.add_theme_font_size_override("font_size", 18)
 	box.add_child(_lobby_players_label)
 	box.add_child(_button("Start Co-op", func() -> void: start_requested.emit()))
+	box.add_child(_button("Start Hide and Seek (the computer is the entity)", func() -> void:
+		Match.request_start(Match.Mode.HIDE_SEEK, Match.BOT)))
+	box.add_child(_button("Start Hide and Seek (a player is the entity)", func() -> void:
+		Match.request_start(Match.Mode.HIDE_SEEK, Match.SEEK_RANDOM)))
+	_lobby_notice.add_theme_color_override("font_color", Color(0.95, 0.5, 0.4))
+	box.add_child(_lobby_notice)
 	box.add_child(_button("Back", func() -> void:
 		NetSession.leave_session()
 		_back()
