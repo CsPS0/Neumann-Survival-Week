@@ -1,0 +1,14 @@
+# Run from the HORROR-GAME folder:  docker compose -f server/docker-compose.yml up --build
+# Set NEUMANN_PUBLIC_HOST to the address players use to reach this machine, so the room code is correct.
+services:
+  empty-school-server:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    ports:
+      - "${NEUMANN_PORT:-7777}:${NEUMANN_PORT:-7777}/udp"
+    environment:
+      NEUMANN_PORT: "${NEUMANN_PORT:-7777}"
+      NEUMANN_MAX_PLAYERS: "${NEUMANN_MAX_PLAYERS:-4}"
+      NEUMANN_PUBLIC_HOST: "${NEUMANN_PUBLIC_HOST:-}"
+    restart: unless-stopped
