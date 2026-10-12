@@ -209,6 +209,8 @@ func _build_lobby_page() -> void:
 		Match.request_start(Match.Mode.HIDE_SEEK, Match.BOT)))
 	box.add_child(_button("Start Hide and Seek (a player is the entity)", func() -> void:
 		Match.request_start(Match.Mode.HIDE_SEEK, Match.SEEK_RANDOM)))
+	box.add_child(_button("Start Social Deduction (3 to 5 players)", func() -> void:
+		Match.request_start(Match.Mode.DEDUCTION, Match.BOT)))
 	_lobby_notice.add_theme_color_override("font_color", Color(0.95, 0.5, 0.4))
 	box.add_child(_lobby_notice)
 	box.add_child(_button("Back", func() -> void:

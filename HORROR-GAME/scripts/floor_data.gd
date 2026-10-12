@@ -149,3 +149,20 @@ static func room_rect(floor_index: int, label: String) -> Rect2:
 			var b := (Vector2(room[3], room[4]) - origin) * scale
 			return Rect2(a, b - a).abs()
 	return Rect2()
+
+
+## Label of the room that contains a world point (x, z in metres) on a floor, "Corridor" when it is in none.
+## Unnamed rooms count as the corridor.
+static func room_label_at(floor_index: int, x: float, z: float) -> String:
+	var data: Dictionary = FLOORS[floor_index]
+	var origin: Vector2 = data["origin"]
+	var scale: float = data["scale"]
+	var point := Vector2(x, z)
+	for room: Array in data["rooms"]:
+		if room[0] == "":
+			continue
+		var a := (Vector2(room[1], room[2]) - origin) * scale
+		var b := (Vector2(room[3], room[4]) - origin) * scale
+		if Rect2(a, b - a).abs().has_point(point):
+			return room[0]
+	return "Corridor"

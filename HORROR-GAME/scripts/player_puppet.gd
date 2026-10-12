@@ -63,6 +63,12 @@ func _process(delta: float) -> void:
 
 func interact(by: Node) -> void:
 	# Revive is handled in _process. In a match the entity's player catches with E.
+	if Match.mode == Match.Mode.DEDUCTION:
+		if Match.is_active() and Match.is_entity_me():
+			var main = get_tree().current_scene
+			if main and main.get("match_world"):
+				main.match_world.try_takedown(name.to_int(), global_position)
+		return
 	if Match.is_active() and Match.is_seeker_me() and Match.phase == Match.Phase.HUNT and _catch_cooldown <= 0.0 \
 			and Match.state_of(name.to_int()) == Match.PState.ALIVE and by.get("seeker_mode"):
 		_catch_cooldown = 1.0
@@ -83,6 +89,9 @@ func set_downed(downed: bool) -> void:
 func _update_match_prompt() -> void:
 	var main = get_tree().current_scene
 	if main == null or main.name != "Main" or main.player == null:
+		return
+	if Match.mode == Match.Mode.DEDUCTION:
+		prompt = "Take down" if main.match_world.can_takedown() else ""
 		return
 	var state := Match.state_of(name.to_int())
 	var ray = main.player.interact_ray

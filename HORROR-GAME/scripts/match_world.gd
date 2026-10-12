@@ -5,6 +5,8 @@ extends Node
 ## the computer-controlled entity) moves it and sends its position about 20 times a second. On the other devices the
 ## node is `remote_driven` and only follows that stream, so flashes, footsteps and the heartbeat work as in the campaign.
 
+const BodyMarker := preload("res://scripts/body_marker.gd")
+const FloorData := preload("res://scripts/floor_data.gd")
 const SYNC_INTERVAL := 0.05
 const PUPPET_LAYER := 17
 const SPREAD := 1.1   ## Metres between survivors at the start.
@@ -23,6 +25,13 @@ var _sync_timer := 0.0
 var _puppet_timer := 0.0
 var _stun_left := 0.0
 var _far_point := Vector3.ZERO
+var _bodies: Array[Node] = []
+var _room_timer := 0.0
+var _last_room := ""
+var _takedown_ready_at := 0.0   ## Seconds on the engine clock when the entity may take someone down again.
+var _vote_peers: Array[int] = []
+var _meeting_open := false
+var _previous_phase := 0
 
 
 func _ready() -> void:
@@ -61,6 +70,12 @@ func _ready() -> void:
 	Match.stun_received.connect(_on_stun)
 	Match.driver_changed.connect(_apply_driver)
 	Match.start_rejected.connect(func(reason: String) -> void: _say(reason, 5.0))
+	Match.body_dropped.connect(_on_body_dropped)
+	Match.meeting_started.connect(_on_meeting_started)
+	Match.meeting_result.connect(_on_meeting_result)
+	Match.takedown_acked.connect(func(cooldown: float) -> void:
+		_takedown_ready_at = Time.get_ticks_msec() / 1000.0 + cooldown)
+	main.choice_ui.chosen.connect(_on_vote_choice)
 
 
 # --- Round events -----------------------------------------------------------
@@ -71,6 +86,10 @@ func _on_round_begun(info: Dictionary) -> void:
 		main.enter_match_mode()
 	_far_point = _far_from_spawn()
 	_reset_entity()
+	_clear_bodies()
+	_meeting_open = false
+	_last_room = ""
+	_takedown_ready_at = Time.get_ticks_msec() / 1000.0 + Match.FIRST_TAKEDOWN_DELAY + Match.BRIEF_TIME
 	player.seeker_mode = false
 	player.is_downed = false
 	_stun_left = 0.0
@@ -80,13 +99,15 @@ func _on_round_begun(info: Dictionary) -> void:
 	_refresh_puppets()
 	var survivors: Array = info["survivors"]
 	survivors.sort()
+	if info["mode"] == Match.Mode.DEDUCTION:
+		_label_puppets()
 	if info["spectator"]:
 		_place(main._spawn_point)
 		player.controls_enabled = false
 		player.set_flashlight(false)
 		_say("A round is running. You join the next one.", 6.0)
 		return
-	if Match.is_seeker_me():
+	if Match.is_seeker_me() and info["mode"] == Match.Mode.HIDE_SEEK:
 		player.seeker_mode = true
 		player.set_flashlight(false)
 		_place(_far_point)
@@ -102,6 +123,10 @@ func _on_round_begun(info: Dictionary) -> void:
 
 
 func _on_phase_changed(phase: int, _seconds: float) -> void:
+	if Match.mode == Match.Mode.DEDUCTION:
+		_deduction_phase(phase)
+		_previous_phase = phase
+		return
 	match phase:
 		Match.Phase.HIDING:
 			if Match.is_seeker_me():
@@ -167,6 +192,9 @@ func _reset_entity() -> void:
 
 
 func _on_round_ended(result: Dictionary) -> void:
+	_meeting_open = false
+	main.choice_ui.close()
+	_clear_bodies()
 	var text: String = result["reason"]
 	var mine := _side_wins(result["winner"])
 	_say("%s\n%s" % ["You win." if mine else "You lose.", text], float(Match.RESULT_TIME))
@@ -177,6 +205,8 @@ func _on_round_ended(result: Dictionary) -> void:
 func _side_wins(winner: String) -> bool:
 	if Match.is_spectator():
 		return false
+	if Match.mode == Match.Mode.DEDUCTION:
+		return (winner == "entity") == Match.is_entity_me()
 	return (winner == "seeker") == Match.is_seeker_me()
 
 
@@ -184,7 +214,19 @@ func _on_player_state_changed(peer: int, state: int) -> void:
 	if peer != Match.my_id():
 		var puppet = main._puppets.get(peer)
 		if puppet:
-			puppet.set_downed(state != Match.PState.ALIVE)
+			if Match.mode == Match.Mode.DEDUCTION:
+				_apply_puppet(peer, puppet)   # The body replaces the puppet.
+			else:
+				puppet.set_downed(state != Match.PState.ALIVE)
+		return
+	if Match.mode == Match.Mode.DEDUCTION:
+		if state == Match.PState.OUT:
+			player.is_downed = true
+			player.controls_enabled = false
+			player.set_flashlight(false)
+			if player.is_hiding:
+				player.exit_hiding()
+			_say("You are out. Watch the others.", 5.0)
 		return
 	match state:
 		Match.PState.DOWNED:
@@ -241,6 +283,8 @@ func _process(delta: float) -> void:
 		_stun_left -= delta
 		if _stun_left <= 0.0 and Match.phase == Match.Phase.HUNT and Match.is_seeker_me():
 			player.controls_enabled = true
+	if Match.mode == Match.Mode.DEDUCTION:
+		_track_room(delta)
 	_puppet_timer -= delta
 	if _puppet_timer <= 0.0:
 		_puppet_timer = 0.5
@@ -262,6 +306,9 @@ func _send_entity() -> void:
 
 ## Top line: the clock, the role and who is still up.
 func _update_status() -> void:
+	if Match.mode == Match.Mode.DEDUCTION:
+		_update_deduction_status()
+		return
 	var role := "Spectator"
 	if Match.is_seeker_me():
 		role = "Entity"
@@ -289,6 +336,9 @@ func _up_count() -> int:
 
 
 func hud_text() -> String:
+	if Match.mode == Match.Mode.DEDUCTION:
+		return "Battery %d%%\n[F] light   [E] interact, hide, report a body   [G] call a meeting (once)   [Shift] sprint   [Esc] pause" \
+				% roundi(player.battery / player.battery_max * 100.0)
 	var held := "flashlight" if player.flashlight.visible else "empty hands"
 	return "Battery %d%%  |  In hand: %s\n[F] light   [T] flash the entity   [E] interact, hide, revive   [Shift] sprint   [Esc] pause" \
 			% [roundi(player.battery / player.battery_max * 100.0), held]
@@ -340,6 +390,8 @@ func _refresh_puppets() -> void:
 ## The entity's own player has no puppet on screen (the entity node shows it), and a hidden survivor is in a locker.
 func _apply_puppet(peer: int, puppet: Node) -> void:
 	var shown: bool = peer != Match.seeker and not puppet.is_hiding
+	if Match.mode == Match.Mode.DEDUCTION:
+		shown = shown and Match.state_of(peer) == Match.PState.ALIVE
 	puppet.visible = shown
 	puppet.collision_layer = PUPPET_LAYER if shown else 0
 
@@ -347,3 +399,157 @@ func _apply_puppet(peer: int, puppet: Node) -> void:
 func _say(text: String, seconds: float) -> void:
 	_banner.text = text
 	_banner_left = seconds
+
+
+# --- Social Deduction -------------------------------------------------------
+
+func _label_puppets() -> void:
+	for peer: int in main._puppets:
+		main._puppets[peer].nametag.text = Match.labels.get(peer, "")
+
+
+func _deduction_phase(phase: int) -> void:
+	match phase:
+		Match.Phase.HIDING:
+			_label_puppets()
+			player.controls_enabled = not Match.is_spectator()
+			if Match.is_entity_me():
+				_say("You are the ENTITY.\nBlend in. Take crew down with E when nobody sees. Do not get voted out.", 8.0)
+			elif not Match.is_spectator():
+				_say("You are CREW (%s).\nOne of you is the entity. Find the body, read the room log, vote it out." \
+						% Match.labels.get(Match.my_id(), ""), 8.0)
+		Match.Phase.PLAY:
+			if _previous_phase == Match.Phase.MEETING:
+				_back_to_start()
+			if Match.state_of(Match.my_id()) == Match.PState.ALIVE and not Match.is_spectator():
+				player.controls_enabled = true
+				main.player.set_flashlight(true)
+		Match.Phase.MEETING:
+			player.controls_enabled = false
+		Match.Phase.RESULT:
+			_meeting_open = false
+			main.choice_ui.close()
+			player.controls_enabled = false
+
+
+## After a meeting everybody starts again at the entrance.
+func _back_to_start() -> void:
+	var peers: Array = Match.states.keys()
+	peers.sort()
+	var index := maxi(peers.find(Match.my_id()), 0)
+	_place(main._spawn_point + Vector3((index % 3 - 1) * SPREAD, 0.0, -(index / 3) * SPREAD))
+
+
+func _update_deduction_status() -> void:
+	var role := "Spectator"
+	if Match.is_entity_me():
+		role = "Entity"
+	elif Match.my_role == "crew":
+		role = "Crew"
+	var phase_text := "Waiting"
+	match Match.phase:
+		Match.Phase.HIDING:
+			phase_text = "Get ready  %d s" % ceili(Match.time_left)
+		Match.Phase.PLAY:
+			phase_text = "Night  %d:%02d" % [int(Match.time_left) / 60, int(Match.time_left) % 60]
+		Match.Phase.MEETING:
+			phase_text = "Meeting  %d s" % ceili(Match.time_left)
+		Match.Phase.RESULT:
+			phase_text = "Round over"
+	var extra := ""
+	if Match.is_entity_me() and Match.phase == Match.Phase.PLAY:
+		var wait := _takedown_ready_at - Time.get_ticks_msec() / 1000.0
+		extra = "  |  Take down: " + ("ready" if wait <= 0.0 else "%d s" % ceili(wait))
+	_status.text = "%s  |  %s  |  Alive: %d%s" % [role, phase_text, Match.alive_count(), extra]
+
+
+func can_takedown() -> bool:
+	return Match.is_entity_me() and Match.phase == Match.Phase.PLAY \
+			and Time.get_ticks_msec() / 1000.0 >= _takedown_ready_at and player.controls_enabled
+
+
+## The entity pressed E on a crew puppet.
+func try_takedown(peer: int, pos: Vector3) -> void:
+	if can_takedown() and Match.state_of(peer) == Match.PState.ALIVE:
+		_takedown_ready_at = Time.get_ticks_msec() / 1000.0 + 2.0   # The authority answers with the real cooldown.
+		Match.report_takedown(peer, pos)
+
+
+func call_meeting() -> void:
+	if Match.mode == Match.Mode.DEDUCTION and Match.phase == Match.Phase.PLAY \
+			and Match.state_of(Match.my_id()) == Match.PState.ALIVE:
+		Match.call_meeting()
+
+
+func _on_body_dropped(victim: int, pos: Vector3) -> void:
+	var body := BodyMarker.new()
+	body.victim = victim
+	main.add_child(body)
+	body.global_position = Vector3(pos.x, pos.y, pos.z)
+	_bodies.append(body)
+	if player.global_position.distance_to(pos) < 20.0:
+		main.daynight.flicker(1.6)   # The lights near a takedown stutter. This is a tell, not a proof.
+	if victim == Match.my_id():
+		_say("The entity got you.", 4.0)
+
+
+func _clear_bodies() -> void:
+	for body in _bodies:
+		if is_instance_valid(body):
+			body.queue_free()
+	_bodies.clear()
+
+
+func _on_meeting_started(info: Dictionary) -> void:
+	_clear_bodies()
+	_meeting_open = false
+	var caller: String = Match.labels.get(info["caller"], "Someone")
+	var title := "%s found %s" % [caller, Match.labels.get(info["victim"], "")] if info["victim"] != 0 \
+			else "%s called a meeting" % caller
+	if Match.state_of(Match.my_id()) != Match.PState.ALIVE:
+		_say("%s.\nYou are out. Watch the vote.\n\n%s" % [title, info["log"]], float(Match.MEETING_TIME))
+		return
+	_vote_peers.clear()
+	var options: Array = []
+	var peers: Array = Match.states.keys()
+	peers.sort()
+	for peer: int in peers:
+		if Match.state_of(peer) == Match.PState.ALIVE:
+			_vote_peers.append(peer)
+			options.append("Vote: %s%s" % [Match.labels.get(peer, "?"), " (you)" if peer == Match.my_id() else ""])
+	_vote_peers.append(0)
+	options.append("Skip")
+	_meeting_open = true
+	main.choice_ui.ask(title, "Room log, last minute:\n%s\n\nMore than half of the living players must agree." % info["log"], options)
+
+
+func _on_vote_choice(index: int) -> void:
+	if not _meeting_open or index >= _vote_peers.size():
+		return
+	_meeting_open = false
+	main.choice_ui.close()
+	Match.cast_vote(_vote_peers[index])
+	_say("Vote cast. Waiting for the others.", 10.0)
+
+
+func _on_meeting_result(ejected: int, was_entity: bool, _tally: Dictionary) -> void:
+	_meeting_open = false
+	main.choice_ui.close()
+	if ejected == 0:
+		_say("No one was ejected.", float(Match.MEETING_RESULT_TIME))
+	else:
+		_say("%s was ejected.\n%s" % [Match.labels.get(ejected, "?"),
+				"They were the entity." if was_entity else "They were crew."], float(Match.MEETING_RESULT_TIME))
+
+
+## Reports the room when it changes. The log is the crew's evidence.
+func _track_room(delta: float) -> void:
+	_room_timer -= delta
+	if _room_timer > 0.0 or Match.phase != Match.Phase.PLAY or Match.state_of(Match.my_id()) != Match.PState.ALIVE:
+		return
+	_room_timer = 0.5
+	var floor_index := clampi(roundi(player.global_position.y / main.FLOOR_HEIGHT), 0, FloorData.FLOORS.size() - 1)
+	var room := FloorData.room_label_at(floor_index, player.global_position.x, player.global_position.z)
+	if room != _last_room:
+		_last_room = room
+		Match.report_room(room if room == "Corridor" else "Room " + room)

@@ -391,7 +391,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _game_over and event is InputEventKey and event.pressed and event.keycode == KEY_R:
 		get_tree().reload_current_scene()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G and not menu.is_open():
-		_open_accusation()
+		if match_world.active:
+			match_world.call_meeting()   # Social Deduction: one meeting per player and round.
+		else:
+			_open_accusation()
 	elif event.is_action_pressed(&"ui_cancel") and not _game_over and not menu.is_open() and not choice_ui.visible \
 			and not lesson_ui.visible:
 		get_tree().paused = not match_world.active   # A match goes on for the others, so it never pauses.
