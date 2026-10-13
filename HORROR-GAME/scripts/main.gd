@@ -32,6 +32,7 @@ const AulaPhotoScript := preload("res://scripts/aula_photo.gd")
 const DreamScript := preload("res://scripts/dream.gd")
 const FurnitureScript := preload("res://scripts/furniture.gd")
 const HidingSpotScript := preload("res://scripts/hiding_spot.gd")
+const MatchWorldScript := preload("res://scripts/match_world.gd")
 
 const WS := FloorData.WORLD_SCALE   ## Shorthand: plan-tied metre values are multiplied by it, human-sized ones are not.
 const FLOOR_HEIGHT := 4.0       ## Floor-to-floor distance.
@@ -109,6 +110,7 @@ var tasks := TasksScript.new()
 var dream := DreamScript.new()   ## Hunt days: the demon follows the player into a nap.
 var haunting := HauntingScript.new()   ## Day 3: the demon starts pranking the player.
 var mecha := MechaScript.new()   ## The daily neu_mecha chameleon and the phone feed.
+var match_world := MatchWorldScript.new()   ## Multiplayer match modes (hide and seek); inert in the campaign.
 var furniture := FurnitureScript.new()   ## Desks, PCs and WC fixtures; built before the navmesh bake.
 var _table_spots: Array[Vector3] = []    ## Every `_table()` centre: furniture keeps clear of them.
 var porter: Node        ## Mr. Bakó at the Porta desk (group "porta", never "teachers").
@@ -257,6 +259,10 @@ func _ready() -> void:
 	campaign.player = player
 	campaign.quest = quest
 	campaign.room_check = func(i: int) -> bool: return _player_in_room(Lessons.subject_at(campaign.day, i))
+	match_world.main = self
+	match_world.player = player
+	match_world.entity = entity
+	add_child(match_world)
 	crowd.player = player
 	crowd.entity = entity
 	crowd.campaign = campaign
@@ -385,10 +391,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _game_over and event is InputEventKey and event.pressed and event.keycode == KEY_R:
 		get_tree().reload_current_scene()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G and not menu.is_open():
-		_open_accusation()
+		if match_world.active:
+			match_world.call_meeting()   # Social Deduction: one meeting per player and round.
+		else:
+			_open_accusation()
 	elif event.is_action_pressed(&"ui_cancel") and not _game_over and not menu.is_open() and not choice_ui.visible \
 			and not lesson_ui.visible:
-		get_tree().paused = true
+		get_tree().paused = not match_world.active   # A match goes on for the others, so it never pauses.
 		_hud_layer.visible = false
 		menu.show_pause()
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -439,6 +448,8 @@ func _connect_signals() -> void:
 	menu.start_requested.connect(_start_game)
 	menu.resume_requested.connect(_resume)
 	menu.restart_requested.connect(func() -> void:
+		if match_world.active:
+			NetSession.leave_session()   # Leaving a match: back to the title screen alone.
 		get_tree().paused = false
 		get_tree().reload_current_scene())
 	
@@ -478,6 +489,27 @@ func _start_game() -> void:
 	campaign.start_day(1)
 
 
+## A multiplayer round has begun: the school becomes an empty night arena. No teachers, students, caretaker or dog, and
+## the campaign never starts, so nothing in the story runs. Safe to call on every round.
+func enter_match_mode() -> void:
+	if is_instance_valid(_menu_camera) and _menu_camera.is_inside_tree():
+		_stop_title_scene()
+	menu.hide_all()
+	_hud_layer.visible = true
+	get_tree().paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	for group: StringName in [&"teachers", &"ambient_staff", &"caretaker", &"csoki", &"porta"]:
+		for node: Node in get_tree().get_nodes_in_group(group):
+			node.remove_from_group(group)
+			node.queue_free()
+	crowd.process_mode = Node.PROCESS_MODE_DISABLED
+	crowd.visible = false
+	staff_manager.process_mode = Node.PROCESS_MODE_DISABLED
+	daynight.running = false
+	daynight.is_night = true
+	daynight.minutes = DayNightScript.NIGHT
+
+
 func _resume() -> void:
 	menu.hide_all()
 	_hud_layer.visible = true
@@ -512,6 +544,9 @@ func _far_patrol_point() -> Vector3:
 
 
 func _on_player_caught() -> void:
+	if match_world.active:
+		match_world.on_local_caught()
+		return
 	if _game_over or campaign.ending_id != 0:
 		return
 	quest.on_player_caught()
@@ -2155,6 +2190,9 @@ func _show_inventory_panel(open: bool) -> void:
 
 
 func _update_hud() -> void:
+	if match_world.active:
+		_hud.text = match_world.hud_text()
+		return
 	if _inventory_panel.visible:
 		_inventory_label.text = player.items.detail()
 	var held := "empty hands"

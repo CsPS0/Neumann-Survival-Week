@@ -99,6 +99,8 @@ var phone_two_hands := false        ## False: phone in the active hand, torch in
 var inventory_open := false         ## Tab: the inventory list is on screen (closed again when the phone goes up).
 var is_downed := false
 var is_hiding := false
+var seeker_mode := false   ## Match mode: this player is the entity. Fixed speed, no torch.
+const SEEKER_SPEED := 4.2
 var is_holding_breath := false
 var _current_hiding_spot: Node = null
 var _pre_hide_pos := Vector3.ZERO
@@ -249,6 +251,9 @@ func _physics_process(delta: float) -> void:
 	var moving := direction.length() > 0.1
 	var sprinting := wants_sprint and moving and not exhausted
 	var speed := (sprint_speed if sprinting else walk_speed) * items.speed_multiplier()
+	if seeker_mode:
+		sprinting = false
+		speed = SEEKER_SPEED
 	_update_stamina(delta, sprinting, wants_sprint and moving)
 
 	velocity.x = move_toward(velocity.x, direction.x * speed, acceleration * delta)
@@ -362,7 +367,7 @@ func flash_burst() -> void:
 
 ## Turns the light on/off. Refuses to turn on with an empty battery.
 func set_flashlight(on: bool) -> void:
-	if on and battery <= 0.0:
+	if on and (battery <= 0.0 or seeker_mode):
 		return
 	flashlight.visible = on
 	flashlight.light_energy = _flashlight_base_energy
@@ -570,7 +575,7 @@ func _update_prompt() -> void:
 		var target := interact_ray.get_collider() as Node
 		if target and target.has_method(&"interact"):
 			var prompt = target.get("prompt")
-			text = "[E] " + str(prompt) if prompt != null else "[E] Use"
+			text = "[E] " + str(prompt) if prompt != null and str(prompt) != "" else ("" if prompt != null else "[E] Use")
 	if text != _last_prompt:
 		_last_prompt = text
 		prompt_changed.emit(text)
@@ -629,7 +634,7 @@ func _register_actions() -> void:
 
 
 func enter_hiding(spot: Node) -> void:
-	if is_hiding:
+	if is_hiding or seeker_mode:
 		return
 	is_hiding = true
 	_current_hiding_spot = spot
@@ -648,6 +653,8 @@ func enter_hiding(spot: Node) -> void:
 	velocity = Vector3.ZERO
 	set_flashlight(false)
 	prompt_changed.emit("[E] Kilépés | [Space] Lélegzet-visszatartás")
+	if Match.is_active():
+		Match.send_hiding(true)
 
 
 func exit_hiding() -> void:
@@ -665,6 +672,8 @@ func exit_hiding() -> void:
 		if spot.get("occupant") == self and spot.has_method(&"exit"):
 			spot.exit(self)
 	prompt_changed.emit("")
+	if Match.is_active():
+		Match.send_hiding(false)
 
 
 func _update_heartbeat(delta: float) -> void:

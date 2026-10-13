@@ -141,6 +141,7 @@ These features exist in the code but are early and untested on real hardware:
 
 - **Touch controls (Android):** the overlay shows by itself on Android and hides while a menu, dialog or the safe keypad is open, or when a physical keyboard or mouse is used. Left half of the screen: floating stick (push to the edge to sprint). Right half: look. Buttons: E, F, Q, Tab, Hands, Bag, Swap, Stow, Pause (the Back button also pauses), Name (day 4), Ping (co-op), hold breath while hiding, and on the phone: floor, zoom and pan. The answer sheet has a Hand in button, the safe has a keypad and the ending card has a Play again button. Try it on a desktop with `godot --path . -- --touch`. Mobile devices use a lower render scale and the game runs in landscape.
 - **Co-op (up to 4 players):** Host Co-op and Join Co-op in the main menu, with a lobby, a ping marker (middle mouse button) and proximity voice. The host sees a room code and an address in the lobby. Joining players type either one. See [Co-op and dedicated server](#co-op-and-dedicated-server).
+- **Hide and Seek and Social Deduction (multiplayer):** from the Co-op lobby, one entity hunts the other players through the empty school, or one secret entity hides among the crew. See [Multiplayer modes](#multiplayer-modes).
 - **VR (OpenXR):** the game switches to VR when an OpenXR runtime is present, otherwise it runs in standard mode.
 
 ## Co-op and dedicated server
@@ -171,6 +172,14 @@ The server prints its address and room code at start. It prints the address of t
 
 **Limits.** Connections are direct. There is no relay service, so players on different networks need a reachable host: a forwarded port or a server with a public address. Android players join with the room code or address like everyone else. Docker on macOS and Windows does not pass LAN broadcasts, so discovery buttons do not appear for those servers. The code and address still work.
 
+## Multiplayer modes
+
+Open the Co-op lobby (Host Co-op or Join Co-op) and press a start button for a mode. Any player can start. The design note is [docs/multiplayer-modes.md](docs/multiplayer-modes.md).
+
+- **Hide and Seek.** 25 seconds to hide, then 4 minutes of hunting in the empty night school. The entity is the computer (the default) or a random player, which needs at least 2 players. Survivors hide in lockers (E, Space holds the breath), flash the torch (T) to stun the entity for 3 seconds, and revive downed teammates by holding E for 3 seconds. A caught survivor has 25 seconds to be revived. Survivors win when time runs out with one of them up. The entity wins when nobody is standing. A new round starts 12 seconds after each result. Leave from the pause menu.
+- **Social Deduction.** 3 to 5 players. One random player is secretly the entity, the others are students and teachers. The entity takes crew members down with E (every 30 s). Finding a body (E) or pressing G (once per player) starts a 45 second meeting with the room log of the last minute. Vote with the number keys: more than half of the living players ejects someone. The crew wins by ejecting the entity or by surviving the 6 minute night. The entity wins when one crew member is left. Lights near a takedown flicker.
+- **Works with the dedicated server.** The server runs the round logic without a world. With the computer as the entity, one player device runs it.
+
 ## Code layout
 
 | Path | What it holds |
@@ -187,6 +196,7 @@ The server prints its address and room code at start. It prints the address of t
 | `scripts/phone_viewmodel.gd`, `phone_map.gd`, `ekreta.gd`, `bulletin.gd` | The phone: its apps, map zoom, and the data behind e-Kréten and the notice board. |
 | `scripts/menu.gd`, `settings_ui.gd`, `profile.gd`, `achievements.gd` | Menus, settings and saved profile. |
 | `scripts/staff_source.gd` | Loads the gitignored `scripts/staff.gd` when present, else the committed placeholder. |
+| `scripts/match.gd`, `match_world.gd`, `body_marker.gd` | Match modes: round logic on the host or the dedicated server (`match.gd`, autoload `Match`), its effect on the school (`match_world.gd`) and the body in Social Deduction. |
 | `scripts/net_session.gd`, `dedicated_server.gd`, `input_bridge.gd`, `touch_controls.gd`, `xr_manager.gd` | Co-op, the headless server (`server/` holds its launch files), touch and VR. |
 
 ## Releases

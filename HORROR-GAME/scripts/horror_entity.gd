@@ -56,6 +56,9 @@ const STUCK_CHECK_INTERVAL := 1.0
 var state := State.IDLE
 var player: Node3D
 var force_hunt := false    ## True during the ritual: it always knows where the player is.
+var target_provider := Callable()   ## Match mode: () -> Array of the survivors it may hunt. Empty = the local player only.
+var hunt_hint_interval := 0.0       ## Match mode: every this many seconds it senses roughly where its target is. 0 = never.
+var remote_driven := false          ## Match mode, not the driver: position and look come from `set_remote_state`.
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _state_time := 0.0
@@ -73,6 +76,10 @@ var _jumpscare := AudioStreamPlayer.new()
 var _encounter_id := 0
 var _stun_time := 0.0
 var _blind_time := 0.0
+var _retarget_timer := 0.0
+var _hint_timer := 0.0
+var _remote_position := Vector3.ZERO
+var _remote_yaw := 0.0
 
 
 func _ready() -> void:
@@ -97,6 +104,11 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if remote_driven:
+		_tick_remote(delta)
+		return
+	if target_provider.is_valid():
+		_retarget(delta)
 	if _stun_time > 0.0:
 		_tick_stun(delta)
 		return
@@ -121,6 +133,9 @@ func _physics_process(delta: float) -> void:
 ## The player's torch flash: it freezes for `seconds`, then loses the player and wanders off.
 ## Ignored while it is already biting (the catch has happened) or asleep.
 func stun(seconds: float) -> void:
+	if remote_driven:
+		Match.send_stun(seconds)   # The device that drives it freezes it.
+		return
 	if state == State.ATTACK or process_mode == Node.PROCESS_MODE_DISABLED:
 		return
 	_stun_time = seconds
@@ -143,6 +158,58 @@ func _tick_stun(delta: float) -> void:
 		_stun_time = 0.0
 		_blind_time = BLIND_AFTER_STUN
 		_set_state(State.PATROL)
+
+
+# --- Match mode ------------------------------------------------------------
+
+## Hunts the nearest survivor that is not hiding, else the nearest one. With none left it keeps roaming.
+func _retarget(delta: float) -> void:
+	_retarget_timer -= delta
+	if _retarget_timer > 0.0:
+		return
+	_retarget_timer = 0.25
+	var best: Node3D = null
+	var best_distance := INF
+	var best_hidden := true
+	for candidate: Node3D in target_provider.call():
+		if not is_instance_valid(candidate):
+			continue
+		var hidden: bool = candidate.get("is_hiding") == true
+		var distance := global_position.distance_squared_to(candidate.global_position)
+		if (best_hidden and not hidden) or (hidden == best_hidden and distance < best_distance):
+			best = candidate
+			best_distance = distance
+			best_hidden = hidden
+	if best != player:
+		player = best
+		_sees_player = false
+		if player == null and state == State.CHASE:
+			_set_state(State.IDLE)
+	if hunt_hint_interval > 0.0 and player != null:
+		_hint_timer += 0.25
+		if _hint_timer >= hunt_hint_interval and (state == State.IDLE or state == State.PATROL):
+			_hint_timer = 0.0
+			var offset := Vector3(randf_range(-6.0, 6.0), 0.0, randf_range(-6.0, 6.0))
+			_investigate(player.global_position + offset)
+
+
+## Position and look of the real entity, sent about 20 times a second by the device that runs it.
+func set_remote_state(pos: Vector3, yaw: float, aggressive: bool) -> void:
+	_remote_position = pos
+	_remote_yaw = yaw
+	model.set_aggressive(aggressive)
+	state = State.CHASE if aggressive else State.PATROL
+
+
+func _tick_remote(delta: float) -> void:
+	if _stun_time > 0.0:
+		_stun_time -= delta
+	var before := global_position
+	global_position = global_position.lerp(_remote_position, minf(12.0 * delta, 1.0))
+	rotation.y = lerp_angle(rotation.y, _remote_yaw, minf(12.0 * delta, 1.0))
+	velocity = (global_position - before) / maxf(delta, 0.001)
+	velocity.y = 0.0
+	_tick_footsteps(delta)
 
 
 # --- State logic -----------------------------------------------------------
@@ -228,7 +295,7 @@ func _set_state(new_state: State) -> void:
 		State.CHASE:
 			_time_since_seen = 0.0
 			_repath_timer = 0.0
-			if _sees_player:
+			if _sees_player and player:
 				_last_known_position = player.global_position
 			if previous != State.ATTACK:
 				chase_sting.play()
@@ -375,7 +442,7 @@ func _open_nearby_doors() -> void:
 
 
 func _tick_footsteps(delta: float) -> void:
-	if footstep_sounds.is_empty() or not is_on_floor():
+	if footstep_sounds.is_empty() or (not is_on_floor() and not remote_driven):
 		return
 	_step_accum += Vector2(velocity.x, velocity.z).length() * delta
 	if _step_accum < step_distance:

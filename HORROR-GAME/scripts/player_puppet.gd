@@ -9,6 +9,11 @@ var target_position := Vector3.ZERO
 var target_rotation := 0.0
 var target_flashlight := false
 var is_sprinting := false
+var is_hiding := false          ## Match mode: set from the hiding report; the entity reads it like the player's.
+var walk_speed := 3.0           ## Same fields the entity reads on the real player.
+var velocity := Vector3.ZERO
+var _last_position := Vector3.ZERO
+var _catch_cooldown := 0.0
 
 func _ready() -> void:
 	target_position = global_position
@@ -19,7 +24,10 @@ var prompt = "Revive"
 var _revive_timer = 0.0
 
 func _process(delta: float) -> void:
+	_last_position = global_position
 	global_position = global_position.lerp(target_position, 15.0 * delta)
+	velocity = (global_position - _last_position) / maxf(delta, 0.001)
+	_catch_cooldown = maxf(_catch_cooldown - delta, 0.0)
 	rotation.y = lerp_angle(rotation.y, target_rotation, 15.0 * delta)
 	flashlight.visible = target_flashlight
 	
@@ -33,6 +41,9 @@ func _process(delta: float) -> void:
 		
 	# Re-orient nametag manually if billboard isn't enough, but billboard=1 handles it in scene
 	
+	if Match.is_active():
+		_update_match_prompt()
+		return
 	var main = get_tree().current_scene
 	if rotation.x != 0 and main and main.name == "Main" and main.player:
 		var ray = main.player.interact_ray
@@ -50,8 +61,57 @@ func _process(delta: float) -> void:
 			_revive_timer = 0.0
 			prompt = "Revive"
 
-func interact(player: Node) -> void:
-	pass # Handled in process
+func interact(by: Node) -> void:
+	# Revive is handled in _process. In a match the entity's player catches with E.
+	if Match.mode == Match.Mode.DEDUCTION:
+		if Match.is_active() and Match.is_entity_me():
+			var main = get_tree().current_scene
+			if main and main.get("match_world"):
+				main.match_world.try_takedown(name.to_int(), global_position)
+		return
+	if Match.is_active() and Match.is_seeker_me() and Match.phase == Match.Phase.HUNT and _catch_cooldown <= 0.0 \
+			and Match.state_of(name.to_int()) == Match.PState.ALIVE and by.get("seeker_mode"):
+		_catch_cooldown = 1.0
+		Match.report_catch(name.to_int())
+
+
+## Called by the computer-controlled entity when it reaches this survivor.
+func on_caught(_source: Node3D = null) -> void:
+	if Match.is_bot_host_me():
+		Match.report_catch(name.to_int())
+
+
+func set_downed(downed: bool) -> void:
+	rotation.x = PI / 2.0 if downed else 0.0
+	position.y = 0.2 if downed else 0.0
+
+
+func _update_match_prompt() -> void:
+	var main = get_tree().current_scene
+	if main == null or main.name != "Main" or main.player == null:
+		return
+	if Match.mode == Match.Mode.DEDUCTION:
+		prompt = "Take down" if main.match_world.can_takedown() else ""
+		return
+	var state := Match.state_of(name.to_int())
+	var ray = main.player.interact_ray
+	var aimed: bool = ray.is_colliding() and ray.get_collider() == self
+	if Match.is_seeker_me():
+		prompt = "Catch"
+		return
+	if state != Match.PState.DOWNED or Match.phase != Match.Phase.HUNT or main.player.is_downed:
+		_revive_timer = 0.0
+		prompt = ""
+		return
+	if aimed and Input.is_action_pressed("interact"):
+		_revive_timer += get_process_delta_time()
+		prompt = "Reviving... " + str(int((_revive_timer / 3.0) * 100)) + "%"
+		if _revive_timer >= 3.0:
+			Match.report_revive(name.to_int())
+			_revive_timer = 0.0
+	else:
+		_revive_timer = 0.0
+		prompt = "Revive"
 
 
 @rpc("any_peer", "unreliable")
