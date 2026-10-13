@@ -160,8 +160,9 @@ if printf '%s\n' "${targets[@]}" | grep -qE '^(android|quest)$'; then
 	java_home="${JAVA_HOME:-}"
 	[ -z "$java_home" ] && command -v javac >/dev/null 2>&1 &&
 		java_home="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
-	settings="${XDG_CONFIG_HOME:-$HOME/.config}/godot/editor_settings-4.tres"
-	[ "$os" = "Darwin" ] && settings="$HOME/Library/Application Support/Godot/editor_settings-4.tres"
+	settings_dir="${XDG_CONFIG_HOME:-$HOME/.config}/godot"
+	[ "$os" = "Darwin" ] && settings_dir="$HOME/Library/Application Support/Godot"
+	minor="$(echo "$version" | cut -d. -f1,2)"
 	if [ -z "$sdk" ] || [ ! -d "$sdk" ]; then
 		echo "SKIP android/quest: Android SDK not found. Set ANDROID_HOME (needs platform-tools, build-tools 35.0.1 and platforms;android-35)."; android_ok=0
 	elif [ -z "$java_home" ]; then
@@ -189,24 +190,27 @@ if printf '%s\n' "${targets[@]}" | grep -qE '^(android|quest)$'; then
 		fi
 		if [ "$android_ok" -eq 1 ]; then
 			# Fill the Godot editor settings when a value is missing, empty or points to a missing path.
-			mkdir -p "$(dirname "$settings")"
-			[ -f "$settings" ] || printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$settings"
-			ensure_setting() { # key value check (file to test inside the path, or "none")
-				local cur
-				cur="$(awk -F' = ' -v k="$1" '$1 == k { gsub(/^"|"$/, "", $2); print $2; exit }' "$settings")"
-				if [ -n "$cur" ] && { [ "$3" = none ] || [ -e "$cur/$3" ] || { [ "$3" = self ] && [ -e "$cur" ]; }; }; then return; fi
-				if grep -q "^$1 = " "$settings"; then
-					sed -i "s|^$1 = .*|$1 = \"$2\"|" "$settings"
-				else
-					printf '%s = "%s"\n' "$1" "$2" >> "$settings"
-				fi
-				echo "Set $1 in $settings"
-			}
-			ensure_setting export/android/java_sdk_path "$java_home" bin/javac
-			ensure_setting export/android/android_sdk_path "$sdk" platform-tools/adb
-			ensure_setting export/android/debug_keystore "$HOME/.android/debug.keystore" self
-			ensure_setting export/android/debug_keystore_user androiddebugkey none
-			ensure_setting export/android/debug_keystore_pass android none
+			# Godot 4.7 reads editor_settings-4.7.tres, older builds read editor_settings-4.tres. Fill both.
+			mkdir -p "$settings_dir"
+			for settings in "$settings_dir/editor_settings-$minor.tres" "$settings_dir/editor_settings-4.tres"; do
+				[ -f "$settings" ] || printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$settings"
+				ensure_setting() { # key value check (file to test inside the path, or "none" or "self")
+					local cur
+					cur="$(awk -F' = ' -v k="$1" '$1 == k { gsub(/^"|"$/, "", $2); print $2; exit }' "$settings")"
+					if [ -n "$cur" ] && { [ "$3" = none ] || [ -e "$cur/$3" ] || { [ "$3" = self ] && [ -e "$cur" ]; }; }; then return; fi
+					if grep -q "^$1 = " "$settings"; then
+						sed -i "s|^$1 = .*|$1 = \"$2\"|" "$settings"
+					else
+						printf '%s = "%s"\n' "$1" "$2" >> "$settings"
+					fi
+					echo "Set $1 in $settings"
+				}
+				ensure_setting export/android/java_sdk_path "$java_home" bin/javac
+				ensure_setting export/android/android_sdk_path "$sdk" platform-tools/adb
+				ensure_setting export/android/debug_keystore "$HOME/.android/debug.keystore" self
+				ensure_setting export/android/debug_keystore_user androiddebugkey none
+				ensure_setting export/android/debug_keystore_pass android none
+			done
 		fi
 	fi
 fi
