@@ -81,6 +81,29 @@ if [ ! -f "$presets" ]; then
 	cp "$ci_presets" "$presets"
 	echo "Copied the CI presets to HORROR-GAME/export_presets.cfg (gitignored)."
 fi
+# Append any requested preset that an older or partial export_presets.cfg lacks.
+preset_name() {
+	case "$1" in
+		linux) echo "Linux/X11" ;; windows) echo "Windows Desktop" ;; windows-vr) echo "Windows VR" ;;
+		macos) echo "macOS" ;; android) echo "Android" ;; quest) echo "Android VR (Quest)" ;;
+	esac
+}
+for t in "${targets[@]}"; do
+	pname="$(preset_name "$t")"
+	grep -qF "name=\"$pname\"" "$presets" && continue
+	[ -f "$ci_presets" ] && grep -qF "name=\"$pname\"" "$ci_presets" || continue
+	n=$(grep -c '^\[preset\.[0-9]*\]$' "$presets")
+	awk -v want="$pname" -v newn="$n" '
+		/^\[preset\.[0-9]+(\.options)?\]$/ { match($0, /[0-9]+/); cur = substr($0, RSTART, RLENGTH) }
+		{ lines[cur] = lines[cur] $0 "\n" }
+		/^name=/ { nm = $0; sub(/^name="/, "", nm); sub(/"$/, "", nm); names[cur] = nm }
+		END { for (i in names) if (names[i] == want) {
+			s = lines[i]
+			gsub("\\[preset\\." i "\\]", "[preset." newn "]", s)
+			gsub("\\[preset\\." i "\\.options\\]", "[preset." newn ".options]", s)
+			printf "\n%s", s } }' "$ci_presets" >> "$presets"
+	echo "Added the \"$pname\" preset to HORROR-GAME/export_presets.cfg."
+done
 if printf '%s\n' "${targets[@]}" | grep -qx macos && ! grep -q 'name="macOS"' "$presets"; then
 	n=$(grep -c '^\[preset\.[0-9]*\]$' "$presets")
 	cat >> "$presets" <<PRESET
