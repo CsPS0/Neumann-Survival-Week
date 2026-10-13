@@ -181,21 +181,29 @@ if printf '%s\n' "${targets[@]}" | grep -qE '^(android|quest)$'; then
 			fi
 			export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$dk" GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
 		fi
-		if [ "$android_ok" -eq 1 ] && [ ! -f "$settings" ]; then
+		if [ "$android_ok" -eq 1 ] && { [ ! -d "$sdk/build-tools" ] || [ ! -d "$sdk/platform-tools" ]; }; then
+			echo "SKIP android/quest: $sdk has no build-tools or platform-tools. Install them with sdkmanager --sdk_root=$sdk \"platform-tools\" \"build-tools;35.0.1\" \"platforms;android-35\" \"cmake;3.10.2.4988893\" \"ndk;28.1.13356709\" (use sudo for /opt/android-sdk)."; android_ok=0
+		fi
+		if [ "$android_ok" -eq 1 ]; then
+			# Fill the Godot editor settings when a value is missing, empty or points to a missing path.
 			mkdir -p "$(dirname "$settings")"
-			cat > "$settings" <<SETTINGS
-[gd_resource type="EditorSettings" format=3]
-
-[resource]
-export/android/java_sdk_path = "$java_home"
-export/android/android_sdk_path = "$sdk"
-export/android/debug_keystore = "$HOME/.android/debug.keystore"
-export/android/debug_keystore_user = "androiddebugkey"
-export/android/debug_keystore_pass = "android"
-SETTINGS
-			echo "Wrote the Android paths to $settings"
-		elif [ "$android_ok" -eq 1 ] && ! grep -q android_sdk_path "$settings"; then
-			echo "SKIP android/quest: $settings exists without the Android SDK path. Set it in Editor, Editor Settings, Export, Android."; android_ok=0
+			[ -f "$settings" ] || printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$settings"
+			ensure_setting() { # key value is_path
+				local cur
+				cur="$(awk -F' = ' -v k="$1" '$1 == k { gsub(/^"|"$/, "", $2); print $2; exit }' "$settings")"
+				if [ -n "$cur" ] && { [ "$3" != path ] || [ -d "$cur" ] || [ -f "$cur" ]; }; then return; fi
+				if grep -q "^$1 = " "$settings"; then
+					sed -i "s|^$1 = .*|$1 = \"$2\"|" "$settings"
+				else
+					printf '%s = "%s"\n' "$1" "$2" >> "$settings"
+				fi
+				echo "Set $1 in $settings"
+			}
+			ensure_setting export/android/java_sdk_path "$java_home" path
+			ensure_setting export/android/android_sdk_path "$sdk" path
+			ensure_setting export/android/debug_keystore "$HOME/.android/debug.keystore" path
+			ensure_setting export/android/debug_keystore_user androiddebugkey text
+			ensure_setting export/android/debug_keystore_pass android text
 		fi
 	fi
 fi
