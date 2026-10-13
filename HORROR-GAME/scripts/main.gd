@@ -445,7 +445,7 @@ func _connect_signals() -> void:
 	NetSession.player_joined.connect(_on_peer_connected)
 	NetSession.player_left.connect(_on_peer_disconnected)
 	if NetSession.is_multiplayer_active():
-		for id in multiplayer.get_peers():
+		for id in NetSession.get_remote_players():
 			_on_peer_connected(id)
 
 func _on_peer_connected(id: int) -> void:

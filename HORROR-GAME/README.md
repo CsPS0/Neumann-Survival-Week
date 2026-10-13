@@ -140,8 +140,36 @@ All character names in the committed code are invented.
 These features exist in the code but are early and untested on real hardware:
 
 - **Touch controls (Android):** the overlay shows by itself on Android and hides while a menu, dialog or the safe keypad is open, or when a physical keyboard or mouse is used. Left half of the screen: floating stick (push to the edge to sprint). Right half: look. Buttons: E, F, Q, Tab, Hands, Bag, Swap, Stow, Pause (the Back button also pauses), Name (day 4), Ping (co-op), hold breath while hiding, and on the phone: floor, zoom and pan. The answer sheet has a Hand in button, the safe has a keypad and the ending card has a Play again button. Try it on a desktop with `godot --path . -- --touch`. Mobile devices use a lower render scale and the game runs in landscape.
-- **Co-op (up to 4 players):** Host Co-op and Join Co-op in the main menu, with a lobby, a ping marker (middle mouse button) and proximity voice. Join currently connects to the same computer only (127.0.0.1).
+- **Co-op (up to 4 players):** Host Co-op and Join Co-op in the main menu, with a lobby, a ping marker (middle mouse button) and proximity voice. The host sees a room code and an address in the lobby. Joining players type either one. See [Co-op and dedicated server](#co-op-and-dedicated-server).
 - **VR (OpenXR):** the game switches to VR when an OpenXR runtime is present, otherwise it runs in standard mode.
+
+## Co-op and dedicated server
+
+Co-op uses Godot's ENet multiplayer on one UDP port. The default is 7777, for up to 4 players. The game runs on each player's device. The host only relays positions and events.
+
+**Host from the game.** Choose Host Co-op. The lobby shows the room code (for example `D7AAA-ACHTO`) and the address (for example `192.168.1.20:7777`). The host needs UDP port 7777 reachable.
+
+**Join.** Choose Join Co-op and type the room code or an address (`host`, `host:port`). Games on the same local network also appear as buttons on that page.
+
+**Room code.** The code is the host IPv4 address and port packed into ten letters (A to Z and 2 to 7). It works for IPv4 addresses only. For a host name, use the address instead of the code. Codes are not case sensitive and the dash is optional.
+
+**Dedicated server.** A headless server needs no window and does not play. Players join it like any host. Start it with the Godot 4.7 binary, from this folder:
+
+| Platform | Command |
+|---|---|
+| Windows | `server\run-server.bat --port 7777 --max-players 4` |
+| Linux and macOS | `server/run-server.sh --port 7777 --max-players 4` |
+| Any | `godot --headless --path . res://scenes/dedicated_server.tscn -- --port 7777` |
+| Docker | `docker compose -f server/docker-compose.yml up --build` |
+| Docker (plain) | `docker build -f server/Dockerfile -t empty-school-server .` then `docker run --rm -p 7777:7777/udp -e NEUMANN_PUBLIC_HOST=203.0.113.5 empty-school-server` |
+
+The scripts use `godot` from the PATH. Set `GODOT` to the binary path otherwise, for example `/Applications/Godot.app/Contents/MacOS/Godot` on macOS. Options: `--port`, `--max-players`, `--public-host`. Docker reads `NEUMANN_PORT`, `NEUMANN_MAX_PLAYERS` and `NEUMANN_PUBLIC_HOST`.
+
+The server prints its address and room code at start. It prints the address of this machine on the local network. Pass `--public-host` (or `NEUMANN_PUBLIC_HOST`) with the address players use to reach it, so the printed code is correct. Examples: `127.0.0.1` for the same computer, the LAN address for a local network, the public IP for the internet.
+
+**Ports.** UDP 7777 for the game (change it with `--port`). UDP 7778 for LAN discovery on the local network only. Forward UDP 7777 on the router for players on other networks. TCP is not used.
+
+**Limits.** Connections are direct. There is no relay service, so players on different networks need a reachable host: a forwarded port or a server with a public address. Android players join with the room code or address like everyone else. Docker on macOS and Windows does not pass LAN broadcasts, so discovery buttons do not appear for those servers. The code and address still work.
 
 ## Code layout
 
@@ -159,7 +187,7 @@ These features exist in the code but are early and untested on real hardware:
 | `scripts/phone_viewmodel.gd`, `phone_map.gd`, `ekreta.gd`, `bulletin.gd` | The phone: its apps, map zoom, and the data behind e-Kréten and the notice board. |
 | `scripts/menu.gd`, `settings_ui.gd`, `profile.gd`, `achievements.gd` | Menus, settings and saved profile. |
 | `scripts/staff_source.gd` | Loads the gitignored `scripts/staff.gd` when present, else the committed placeholder. |
-| `scripts/net_session.gd`, `input_bridge.gd`, `touch_controls.gd`, `xr_manager.gd` | Co-op, touch and VR. |
+| `scripts/net_session.gd`, `dedicated_server.gd`, `input_bridge.gd`, `touch_controls.gd`, `xr_manager.gd` | Co-op, the headless server (`server/` holds its launch files), touch and VR. |
 
 ## Releases
 
