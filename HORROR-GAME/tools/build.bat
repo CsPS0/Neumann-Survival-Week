@@ -149,6 +149,7 @@ if defined FAILED exit /b 1
 exit /b 0
 
 :export
+findstr /c:"name=\"%~2\"" "%PRESETS%" >nul || ( echo ERROR: preset %~2 is missing from export_presets.cfg. Delete HORROR-GAME\export_presets.cfg and run again. & set "FAILED=!FAILED! %~1" & exit /b 0 )
 set "OUTFILE=%~3"
 set "OUTDIR=%OUTFILE:/=\%"
 for %%F in ("%OUTDIR%") do if not exist "%%~dpF" mkdir "%%~dpF"
