@@ -2,7 +2,7 @@
 
 Two round-based modes sit on top of the existing co-op session. The solo campaign and the co-op campaign do not change. Both modes use the school as an empty night map: no lessons, teachers, students, caretaker or story items.
 
-Status: Hide and Seek is built. Social Deduction is designed here and ships in a second pull request.
+Status: both modes are built. Hide and Seek came first; Social Deduction is the second pull request.
 
 ## Shared rules
 
@@ -40,22 +40,28 @@ What is synced (all through `scripts/match.gd`):
 
 Not in this mode yet: generators or other objectives, a spectator camera for eliminated players, a relay for players on different networks.
 
-## Mode 1: Social Deduction (second pull request)
+## Mode 1: Social Deduction
 
-One player is secretly the entity. The others are students and teachers. Players never get a bot entity in this mode, because the idea is that nobody knows who it is.
+One player is secretly the entity. The others are students and teachers. There is no computer entity in this mode, because the point is that nobody knows who it is.
 
 | Item | Rule |
 |---|---|
-| Roles | 1 entity for up to 5 players. The rest are crew. Crew roles (student or teacher) are a name tag only. |
-| Entity ability | Takes a crew member down when close, with a 30 s cooldown. Looks like any other player. |
-| Information about the entity | The crew gathers it from: the room log (who was in which room at which time, reported by each device when it changes rooms), clue pickups that the entity's real movements generate (for example "Someone left room 24 at 14:10"), and the lights near a takedown flickering for a moment. Existing clue and find pickups are reused for the carriers. |
-| Meetings | Finding a body or pressing the meeting button on the Aula table starts a vote: 60 s, one vote each, skip allowed. The player with the most votes and more than half of the living players' votes is ejected and their role is shown. |
-| Crew wins | The entity is ejected, or the crew collects all the clue pickups. |
-| Entity wins | The living crew is not larger than the living entities. |
-| Authority | Peer 1 keeps roles secret: it sends each player only their own role until the round ends. |
+| Players | 3 to 5. One random player is the entity. The rest are crew. Names are tags only: "Student 1", "Teacher 2" and so on (the real peer ids are never shown). |
+| Phases | Get ready 8 s, Night 360 s, Meeting 45 s (then 6 s to read the result), Result 12 s. |
+| Secrecy | Peer 1 sends each player only their own role. The entity id stays on peer 1 until the round is over. |
+| Entity | Looks like any other player. Looks at a crew member and presses E to take them down, 20 s after the night starts and then every 30 s. The crew member becomes a body and is out. |
+| Evidence | Three kinds. 1) The room log: every device reports its room when it changes. A meeting shows the last minute of rooms for each living player and for the victim. The log is true, also for the entity. 2) The lights near a takedown flicker for 1.6 s for everyone within 20 m. 3) Seeing a puppet vanish into a locker or walk out of a room. |
+| Meetings | Pressing E on a body reports it. Pressing G calls a meeting once per player and round, not in the first 15 s of the night. Everyone is frozen, the bodies are removed and the log is shown in a vote list. |
+| Vote | One vote each, or skip. The player with more than half of the living players' votes is ejected and their role is shown. A tie or too few votes ejects nobody. The meeting ends early when all living players have voted. |
+| After a meeting | Everyone starts again at the entrance. |
+| Crew wins | The entity is ejected, or the night ends with the entity still in. |
+| Entity wins | The living crew is not larger than the entity (with one entity, one crew member left). |
+| Leaving | The entity leaving ends the round for the crew. A crew member leaving counts as out. |
 
-This mode adds the vote UI and the room log. It reuses the lobby, `match.gd` phases and the world layer from Hide and Seek.
+What is synced: the same channels as Hide and Seek, plus: the secret role (reliable, to one peer), labels, takedown and body reports (reliable, to peer 1, which broadcasts the body), room reports, votes and the meeting result.
+
+Not in this mode yet: crew tasks (the crew can only win by voting or surviving), a spectator camera or ghost play for players who are out, and touch controls for G.
 
 ## Testing
 
-Real multi-player play is not tested by the author. The checks run headless with the Godot binary: a solo round with the computer entity, two processes (host and client) with a player as the entity, and a dedicated server with two clients and the computer entity. See the pull request for the exact list.
+Real multi-player play is not tested by the author. The checks run headless with the Godot binary: a solo round with the computer entity, two processes (host and client) with a player as the entity, a dedicated server with two clients and the computer entity, and four processes for Social Deduction (takedown, body report, meeting, vote and the result). See the pull request for the exact list.
