@@ -73,6 +73,8 @@ if not exist "%PRESETS%" (
   copy /y "%CIPRESETS%" "%PRESETS%" >nul
   echo Copied the CI presets to HORROR-GAME\export_presets.cfg, which is gitignored.
 )
+rem Android co-op needs the INTERNET permission. Add it to any Android preset that lacks it.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0add-android-permissions.ps1" -Path "%PRESETS%"
 echo %TARGETS% | findstr /i /c:"macos" >nul && (
   findstr /c:"name=\"macOS\"" "%PRESETS%" >nul || echo NOTE: no macOS preset in export_presets.cfg. The macos target will fail. Use tools/build.sh on a Linux or macOS machine, which adds it.
 )

@@ -165,6 +165,8 @@ func _build_title() -> void:
 	))
 	box.add_child(_button("Join Co-op", func() -> void:
 		_join_status.text = ""
+		for old in _lan_box.get_children():
+			old.queue_free()
 		NetSession.start_lan_discovery()
 		_open("join")
 	))
@@ -224,10 +226,9 @@ func _refresh_lobby() -> void:
 		_lobby_address_label.text = ""
 		_lobby_players_label.text = ""
 	elif NetSession.is_host():
-		var code := NetSession.get_display_code()
-		_lobby_code_label.text = "Room code: " + (code if code != "" else "not available")
-		_lobby_address_label.text = "Address: %s (UDP). Other players enter the code or the address in Join Co-op." \
-				% NetSession.get_address()
+		_lobby_code_label.text = "Room code: " + NetSession.get_display_code()
+		_lobby_address_label.text = ("Players on the same Wi-Fi or network enter the code in Join Co-op. " \
+				+ "Others enter the address %s (UDP).") % NetSession.get_address()
 		_lobby_players_label.text = "Connected players: %d" % NetSession.player_count()
 	elif NetSession.is_connected_to_session():
 		_lobby_code_label.text = "Connected to " + NetSession.get_address()
@@ -242,11 +243,12 @@ func _build_join_page() -> void:
 	var box := _new_page("join", 0.85)
 	box.add_child(_heading("JOIN CO-OP"))
 	var hint := Label.new()
-	hint.text = "Enter the room code (XXXXX-XXXXX) or an address such as 192.168.1.20:7777."
+	hint.text = "Enter the 4 digit room code. It finds rooms on your Wi-Fi or network. " \
+			+ "For another network, enter the address, for example 192.168.1.20:7777."
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.add_theme_font_size_override("font_size", 16)
 	box.add_child(hint)
-	_join_input.placeholder_text = "Room code or host:port"
+	_join_input.placeholder_text = "1234 or host:port"
 	_join_input.add_theme_font_size_override("font_size", 22)
 	_join_input.text_submitted.connect(func(_t: String) -> void: _try_join(_join_input.text))
 	box.add_child(_join_input)
@@ -260,14 +262,21 @@ func _build_join_page() -> void:
 		_back()
 	))
 	NetSession.lan_room_found.connect(func(code: String, address: String) -> void:
-		_lan_box.add_child(_button("LAN game %s" % address, func() -> void: _try_join(address))))
+		_lan_box.add_child(_button("Room %s (%s)" % [code, address], func() -> void: _try_join(address))))
 
 func _try_join(target: String) -> void:
 	_lobby_error = ""
+	target = target.strip_edges()
+	if NetSession.is_valid_code(target):
+		_join_status.text = "Looking for room %s..." % target
+		var address: String = await NetSession.resolve_room(target)
+		if address == "":
+			_join_status.text = "No room %s found on this network. Check the code and that both devices use the same Wi-Fi, or enter the address." % target
+			return
+		target = address
 	if NetSession.join_session(target) != OK:
 		_join_status.text = NetSession.last_error
 		return
-	NetSession.stop_lan_discovery()
 	_open("lobby")
 
 func _on_join_failed() -> void:

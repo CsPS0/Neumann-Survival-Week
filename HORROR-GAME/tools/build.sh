@@ -81,6 +81,20 @@ if [ ! -f "$presets" ]; then
 	cp "$ci_presets" "$presets"
 	echo "Copied the CI presets to HORROR-GAME/export_presets.cfg (gitignored)."
 fi
+# Android co-op needs the INTERNET permission. Add it to any Android preset that lacks it.
+awk '
+	FNR == NR { if ($0 ~ /^\[preset\.[0-9]+(\.options)?\]$/) { match($0, /[0-9]+/); c = substr($0, RSTART, RLENGTH) }
+		if ($0 ~ /^permissions\/internet=/) has[c] = 1; next }
+	/^\[preset\.[0-9]+(\.options)?\]$/ { match($0, /[0-9]+/); cur = substr($0, RSTART, RLENGTH); hdr = ($0 ~ /options\]$/) }
+	/^platform="Android"$/ { android[cur] = 1 }
+	{ print }
+	hdr && android[cur] && !has[cur] && /options\]$/ { print "permissions/internet=true"; print "permissions/access_network_state=true"; hdr = 0 }
+' "$presets" "$presets" > "$presets.tmp" && if ! cmp -s "$presets" "$presets.tmp"; then
+	mv "$presets.tmp" "$presets"
+	echo "Added the Android INTERNET permission to HORROR-GAME/export_presets.cfg."
+else
+	rm -f "$presets.tmp"
+fi
 # Append any requested preset that an older or partial export_presets.cfg lacks.
 preset_name() {
 	case "$1" in

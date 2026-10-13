@@ -1,7 +1,8 @@
 extends Node
 ## Headless co-op server. Run it with:
-##   godot --headless --path . res://scenes/dedicated_server.tscn -- --port 7777 --max-players 4 --public-host 203.0.113.5
-## Every option is also read from NEUMANN_PORT, NEUMANN_MAX_PLAYERS and NEUMANN_PUBLIC_HOST (used by Docker).
+##   godot --headless --path . res://scenes/dedicated_server.tscn -- --port 7777 --max-players 4 --public-host 203.0.113.5 --code 4821
+## Every option is also read from NEUMANN_PORT, NEUMANN_MAX_PLAYERS, NEUMANN_PUBLIC_HOST and NEUMANN_CODE (used by Docker).
+## --code sets a fixed four digit room code. Without it the server picks a free one.
 ## The server only relays players. The game itself runs on each player's device.
 
 
@@ -9,7 +10,12 @@ func _ready() -> void:
 	var port := _option("port", "NEUMANN_PORT", NetSession.DEFAULT_PORT)
 	var max_players := _option("max-players", "NEUMANN_MAX_PLAYERS", NetSession.MAX_CLIENTS)
 	var public_host := _text_option("public-host", "NEUMANN_PUBLIC_HOST")
-	if NetSession.host_session(port, max_players, true, public_host) != OK:
+	var code_option := _text_option("code", "NEUMANN_CODE")
+	if code_option != "" and not NetSession.is_valid_code(code_option):
+		printerr("--code must be four digits.")
+		get_tree().quit(1)
+		return
+	if NetSession.host_session(port, max_players, true, public_host, code_option) != OK:
 		printerr("Server failed to start: " + NetSession.last_error)
 		get_tree().quit(1)
 		return
@@ -21,7 +27,7 @@ func _ready() -> void:
 	print("Listening on UDP port %d for up to %d players." % [port, max_players])
 	print("Address: " + NetSession.get_address())
 	var code := NetSession.get_display_code()
-	print("Room code: " + (code if code != "" else "not available for this host, use the address"))
+	print("Room code: " + code + " (players on the same local network enter it. Others enter the address.)")
 	if public_host == "":
 		print("This address is the local one. Pass --public-host with the address players use to reach this machine.")
 

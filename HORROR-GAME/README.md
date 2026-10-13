@@ -140,7 +140,7 @@ All character names in the committed code are invented.
 These features exist in the code but are early and untested on real hardware:
 
 - **Touch controls (Android):** the overlay shows by itself on Android and hides while a menu, dialog or the safe keypad is open, or when a physical keyboard or mouse is used. Left half of the screen: floating stick (push to the edge to sprint). Right half: look. Buttons: E, F, Q, Tab, Hands, Bag, Swap, Stow, Pause (the Back button also pauses), Name (day 4), Ping (co-op), hold breath while hiding, and on the phone: floor, zoom and pan. The answer sheet has a Hand in button, the safe has a keypad and the ending card has a Play again button. Try it on a desktop with `godot --path . -- --touch`. Mobile devices use a lower render scale and the game runs in landscape.
-- **Co-op (up to 4 players):** Host Co-op and Join Co-op in the main menu, with a lobby, a ping marker (middle mouse button) and proximity voice. The host sees a room code and an address in the lobby. Joining players type either one. See [Co-op and dedicated server](#co-op-and-dedicated-server).
+- **Co-op (up to 4 players):** Host Co-op and Join Co-op in the main menu, with a lobby, a ping marker (middle mouse button) and proximity voice. The host sees a four digit room code and an address in the lobby. Joining players type the code or the address. See [Co-op and dedicated server](#co-op-and-dedicated-server).
 - **Hide and Seek and Social Deduction (multiplayer):** from the Co-op lobby, one entity hunts the other players through the empty school, or one secret entity hides among the crew. See [Multiplayer modes](#multiplayer-modes).
 - **VR (OpenXR):** the game switches to VR when an OpenXR runtime is present, otherwise it runs in standard mode.
 
@@ -148,11 +148,13 @@ These features exist in the code but are early and untested on real hardware:
 
 Co-op uses Godot's ENet multiplayer on one UDP port. The default is 7777, for up to 4 players. The game runs on each player's device. The host only relays positions and events.
 
-**Host from the game.** Choose Host Co-op. The lobby shows the room code (for example `D7AAA-ACHTO`) and the address (for example `192.168.1.20:7777`). The host needs UDP port 7777 reachable.
+**Host from the game.** Choose Host Co-op. The lobby shows a four digit room code (for example `4821`) and the address (for example `192.168.1.20:7777`). The host needs UDP port 7777 reachable.
 
-**Join.** Choose Join Co-op and type the room code or an address (`host`, `host:port`). Games on the same local network also appear as buttons on that page.
+**Join.** Choose Join Co-op and type the four digit code, or an address (`host` or `host:port`). Rooms found on the local network also appear as buttons on that page.
 
-**Room code.** The code is the host IPv4 address and port packed into ten letters (A to Z and 2 to 7). It works for IPv4 addresses only. For a host name, use the address instead of the code. Codes are not case sensitive and the dash is optional.
+**Room code.** The code is four digits. The host announces its code and address by UDP broadcast on the local network. A joining player broadcasts a query for the code, and the host that holds it answers with its address. So a code works for players on the same Wi-Fi or network as the host, and for a host on the same computer. For players on another network, use the address.
+
+**Code collisions.** A host picks a code that no room on its network announces. If two hosts end up with the same code, the host with the larger address picks a new code and the lobby shows it. A dedicated server accepts a fixed code with `--code 4821` (or `NEUMANN_CODE`), which is never changed.
 
 **Dedicated server.** A headless server needs no window and does not play. Players join it like any host. Start it with the Godot 4.7 binary, from this folder:
 
@@ -164,13 +166,15 @@ Co-op uses Godot's ENet multiplayer on one UDP port. The default is 7777, for up
 | Docker | `docker compose -f server/docker-compose.yml up --build` |
 | Docker (plain) | `docker build -f server/Dockerfile -t empty-school-server .` then `docker run --rm -p 7777:7777/udp -e NEUMANN_PUBLIC_HOST=203.0.113.5 empty-school-server` |
 
-The scripts use `godot` from the PATH. Set `GODOT` to the binary path otherwise, for example `/Applications/Godot.app/Contents/MacOS/Godot` on macOS. Options: `--port`, `--max-players`, `--public-host`. Docker reads `NEUMANN_PORT`, `NEUMANN_MAX_PLAYERS` and `NEUMANN_PUBLIC_HOST`.
+The scripts use `godot` from the PATH. Set `GODOT` to the binary path otherwise, for example `/Applications/Godot.app/Contents/MacOS/Godot` on macOS. Options: `--port`, `--max-players`, `--public-host`, `--code`. Docker reads `NEUMANN_PORT`, `NEUMANN_MAX_PLAYERS`, `NEUMANN_PUBLIC_HOST` and `NEUMANN_CODE`.
 
-The server prints its address and room code at start. It prints the address of this machine on the local network. Pass `--public-host` (or `NEUMANN_PUBLIC_HOST`) with the address players use to reach it, so the printed code is correct. Examples: `127.0.0.1` for the same computer, the LAN address for a local network, the public IP for the internet.
+The server prints its address and room code at start. The address is the one of this machine on the local network. Pass `--public-host` (or `NEUMANN_PUBLIC_HOST`) with the address players use to reach it, so the code leads players to the right address. Examples: `127.0.0.1` for the same computer, the LAN address for a local network, the public IP for the internet.
 
-**Ports.** UDP 7777 for the game (change it with `--port`). UDP 7778 for LAN discovery on the local network only. Forward UDP 7777 on the router for players on other networks. TCP is not used.
+**Ports.** UDP 7777 for the game (change it with `--port`). UDP 7778 for room code lookup on the local network only. Forward UDP 7777 on the router for players on other networks. TCP is not used.
 
-**Limits.** Connections are direct. There is no relay service, so players on different networks need a reachable host: a forwarded port or a server with a public address. Android players join with the room code or address like everyone else. Docker on macOS and Windows does not pass LAN broadcasts, so discovery buttons do not appear for those servers. The code and address still work.
+**Android.** The Android presets grant the INTERNET permission. Without it the phone cannot open a network socket and hosting fails with `Could not open UDP port 7777 (error 20)`. `tools/build.sh` and `tools/build.bat` add the permission to an existing local `export_presets.cfg`. Rebuild and reinstall the APK after pulling this change.
+
+**Limits.** Connections are direct. There is no relay service, so players on different networks need a reachable host: a forwarded port or a server with a public address. Android players join with the room code or address like everyone else. Docker on macOS and Windows does not pass LAN broadcasts, so the code does not work for those servers. Use the address.
 
 ## Multiplayer modes
 
