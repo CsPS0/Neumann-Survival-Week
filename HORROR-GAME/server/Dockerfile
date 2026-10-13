@@ -18,7 +18,8 @@ RUN godot --headless --path /game --import
 
 ENV NEUMANN_PORT=7777 \
 	NEUMANN_MAX_PLAYERS=4 \
-	NEUMANN_PUBLIC_HOST=
+	NEUMANN_PUBLIC_HOST= \
+	NEUMANN_CODE=
 
 EXPOSE 7777/udp
 ENTRYPOINT ["godot", "--headless", "--path", "/game", "res://scenes/dedicated_server.tscn", "--"]
