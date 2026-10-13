@@ -181,7 +181,10 @@ if printf '%s\n' "${targets[@]}" | grep -qE '^(android|quest)$'; then
 			fi
 			export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$dk" GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
 		fi
-		if [ "$android_ok" -eq 1 ] && { [ ! -x "$sdk/platform-tools/adb" ] || ! ls "$sdk"/build-tools/*/apksigner >/dev/null 2>&1; }; then
+		if [ "$android_ok" -eq 1 ] && [ -e "$sdk/platform-tools/adb" ] && [ ! -x "$sdk/platform-tools/adb" ]; then
+			echo "SKIP android/quest: $sdk/platform-tools/adb is not executable for your user. Run: sudo chmod -R a+rX $sdk"; android_ok=0
+		fi
+		if [ "$android_ok" -eq 1 ] && { [ ! -e "$sdk/platform-tools/adb" ] || ! ls "$sdk"/build-tools/*/apksigner >/dev/null 2>&1; }; then
 			echo "SKIP android/quest: $sdk has no installed build-tools or platform-tools (adb and apksigner are missing). Install them with sdkmanager --sdk_root=$sdk \"platform-tools\" \"build-tools;35.0.1\" \"platforms;android-35\" (use sudo for /opt/android-sdk)."; android_ok=0
 		fi
 		if [ "$android_ok" -eq 1 ]; then
