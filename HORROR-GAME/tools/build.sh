@@ -181,17 +181,17 @@ if printf '%s\n' "${targets[@]}" | grep -qE '^(android|quest)$'; then
 			fi
 			export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$dk" GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
 		fi
-		if [ "$android_ok" -eq 1 ] && { [ ! -d "$sdk/build-tools" ] || [ ! -d "$sdk/platform-tools" ]; }; then
-			echo "SKIP android/quest: $sdk has no build-tools or platform-tools. Install them with sdkmanager --sdk_root=$sdk \"platform-tools\" \"build-tools;35.0.1\" \"platforms;android-35\" \"cmake;3.10.2.4988893\" \"ndk;28.1.13356709\" (use sudo for /opt/android-sdk)."; android_ok=0
+		if [ "$android_ok" -eq 1 ] && { [ ! -x "$sdk/platform-tools/adb" ] || ! ls "$sdk"/build-tools/*/apksigner >/dev/null 2>&1; }; then
+			echo "SKIP android/quest: $sdk has no installed build-tools or platform-tools (adb and apksigner are missing). Install them with sdkmanager --sdk_root=$sdk \"platform-tools\" \"build-tools;35.0.1\" \"platforms;android-35\" \"cmake;3.10.2.4988893\" \"ndk;28.1.13356709\" (use sudo for /opt/android-sdk)."; android_ok=0
 		fi
 		if [ "$android_ok" -eq 1 ]; then
 			# Fill the Godot editor settings when a value is missing, empty or points to a missing path.
 			mkdir -p "$(dirname "$settings")"
 			[ -f "$settings" ] || printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\n' > "$settings"
-			ensure_setting() { # key value is_path
+			ensure_setting() { # key value check (file to test inside the path, or "none")
 				local cur
 				cur="$(awk -F' = ' -v k="$1" '$1 == k { gsub(/^"|"$/, "", $2); print $2; exit }' "$settings")"
-				if [ -n "$cur" ] && { [ "$3" != path ] || [ -d "$cur" ] || [ -f "$cur" ]; }; then return; fi
+				if [ -n "$cur" ] && { [ "$3" = none ] || [ -e "$cur/$3" ] || { [ "$3" = self ] && [ -e "$cur" ]; }; }; then return; fi
 				if grep -q "^$1 = " "$settings"; then
 					sed -i "s|^$1 = .*|$1 = \"$2\"|" "$settings"
 				else
@@ -199,11 +199,11 @@ if printf '%s\n' "${targets[@]}" | grep -qE '^(android|quest)$'; then
 				fi
 				echo "Set $1 in $settings"
 			}
-			ensure_setting export/android/java_sdk_path "$java_home" path
-			ensure_setting export/android/android_sdk_path "$sdk" path
-			ensure_setting export/android/debug_keystore "$HOME/.android/debug.keystore" path
-			ensure_setting export/android/debug_keystore_user androiddebugkey text
-			ensure_setting export/android/debug_keystore_pass android text
+			ensure_setting export/android/java_sdk_path "$java_home" bin/javac
+			ensure_setting export/android/android_sdk_path "$sdk" platform-tools/adb
+			ensure_setting export/android/debug_keystore "$HOME/.android/debug.keystore" self
+			ensure_setting export/android/debug_keystore_user androiddebugkey none
+			ensure_setting export/android/debug_keystore_pass android none
 		fi
 	fi
 fi
