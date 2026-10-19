@@ -32,7 +32,7 @@ const COLLIDE_HEIGHT := 1.5
 const PARKED := Vector3(0.0, -1000.0, 0.0)
 const NAMED_CHAIRS := [6, 13]   ## Chair indices (front rows first) of the player's class that the named students take.
 const NAMED_WALKERS := [3, 9]   ## Walking slot indices that the named students take in a break.
-const AULA_START := [Vector2(415.0, 410.0), Vector2(500.0, 410.0)]   ## Ground-floor plan pixels: north of the altar, clear of the doors and the patrol line.
+const AULA_START := [Vector2(40.0, 28.5), Vector2(45.0, 28.5)]   ## Ground-floor plan units: north of the altar, clear of the doors and the patrol line.
 
 var player: Node3D
 var entity: Node3D

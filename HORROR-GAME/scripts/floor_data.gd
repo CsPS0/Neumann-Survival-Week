@@ -1,137 +1,156 @@
 extends RefCounted
-## Floor-plan data, in pixels of the plan screenshots (each floor has its own origin/scale).
+## Floor-plan data, in metres of the school's fire evacuation plans (tuzriado terv) redrawn on a clean grid. Each floor has
+## its own origin (the plan point that is world 0,0) and scale. The plan units are metres at WORLD_SCALE 1.25.
+## The ground floor keeps the plan's orientation (Zalan utca north, Kerepesi ut west, Rakosfalva utca south, the gym east).
+## The two upper plans are drawn turned by 90 degrees on the wall; here they are turned back, so north is up on every floor.
 ##
 ## "rooms":  [label, x0, y0, x1, y1, doors]
-##           doors = space-separated tokens "<side><position px>": N/S/E/W = door with panel + label,
+##           doors = space-separated tokens "<side><position>": N/S/E/W = door with panel + label,
 ##           lowercase = doorless opening, position optional (defaults to the middle of the edge).
-## "solids": [x0, y0, x1, y1] full-height blocks without a door (courtyard planters).
+## "solids": [x0, y0, x1, y1] full-height blocks without a door (courtyards on the ground floor, roof terraces above).
 ## "end_walls": [x0, y0, x1, y1] extra wall lines closing corridor ends.
 ## "lights": ceiling lamp positions.  "patrol": waypoints for the entity.
+## "corridors": polylines the crowd and the break teachers walk.  "csoki": the dog's route.
 
 ## The whole building is built WORLD_SCALE times larger than the plan measurements: the one knob for the size of the
-## school. Replace the plan data and keep this; each floor `scale` is metres per plan pixel * WORLD_SCALE.
+## school. Replace the plan data and keep this; each floor `scale` is metres per plan unit * WORLD_SCALE.
 const WORLD_SCALE := 1.25
 
+## Ground floor, 104 x 43.8 m. Left to right: the west wing (Kerepesi ut) with a corridor and two courtyards, the Aula
+## with the dining hall (Ebedlo) and the four stairwells, the east wing with two more courtyards, and the gym.
+## The entrance, the Porta and the two WCs sit on the south side of the Aula.
 const GROUND := {
-	"origin": Vector2(453.5, 337.3),
-	"scale": 0.0715 * WORLD_SCALE,
-	"rect": Rect2(0, 0, 1080, 664),
+	"origin": Vector2(42.6, 21.9),
+	"scale": 0.8 * WORLD_SCALE,
+	"rect": Rect2(0, 0, 104, 43.8),
 	"rooms": [
-		["GT11-12", 0, 38, 151, 125, "S118"], ["19", 151, 38, 183, 125, "S"], ["19/b", 183, 38, 227, 125, "S"],
-		["20", 227, 0, 260, 125, "S"], ["21", 260, 0, 303, 125, "S"], ["", 303, 38, 356, 125, "S"],
-		["Konyha", 356, 0, 550, 125, "S453"], ["", 550, 38, 604, 125, "S"], ["27", 604, 0, 680, 125, "S"],
-		["28", 680, 38, 767, 125, "S"], ["", 767, 38, 799, 125, "S"], ["30", 799, 38, 831, 125, "S"],
-		["32", 831, 38, 863, 125, "S"], ["33", 863, 38, 950, 125, "S"], ["35", 950, 38, 1036, 125, "S"],
-		["16", 0, 125, 86, 189, "E"], ["Szertár", 0, 189, 86, 233, "E"], ["14", 0, 233, 86, 385, "E"],
-		["8", 0, 385, 86, 428, "E"], ["GT2", 0, 428, 86, 492, "E"], ["GT1", 0, 492, 86, 557, "E"],
-		["5", 0, 557, 151, 643, "N118"], ["3", 151, 557, 248, 643, "N200"], ["", 248, 557, 324, 664, "N286"],
-		["Cisco", 119, 168, 162, 211, "W"], ["15", 119, 211, 162, 254, "W"], ["13", 119, 254, 162, 287, "W"],
-		["12", 119, 287, 162, 319, "W"], ["11", 119, 319, 162, 362, "W"], ["10", 119, 362, 162, 405, "W"],
-		["Gazd.", 119, 427, 162, 470, "W"], ["Fejl.", 119, 470, 162, 524, "W"],
-		["GT3", 162, 276, 227, 352, "e314"], ["GT4", 162, 352, 227, 427, "e390"],
-		["23", 227, 276, 313, 352, "E W314"], ["24", 227, 352, 313, 427, "E w390"],
-		["Ebédlő", 356, 125, 550, 319, "n453 S453 W300"],
-		["Könyvtár", 595, 276, 681, 427, "W350"], ["38", 681, 276, 723, 384, "E"], ["39", 681, 384, 723, 427, "E"],
-		["31", 756, 168, 875, 211, "N"], ["34", 875, 168, 994, 211, "N"], ["Tornaterem", 756, 211, 1080, 470, "W340"],
-		["40", 756, 470, 853, 513, "S"], ["41", 853, 470, 950, 513, "S"], ["42", 950, 470, 1036, 557, "W535 s"],
-		["46", 692, 557, 778, 643, "N"], ["45", 778, 557, 864, 643, "N"], ["44", 864, 557, 950, 643, "N"],
-		["43", 950, 557, 1036, 643, "N"], ["GT47", 604, 557, 692, 664, "W578"],
-		["WC", 324, 600, 378, 643, "N"], ["Bejárat", 378, 600, 454, 643, "N"], ["Porta", 454, 600, 497, 643, "N"],
-		["Büfé", 497, 600, 561, 643, "N"], ["WC", 561, 600, 604, 643, "N"],
+		# North row, west of the Aula.
+		["GT11-12", 0, 0, 13.1, 6.2, "S"], ["19", 13.1, 0, 17.8, 6.2, "S"], ["19/b", 17.8, 0, 21.4, 6.2, "S"],
+		["20", 21.4, 0, 25.4, 6.2, "S"], ["21", 25.4, 0, 29, 6.2, "S"],
+		# North of the Aula: stores and the kitchen behind the dining hall.
+		["", 29, 0, 35.4, 6.8, "S"], ["", 35.4, 0, 42.3, 6.8, "S"], ["Konyha", 42.3, 0, 49.8, 6.8, "S"],
+		["", 49.8, 0, 56.2, 6.8, "S"],
+		# North row, east of the Aula.
+		["27", 56.2, 0, 63.1, 6.2, "S"], ["28", 63.1, 0, 72.6, 6.2, "S"], ["", 72.6, 0, 76.2, 6.2, "S"],
+		["30", 76.2, 0, 79.8, 6.2, "S"], ["32", 79.8, 0, 83.5, 6.2, "S"], ["33", 83.5, 0, 96.4, 6.2, "S"],
+		["35", 96.4, 0, 104, 6.2, "S"],
+		# West wing: outer column along Kerepesi ut, then the corridor (x 8.5 to 11.5), then the inner cells.
+		["16", 0, 9.8, 8.5, 12.4, "E"], ["14", 0, 12.4, 8.5, 22.6, "E"], ["8", 0, 22.6, 8.5, 25.8, "E"],
+		["GT2", 0, 25.8, 8.5, 31, "E"], ["GT1", 0, 31, 8.5, 38, "E"],
+		["5", 0, 38, 12.9, 43.8, "N10"], ["3", 12.9, 38, 19.8, 43.8, "N"], ["", 19.8, 38, 31, 43.8, "N"],
+		["Cisco", 11.5, 9.8, 15.5, 13.2, "W"], ["15", 11.5, 13.2, 15.5, 16.4, "W"], ["13", 11.5, 16.4, 15.5, 18.8, "W"],
+		["12", 11.5, 18.8, 15.5, 21.2, "W"], ["11", 11.5, 21.2, 15.5, 24.2, "W"], ["10", 11.5, 24.2, 15.5, 27.7, "W"],
+		["Gazd.", 11.5, 27.7, 15.5, 31.3, "W"], ["Fejl.", 11.5, 31.3, 15.5, 35.2, "W"],
+		# Between the two west courtyards. GT3 and GT4 are entered through 23 and 24, as on the plan.
+		["GT3", 15.5, 16.9, 22, 22.3, "e19.6"], ["GT4", 15.5, 22.3, 22, 27.7, "e25"],
+		["23", 22, 16.9, 29, 22.3, "E W19.6"], ["24", 22, 22.3, 29, 27.7, "E w25"],
+		# East block between the two east courtyards.
+		["Könyvtár", 56.2, 16.9, 63.5, 27.7, "W"], ["38", 63.5, 16.9, 68, 23.5, "E"], ["39", 63.5, 23.5, 68, 27.7, "E"],
+		# The gym with its changing rooms, and the south row.
+		["Tornaterem", 71, 13.2, 104, 31, "W22 n101.8"],
+		["31", 71, 9.8, 85, 13.2, "N78"], ["34", 85, 9.8, 99.5, 13.2, "N92"],
+		["40", 71, 31, 80, 35.2, "S75.5"], ["41", 80, 31, 88, 35.2, "S84"], ["Szertár", 88, 31, 95.6, 35.2, "S91.8"],
+		["42", 95.6, 31, 104, 38, "W36.6"],
+		["GT47", 56.2, 38, 63, 43.8, "N59.6"], ["46", 63, 38, 71.5, 43.8, "N67.2"], ["45", 71.5, 38, 81.5, 43.8, "N76.5"],
+		["44", 81.5, 38, 92.5, 43.8, "N87"], ["43", 92.5, 38, 104, 43.8, "N94"],
+		# South side of the Aula: WC, entrance, Porta, buffet, WC.
+		["WC", 31, 39.6, 36.4, 43.8, "N33.7"], ["Bejárat", 36.4, 39.6, 42.5, 43.8, "N39.5"],
+		["Porta", 42.5, 39.6, 46.5, 43.8, "N44.5"], ["Büfé", 46.5, 39.6, 50, 43.8, "N48.2"],
+		["WC", 50, 39.6, 56.2, 43.8, "N53.1"],
+		# The dining hall is open to the Aula on three sides on the plan; closed in the demo.
+		["Ebédlő", 35.4, 6.8, 49.8, 21, "n38 s42.6 w20 e20"],
 	],
-	"solids": [[162, 168, 302, 276], [162, 427, 302, 524], [615, 168, 723, 276], [615, 427, 723, 535]],
-	"end_walls": [[1036, 125, 1036, 211]],
+	"solids": [[15.5, 9.8, 29, 16.9], [15.5, 27.7, 29, 35.2], [56.2, 9.8, 68, 16.9], [56.2, 27.7, 68, 35.2]],
+	"end_walls": [[0, 6.2, 0, 9.8], [104, 6.2, 104, 13.2]],
 	"lights": [
-		Vector2(103, 250), Vector2(103, 400), Vector2(103, 530), Vector2(220, 146), Vector2(320, 146),
-		Vector2(600, 146), Vector2(739, 146), Vector2(850, 146), Vector2(990, 146), Vector2(739, 250),
-		Vector2(739, 380), Vector2(739, 480), Vector2(850, 535), Vector2(990, 535), Vector2(453, 420),
-		Vector2(453, 520), Vector2(330, 580), Vector2(560, 580), Vector2(200, 540), Vector2(530, 580),
+		Vector2(6, 8), Vector2(20, 8), Vector2(60, 8), Vector2(76, 8), Vector2(92, 8), Vector2(10, 18), Vector2(10, 30),
+		Vector2(22, 36.6), Vector2(31, 24), Vector2(54, 24), Vector2(42.6, 36), Vector2(38, 30), Vector2(47.5, 30),
+		Vector2(69.5, 18), Vector2(69.5, 30), Vector2(64, 36.6), Vector2(80, 36.6), Vector2(80, 22), Vector2(95, 22),
+		Vector2(39.5, 41.7), Vector2(48.2, 41.7),
 	],
 	"corridors": [
-		[Vector2(103, 530), Vector2(103, 146), Vector2(320, 146)],
-		[Vector2(600, 146), Vector2(990, 146)],
-		[Vector2(739, 146), Vector2(739, 535), Vector2(990, 535)],
-		[Vector2(200, 545), Vector2(335, 545), Vector2(335, 580), Vector2(560, 580)],
-		[Vector2(475, 420), Vector2(475, 520)],
+		[Vector2(10, 36.6), Vector2(10, 8), Vector2(28, 8)],
+		[Vector2(58, 8), Vector2(102, 8)],
+		[Vector2(69.5, 8), Vector2(69.5, 36.6), Vector2(93, 36.6)],
+		[Vector2(10, 37), Vector2(30, 37), Vector2(43, 38.2)],
+		[Vector2(47.5, 24), Vector2(47.5, 36)],
 	],
-	"csoki": [Vector2(400, 480), Vector2(500, 480), Vector2(400, 560), Vector2(500, 560)],
+	"csoki": [Vector2(37.5, 28), Vector2(48, 28), Vector2(37.5, 36), Vector2(48, 36)],
 	"patrol": [
-		Vector2(103, 146), Vector2(320, 146), Vector2(453, 440), Vector2(600, 146), Vector2(739, 146),
-		Vector2(739, 400), Vector2(850, 535), Vector2(453, 575), Vector2(200, 540), Vector2(103, 400),
+		Vector2(10, 8), Vector2(26, 8), Vector2(40, 24), Vector2(60, 8), Vector2(69.5, 8), Vector2(69.5, 24),
+		Vector2(88, 36.6), Vector2(42.6, 37), Vector2(20, 36.6), Vector2(10, 24),
 	],
 }
 
+## Upper floors, 40.6 x 43.8 m, over the middle of the building. Two roof terraces (solid blocks) sit between two long
+## corridors that run north to south, with the stairwells on the terrace side of each corridor. A cross hall joins the
+## corridors between the terraces. Rooms: four corners, two on the middle of the west and east side, two at the north
+## end and two at the south end, plus a WC and a store beside each terrace.
 const FIRST := {
-	"origin": Vector2(540, 473.5),
-	"scale": 0.05 * WORLD_SCALE,
-	"rect": Rect2(162, 0, 756, 947),
+	"origin": Vector2(20.3, 21.9),
+	"scale": 0.8 * WORLD_SCALE,
+	"rect": Rect2(0, 0, 40.6, 43.8),
 	"rooms": [
-		["109", 162, 0, 302, 190, "E168"], ["108", 248, 192, 302, 256, "E"], ["107", 248, 256, 302, 321, "E"],
-		["106", 248, 321, 302, 386, "E"], ["105/b", 162, 386, 302, 472, "E"], ["105/a", 162, 472, 302, 558, "E"],
-		["104", 248, 558, 302, 624, "E"], ["103", 248, 624, 302, 688, "E"], ["102", 248, 688, 302, 753, "E"],
-		["GT10", 162, 753, 302, 947, "E800"],
-		["WC", 302, 62, 400, 148, "S"], ["113", 400, 0, 540, 190, "S"], ["121", 540, 0, 680, 190, "S"],
-		["WC", 680, 62, 778, 148, "S"], ["125", 778, 0, 918, 190, "W168"],
-		["126", 778, 192, 832, 256, "W"], ["127", 778, 256, 832, 321, "W"], ["128", 778, 321, 832, 386, "W"],
-		["129", 778, 386, 918, 558, "W"], ["130", 778, 558, 832, 624, "W"], ["131", 778, 624, 832, 688, "W"],
-		["132", 778, 688, 832, 753, "W"], ["133", 778, 753, 918, 947, "W800"],
-		["114", 400, 386, 540, 558, "N"], ["120", 540, 386, 680, 558, "S"], ["Tanári", 400, 753, 680, 947, "N"],
-		["Raktár", 304, 841, 398, 925, "N"], ["Raktár", 682, 841, 776, 925, "N"],
+		# West side, from north to south.
+		["109", 0, 0, 7.5, 8.2, "E6.4"], ["WC", 0, 8.2, 7.5, 15.2, "E11.5"], ["Raktár", 0, 15.2, 7.5, 17.9, "E16.5"],
+		["Tanári", 0, 17.9, 7.5, 26.1, "E22"], ["Raktár", 0, 26.1, 7.5, 28.8, "E27.4"], ["WC", 0, 28.8, 7.5, 35.6, "E32"],
+		["GT10", 0, 35.6, 7.5, 43.8, "E37.6"],
+		# East side, from north to south.
+		["125", 33.1, 0, 40.6, 8.2, "W6.4"], ["WC", 33.1, 8.2, 40.6, 15.2, "W11.5"], ["Raktár", 33.1, 15.2, 40.6, 17.9, "W16.5"],
+		["129", 33.1, 17.9, 40.6, 26.1, "W22"], ["Raktár", 33.1, 26.1, 40.6, 28.8, "W27.4"], ["WC", 33.1, 28.8, 40.6, 35.6, "W32"],
+		["133", 33.1, 35.6, 40.6, 43.8, "W37.6"],
+		# North and south ends, between the corridors.
+		["113", 13.1, 0, 20.3, 8.2, "W6.4"], ["121", 20.3, 0, 27.5, 8.2, "E6.4"],
+		["114", 13.1, 35.6, 20.3, 43.8, "W37.6"], ["120", 20.3, 35.6, 27.5, 43.8, "E37.6"],
+		# Stores closing the corridors at both ends.
+		["Raktár", 7.5, 0, 13.1, 4.2, "S10.3"], ["Raktár", 27.5, 0, 33.1, 4.2, "S30.3"],
+		["Raktár", 7.5, 39.6, 13.1, 43.8, "N10.3"], ["Raktár", 27.5, 39.6, 33.1, 43.8, "N30.3"],
 	],
-	"solids": [],
-	"end_walls": [[302, 0, 400, 0], [680, 0, 778, 0], [302, 947, 400, 947], [680, 947, 778, 947]],
+	"solids": [[13.1, 8.2, 27.5, 17.9], [13.1, 26.1, 27.5, 35.6]],
+	"end_walls": [],
 	"lights": [
-		Vector2(351, 200), Vector2(351, 350), Vector2(351, 500), Vector2(351, 650), Vector2(351, 780),
-		Vector2(729, 200), Vector2(729, 350), Vector2(729, 500), Vector2(729, 650), Vector2(729, 780),
-		Vector2(470, 289), Vector2(610, 289), Vector2(470, 655), Vector2(610, 655),
+		Vector2(9.4, 7), Vector2(9.4, 16), Vector2(9.4, 30), Vector2(9.4, 38), Vector2(31.2, 7), Vector2(31.2, 16),
+		Vector2(31.2, 30), Vector2(31.2, 38), Vector2(20.3, 22),
 	],
 	"corridors": [
-		[Vector2(351, 200), Vector2(351, 780)],
-		[Vector2(729, 200), Vector2(729, 780)],
-		[Vector2(470, 289), Vector2(610, 289)],
-		[Vector2(470, 655), Vector2(610, 655)],
+		[Vector2(9.4, 5.5), Vector2(9.4, 38.5)],
+		[Vector2(31.2, 5.5), Vector2(31.2, 38.5)],
+		[Vector2(9.4, 22), Vector2(31.2, 22)],
 	],
 	"patrol": [
-		Vector2(351, 250), Vector2(540, 289), Vector2(729, 250),
-		Vector2(729, 780), Vector2(540, 655), Vector2(351, 780),
+		Vector2(9.4, 8), Vector2(20.3, 22), Vector2(31.2, 8), Vector2(31.2, 36), Vector2(20.3, 22), Vector2(9.4, 36),
 	],
 }
 
 const SECOND := {
-	"origin": Vector2(540, 473.5),
-	"scale": 0.05 * WORLD_SCALE,
-	"rect": Rect2(162, 0, 756, 947),
+	"origin": Vector2(20.3, 21.9),
+	"scale": 0.8 * WORLD_SCALE,
+	"rect": Rect2(0, 0, 40.6, 43.8),
 	"rooms": [
-		["GT9", 162, 0, 302, 190, "E173"], ["208", 248, 192, 302, 256, "E"], ["207", 248, 256, 302, 321, "E"],
-		["206", 248, 321, 302, 386, "E"], ["205", 162, 386, 302, 558, "E"], ["204", 248, 558, 302, 623, "E"],
-		["203", 248, 623, 302, 687, "E"], ["202", 248, 687, 302, 752, "E"], ["201", 162, 753, 302, 838, "E795"],
-		["Igazgatói", 162, 838, 302, 947, "E890"],
-		["WC", 302, 72, 400, 158, "S"], ["GT7", 400, 0, 540, 190, "S"], ["GT8", 540, 0, 680, 190, "S"],
-		["222", 680, 72, 712, 158, "S"], ["223", 712, 72, 745, 158, "S"], ["224", 745, 72, 778, 158, "S"],
-		["225", 778, 0, 918, 190, "W173"],
-		["226", 778, 192, 832, 256, "W"], ["227", 778, 256, 832, 321, "W"], ["228", 778, 321, 832, 386, "W"],
-		["229", 778, 386, 918, 558, "W"], ["230", 778, 558, 832, 623, "W"], ["231", 778, 623, 832, 687, "W"],
-		["232", 778, 687, 832, 752, "W"], ["233", 778, 753, 918, 947, "W800"],
-		["GT5", 400, 386, 540, 558, "N"], ["GT6", 540, 386, 680, 558, "S"],
-		["Raktár", 330, 829, 398, 913, "N"], ["Raktár", 682, 829, 776, 913, "N"],
-		["Tanári", 400, 753, 540, 947, "N470"], ["Tárgyaló", 540, 753, 680, 947, "N610"],
+		["GT9", 0, 0, 7.5, 8.2, "E6.4"], ["WC", 0, 8.2, 7.5, 15.2, "E11.5"], ["Raktár", 0, 15.2, 7.5, 17.9, "E16.5"],
+		["205", 0, 17.9, 7.5, 26.1, "E22"], ["Raktár", 0, 26.1, 7.5, 28.8, "E27.4"], ["WC", 0, 28.8, 7.5, 35.6, "E32"],
+		["GT5", 0, 35.6, 7.5, 43.8, "E37.6"],
+		["225", 33.1, 0, 40.6, 8.2, "W6.4"], ["WC", 33.1, 8.2, 40.6, 15.2, "W11.5"], ["Raktár", 33.1, 15.2, 40.6, 17.9, "W16.5"],
+		["229", 33.1, 17.9, 40.6, 26.1, "W22"], ["Raktár", 33.1, 26.1, 40.6, 28.8, "W27.4"], ["WC", 33.1, 28.8, 40.6, 35.6, "W32"],
+		["233", 33.1, 35.6, 40.6, 43.8, "W37.6"],
+		["GT7", 13.1, 0, 20.3, 8.2, "W6.4"], ["GT8", 20.3, 0, 27.5, 8.2, "E6.4"],
+		["GT6", 13.1, 35.6, 20.3, 43.8, "W37.6"], ["Tanári", 20.3, 35.6, 27.5, 43.8, "E37.6"],
+		["Raktár", 7.5, 0, 13.1, 4.2, "S10.3"], ["Raktár", 27.5, 0, 33.1, 4.2, "S30.3"],
+		["Raktár", 7.5, 39.6, 13.1, 43.8, "N10.3"], ["Raktár", 27.5, 39.6, 33.1, 43.8, "N30.3"],
 	],
-	"solids": [],
-	"end_walls": [[302, 0, 400, 0], [680, 0, 778, 0], [302, 947, 400, 947], [680, 947, 778, 947]],
+	"solids": [[13.1, 8.2, 27.5, 17.9], [13.1, 26.1, 27.5, 35.6]],
+	"end_walls": [],
 	"lights": [
-		Vector2(351, 200), Vector2(351, 350), Vector2(351, 500), Vector2(351, 650), Vector2(351, 780),
-		Vector2(729, 200), Vector2(729, 350), Vector2(729, 500), Vector2(729, 650), Vector2(729, 780),
-		Vector2(470, 289), Vector2(610, 289), Vector2(470, 655), Vector2(610, 655),
+		Vector2(9.4, 7), Vector2(9.4, 16), Vector2(9.4, 30), Vector2(9.4, 38), Vector2(31.2, 7), Vector2(31.2, 16),
+		Vector2(31.2, 30), Vector2(31.2, 38), Vector2(20.3, 22),
 	],
 	"corridors": [
-		[Vector2(351, 200), Vector2(351, 780)],
-		[Vector2(729, 200), Vector2(729, 780)],
-		[Vector2(470, 289), Vector2(610, 289)],
-		[Vector2(470, 655), Vector2(610, 655)],
+		[Vector2(9.4, 5.5), Vector2(9.4, 38.5)],
+		[Vector2(31.2, 5.5), Vector2(31.2, 38.5)],
+		[Vector2(9.4, 22), Vector2(31.2, 22)],
 	],
 	"patrol": [
-		Vector2(351, 250), Vector2(540, 289), Vector2(729, 250),
-		Vector2(729, 780), Vector2(540, 655), Vector2(351, 780),
+		Vector2(9.4, 8), Vector2(20.3, 22), Vector2(31.2, 8), Vector2(31.2, 36), Vector2(20.3, 22), Vector2(9.4, 36),
 	],
 }
 

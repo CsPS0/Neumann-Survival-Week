@@ -55,7 +55,7 @@ Notes:
 
 ## The school
 
-- Three floors built in code from floor plan data (`scripts/floor_data.gd`), with corridors, stairwells, classrooms, computer rooms, WCs, the Aula and the Porta desk.
+- Three floors built in code from floor plan data (`scripts/floor_data.gd`), laid out after the school's fire evacuation plans: the ground floor has the west and east wings, four courtyards, the dining hall (Ebédlő), the Aula with four stairwells, the gym (Tornaterem), the entrance, the Porta desk and two WCs. The two upper floors have two roof terraces between two long corridors, with a cross hall, corner classrooms, computer rooms, WCs and stores. Plan coordinates are metres and north is up on every floor.
 - Furniture is procedural: desks, chairs, boards, PCs, cabinets and toilet stalls.
 - Six photo textures (`textures/`) cover walls, floors, ceilings, doors, lamps and the blackboard. Other materials and all sounds are generated at runtime.
 
