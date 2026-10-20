@@ -84,14 +84,14 @@ const ITEM_INFO := {   ## kind -> [inventory id, name, pickup message]
 
 ## id, name, floor, shirt colour, routine waypoints (plan units of that floor).
 const TEACHERS := [
-	["karpati", "Kárpáti Lajos", 1, Color(0.25, 0.3, 0.55), [Vector2(9.4, 10), Vector2(20.3, 22), Vector2(31.2, 10), Vector2(20.3, 24)]],
+	["karpati", "Kárpáti Lajos", 1, Color(0.25, 0.3, 0.55), [Vector2(9.4, 10), Vector2(20.3, 21.5), Vector2(31.2, 10), Vector2(17.0, 24)]],
 	["szentgyorgyi", "Dr. Szentgyörgyi Aranka", 1, Color(0.5, 0.25, 0.45), [Vector2(31.2, 10), Vector2(31.2, 22), Vector2(31.2, 36)]],
 	["halmos", "Halmos Ervin", 0, Color(0.3, 0.45, 0.45), [Vector2(47.5, 24), Vector2(47.5, 36), Vector2(54, 36.6)]],
 	["voros", "Vörös Ildikó", 0, Color(0.55, 0.25, 0.3), [Vector2(10, 26), Vector2(10, 8), Vector2(26, 8)]],
-	["pasztor", "Pásztor Margit", 1, Color(0.25, 0.5, 0.35), [Vector2(31.2, 36), Vector2(20.3, 22), Vector2(9.4, 36)]],
+	["pasztor", "Pásztor Margit", 1, Color(0.25, 0.5, 0.35), [Vector2(31.2, 36), Vector2(20.3, 21.5), Vector2(9.4, 36)]],
 	["onodi", "Ónodi Bence", 0, Color(0.4, 0.4, 0.2), [Vector2(20, 36.6), Vector2(30, 36.6), Vector2(10, 24)]],
-	["fekete", "Fekete Zsombor", 2, Color(0.3, 0.3, 0.5), [Vector2(9.4, 10), Vector2(20.3, 22), Vector2(31.2, 10)]],
-	["lazar", "Lázár Tivadar", 2, Color(0.2, 0.2, 0.22), [Vector2(9.4, 36), Vector2(9.4, 22), Vector2(20.3, 24)]],
+	["fekete", "Fekete Zsombor", 2, Color(0.3, 0.3, 0.5), [Vector2(9.4, 10), Vector2(20.3, 21.5), Vector2(31.2, 10)]],
+	["lazar", "Lázár Tivadar", 2, Color(0.2, 0.2, 0.22), [Vector2(9.4, 36), Vector2(9.4, 22), Vector2(17.0, 24)]],
 ]
 
 @onready var player := $Player
