@@ -182,7 +182,11 @@ func _build_settings_page() -> void:
 	ui.setup(profile, func() -> void:
 		if on_settings_changed.is_valid():
 			on_settings_changed.call())
-	box.add_child(ui)
+	var scroll := ScrollContainer.new()   # The graphics rows do not fit a small window.
+	scroll.custom_minimum_size = Vector2(0.0, 360.0)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.add_child(ui)
+	box.add_child(scroll)
 	box.add_child(_button("Back", _back))
 
 var _lobby_code_label := Label.new()

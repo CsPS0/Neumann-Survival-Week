@@ -128,7 +128,8 @@ All character names in the committed code are invented.
 ## Extras
 
 - Achievements and seen endings, saved with your settings in `user://profile.cfg`.
-- Settings: volume, mouse sensitivity, field of view, brightness, easy map (shows your position on the phone map) and scare flashes.
+- Settings: volume, mouse sensitivity, field of view, brightness, easy map (shows your position on the phone map) scare flashes and graphics.
+- Graphics: a Low, Medium or High preset, or each setting alone: render scale, real-time lamps, shadows, view distance, ambient occlusion and volumetric fog, anti-aliasing (off, FXAA, MSAA 2x), VSync and an FPS limit. The first start picks Low on integrated graphics and phones, High on a discrete card. With real-time lamps off, the school lamps and sun shadows are replaced by flat ambient light that still brightens by day, flickers at dusk and during pranks, and keeps a faint glow at night. The flashlight stays. For very old GPUs, start the game with `--rendering-method gl_compatibility --rendering-driver opengl3` to use the Compatibility renderer. That renderer has no ambient occlusion or volumetric fog. This path is untested on real hardware.
 - The phone holds the tasks, so the HUD only shows the day, floor, time, battery and what is in your hand. The map zooms up to 6x and follows you when the easy map is on.
 - e-Kréten on the phone, a copy of the e-Kréta school system: today's timetable, grades from your quizzes and the day 3 test, absences and messages from the school. All data is invented.
 - Neumann Diákhirdetmények on the phone, a student notice board: lost items that hint where a collectible lies (marked found once you have it) and news that adds lore. New posts arrive every day.

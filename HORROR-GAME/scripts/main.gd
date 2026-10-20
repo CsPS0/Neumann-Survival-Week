@@ -5,6 +5,7 @@ extends Node3D
 const DoorScript := preload("res://scripts/door.gd")
 const FloorData := preload("res://scripts/floor_data.gd")
 const SoundBank := preload("res://scripts/sound_bank.gd")
+const GraphicsSettings := preload("res://scripts/graphics.gd")
 const Textures := preload("res://scripts/textures.gd")
 const PickupScript := preload("res://scripts/pickup.gd")
 const InteractableScript := preload("res://scripts/interactable.gd")
@@ -477,7 +478,7 @@ func _on_peer_disconnected(id: int) -> void:
 
 func _apply_settings() -> void:
 	profile.apply(player, $WorldEnvironment.environment)
-	daynight.set_quality(int(profile.get_setting("quality")))
+	GraphicsSettings.apply(profile, get_viewport(), player, daynight)
 
 
 func _start_game() -> void:
@@ -619,6 +620,7 @@ func _on_explosion() -> void:
 		_lab_fire.light_color = Color(1.0, 0.45, 0.15)
 		_lab_fire.omni_range = 9.0
 		_lab_fire.position = centre + Vector3(0.0, 1.8, 0.0)
+		GraphicsSettings.tag_extra(_lab_fire)
 		add_child(_lab_fire)
 		var flicker := create_tween().bind_node(_lab_fire).set_loops()
 		flicker.tween_property(_lab_fire, "light_energy", 0.5, 0.17)
@@ -1611,6 +1613,7 @@ func _build_strange_object(lab: Vector3) -> void:
 	light.light_color = Color(0.7, 0.2, 1.0)
 	light.omni_range = 4.0
 	light.light_energy = 1.2
+	GraphicsSettings.tag_extra(light)
 	_strange_object.add_child(light)
 	_strange_object.prompt = "Examine the object"
 	_strange_object.handler = func(by: Node) -> void:
@@ -1904,6 +1907,7 @@ func _build_altar() -> void:
 		candle.omni_range = 6.0
 		candle.position = Vector3(x, 1.1, 0.0)
 		candle.visible = false
+		GraphicsSettings.tag_extra(candle)
 		_altar.add_child(candle)
 		_altar_candles.append(candle)
 
