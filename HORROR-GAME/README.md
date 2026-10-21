@@ -17,7 +17,8 @@ Contents:
 - [Co-op](#co-op) with [the school server VM](#the-school-server-vm-ova) and [troubleshooting](#co-op-troubleshooting)
 - [Multiplayer modes](#multiplayer-modes)
 - [Code layout](#code-layout) and [releases](#releases)
-- Other documents: [build guide](docs/BUILD-GUIDE.md), [multiplayer design note](docs/multiplayer-modes.md), [server folder](server/README.md), [VM guide](server/vm/GUIDE.md), [handoff notes](HANDOFF.md)
+- [Developing and testing](#developing-and-testing)
+- Other document: [multiplayer design note](docs/multiplayer-modes.md)
 
 ## How to run
 
@@ -43,10 +44,69 @@ Notes:
 | Meta Quest | APK with the OpenXR rig. | Built. Not tested on a headset. |
 | macOS | Unsigned build. | Not verified. Needs a local preset. |
 
-- Builds are not committed. `export_presets.cfg` and `build/` are gitignored. The tracked preset file is `.github/godot/export_presets.ci.cfg`.
-- The quickest build is `tools/build.sh` (Linux and macOS) or `tools/build.bat` (Windows), run from this folder. Both check Godot and the export templates, copy the CI presets and print a summary.
-- Every command, prerequisite and Android note is in [docs/BUILD-GUIDE.md](docs/BUILD-GUIDE.md).
-- Build the Windows client at home, not at school. School PCs usually have no Godot, no export templates and a restricted network.
+### Build
+
+Builds are not committed. `export_presets.cfg` and `build/` are gitignored. The tracked preset file is `.github/godot/export_presets.ci.cfg`. It holds Linux/X11, Windows Desktop, Windows VR, Android and Android VR (Quest). It has no macOS preset.
+
+**Prerequisites**
+
+| Item | Needed for | Detail |
+|---|---|---|
+| Godot 4.7.2 standard build (not .NET) | All targets | The CI workflow pins 4.7 stable. |
+| Export templates matching the editor version | All targets | The folder must be named `4.7.2.stable` (`%APPDATA%\Godot\export_templates\` on Windows, `~/.local/share/godot/export_templates/` on Linux). Install them in the editor under Editor, Manage Export Templates. The download is about 1.2 GB. |
+| `export_presets.cfg` in this folder | All targets | Copy `.github/godot/export_presets.ci.cfg` to `HORROR-GAME/export_presets.cfg`. |
+| Local-only files | Real names and faces | `scripts/staff.gd`, `scripts/student_faces_local.gd`, `assets/faces_local/`. Without them the build uses placeholders. The export packs whatever is on disk. |
+| JDK 17 and Android SDK | Android and Quest | Platform-tools, build-tools 35.0.1 and platform android-35. Gradle is off, so cmake and the NDK are not needed. |
+| Debug keystore | Android and Quest debug builds | Created once with `keytool`, see below. |
+| Release keystore | Android and Quest release builds | Your own. Never commit it. |
+| Vulkan driver | Running the Linux build | Required. |
+
+**Quickest route: the build scripts.** Run them from this folder. They find Godot, check that the version is 4.7.x, check the templates, copy the CI presets when `export_presets.cfg` is missing, import the project, export each target and print a Built, Skipped and Failed summary. Android and Quest targets are skipped with a reason when the SDK, JDK or keystore is missing.
+
+```
+GODOT=/path/to/godot ./tools/build.sh                 # linux, windows, windows-vr
+./tools/build.sh all
+./tools/build.sh linux quest
+./tools/build.sh --install-templates desktop           # downloads about 1.2 GB
+./tools/build.sh --release android
+```
+
+On Windows, with the `_console.exe` build of Godot so output shows in the terminal:
+
+```
+$env:GODOT="C:\Godot\Godot_v4.7.2-stable_win64_console.exe"; .\tools\build.bat
+```
+
+`tools/build.bat` accepts the same targets and options. Checked: on Linux, `build.sh` built Linux, Windows and the phone and Quest debug APKs with Godot 4.7.2. Not checked: Windows VR, macOS and every Windows-machine command, including `build.bat`.
+
+**Manual commands.** Import once per fresh checkout, then export. Run all commands from this folder, with `$GODOT` set to the Godot binary.
+
+```
+$GODOT --headless --path . --import
+mkdir -p build/linux   && $GODOT --headless --path . --export-release "Linux/X11"       build/linux/TheEmptySchool.x86_64
+mkdir -p build/windows && $GODOT --headless --path . --export-release "Windows Desktop" build/windows/TheEmptySchool.exe
+mkdir -p build/vr      && $GODOT --headless --path . --export-release "Windows VR"      build/vr/TheEmptySchool_VR.exe
+mkdir -p build/macos   && $GODOT --headless --path . --export-release "macOS"            build/macos/TheEmptySchool.zip
+mkdir -p build/mobile  && $GODOT --headless --path . --export-debug   "Android"          build/mobile/TheEmptySchool.apk
+mkdir -p build/vr      && $GODOT --headless --path . --export-debug   "Android VR (Quest)" build/vr/TheEmptySchool_Quest.apk
+```
+
+- The Windows output is one `.exe` of about 111 MB with the data pack embedded. It is unsigned, so SmartScreen warns. The Linux output is one file of about 75 MB.
+- macOS needs a `macOS` preset from a local `export_presets.cfg`. The preset uses architecture `universal`, no codesign and no notarization. Remove the quarantine flag after unzipping: `xattr -cr TheEmptySchool.app`.
+- Android and Quest build `arm64-v8a` only, with Gradle off. Package names: `hu.njszki.theemptyschool` (phone) and `hu.njszki.theemptyschoolvr` (Quest).
+- Debug keystore, once: `keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"`. Then set Java SDK Path, Android SDK Path and the debug keystore in the editor under Editor Settings, Export, Android. The build scripts fill these in on the first run.
+- Release APKs read the keystore from `GODOT_ANDROID_KEYSTORE_RELEASE_PATH`, `GODOT_ANDROID_KEYSTORE_RELEASE_USER` and `GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD`, then run the same command with `--export-release`.
+- Install on a phone or Quest in developer mode: `adb install -r build/mobile/TheEmptySchool.apk` or `adb install -r build/vr/TheEmptySchool_Quest.apk`.
+- A root-owned SDK in `/opt/android-sdk` needs `sudo chmod -R a+rX /opt/android-sdk` so your user can run adb and apksigner. The message "cannot connect to daemon at tcp:5037" at the end of a phone build is harmless.
+
+**Common build errors**
+
+- `This project doesn't have an export_presets.cfg file at its root`: copy the CI presets.
+- `No export template found`: the template folder name differs from the editor version.
+- The build shows placeholder names or faces: the local-only files are missing.
+- A single-script `--check-only` reports `Identifier not found: NetSession`. That check does not load autoloads. The full headless boot is the real check.
+
+Build the Windows client at home, not at school. School PCs usually have no Godot, no export templates and a restricted network.
 
 ## Controls
 
@@ -218,9 +278,11 @@ The server prints its address and room code at start. Pass `--public-host` with 
 
 The VM is a Debian 12 appliance with Docker. It boots straight into a running game server with no desktop. It starts 4 dedicated server containers, one per room, on UDP ports 7777 to 7780. Each room holds up to 10 players by default. Use it to host a class on the teacher's Windows 10 PC, which needs no Godot.
 
-The files are in [`server/vm/`](server/vm). The longer guide with a pendrive checklist is [server/vm/GUIDE.md](server/vm/GUIDE.md).
+The files are in [`server/vm/`](server/vm): a Packer template with a Debian 12 preseed, the build scripts, and `files/` with the room service and `rooms.conf`.
 
-**Status.** The build script and the guide state that the appliance was built, imported into VirtualBox and tested with 40 players, and report the CPU and RAM use. The `.ova` is not in the repository (about 574 MB, gitignored). Each person who needs it builds it. Check this section after your first import and correct it if a step differs.
+**Status.** The owner built the appliance, imported it into VirtualBox and ran 40 simulated headless clients against it: 10 per room, in Hide and Seek with the computer entity, Hide and Seek with a player entity, Social Deduction and the five-day co-op campaign. The simulated clients ran with a 15 to 20 FPS cap, processing hitches and throttled position sync. It has not run with 40 real players or on the teacher's low-spec PC. The `.ova` is not in the repository (about 574 MB, gitignored), so you build it yourself.
+
+Measured in that test, on 1 virtual core: about 2.5 percent CPU per room (about 10 percent in total), 38 to 41 MB of RAM per room (about 160 MB for four rooms), and the whole Debian VM near 600 MB of its 1024 MB. There were no disconnects. Position sync runs at about 4 Hz, which keeps bandwidth low on a busy school network.
 
 **1. Build the .ova (once, at home).** You need Oracle VirtualBox 7 or newer (with `VBoxManage`), HashiCorp Packer 1.10 or newer, `tar`, an internet connection and about 10 GB of free disk. The build takes 20 to 40 minutes.
 
@@ -231,7 +293,7 @@ The files are in [`server/vm/`](server/vm). The longer guide with a pendrive che
 
 Add the RAM in MB as an argument to change the default of 1024, for example `server/vm/build-ova.sh 2048`. The result is `server/vm/output/TheEmptySchoolServer.ova`. The build excludes `scripts/staff.gd`, so the server image holds no real names.
 
-**2. Carry it to school.** Copy the `.ova`, the prebuilt Windows client (`TheEmptySchool.exe`) and, as a fallback, the VirtualBox installer to a USB drive.
+**2. Carry it to school.** Copy three things to a USB drive: `TheEmptySchoolServer.ova`, the prebuilt `build/windows/TheEmptySchool.exe` (a standalone file that runs on Windows 10 and 11 without installing Godot) and, as a fallback, the VirtualBox installer. Never build at school.
 
 **3. Import it on the teacher's PC.**
 
@@ -267,7 +329,7 @@ Leave the VM running. You can minimize its window. No login is needed. The codes
 
 All PCs must be on the same network as the VM. A guest or isolated Wi-Fi often blocks traffic between devices.
 
-**6. Manage the VM.** Log in at the VM console as `neumann` with the password `neumann`. Change the password if the VM stays on a shared network.
+**6. Manage the VM.** Log in at the VM console as `neumann` with the password `neumann`. Change the password if the VM stays on a shared network. SSH is off in the image.
 
 | Task | Command |
 |---|---|
@@ -276,7 +338,9 @@ All PCs must be on the same network as the VM. A guest or isolated Wi-Fi often b
 | Read a room log | `sudo docker logs -f neumann-room-1` |
 | Turn on SSH (off by default) | `sudo systemctl enable --now ssh` |
 
-**Known limits.** The in-game Host Co-op still accepts 4 joining players. Only the VM and the dedicated server reach 10 per room. Social Deduction caps at 5 players. The measured RAM and CPU figures in the guide come from one test run. Re-check them on the teacher's low-spec PC.
+**Known limits.** The in-game Host Co-op still accepts 4 joining players. Only the VM and the dedicated server reach 10 per room. Social Deduction caps at 5 players. The resource figures come from one simulated run. Re-check them on the teacher's low-spec PC.
+
+**Weak student PCs.** In Settings, Graphics: preset Low, real-time lamps off (the biggest gain), render scale 60 to 75 percent, VSync on or an FPS limit of 30 or 60.
 
 ### Ports
 
@@ -326,6 +390,49 @@ Open the Co-op lobby (Host Co-op or Join Co-op) and press a start button for a m
 | `scripts/staff_source.gd` | Loads the gitignored `scripts/staff.gd` when present, else the committed placeholder. |
 | `scripts/match.gd`, `match_world.gd`, `body_marker.gd` | Match modes: round logic on the host or the dedicated server (`match.gd`, autoload `Match`), its effect on the school (`match_world.gd`) and the body in Social Deduction. |
 | `scripts/net_session.gd`, `dedicated_server.gd`, `input_bridge.gd`, `touch_controls.gd`, `xr_manager.gd` | Co-op, the headless server (`server/` holds its launch files), touch and VR. |
+
+## Developing and testing
+
+**Rules.**
+
+- Godot files use LF endings and tabs. Match the surrounding style (`.editorconfig`).
+- Real staff names stay out of the repository. `scripts/staff.gd` is gitignored and `scripts/staff_source.gd` falls back to the placeholder roster.
+- Verify a change with the headless boot check. A clean boot prints the banner and "OpenXR not initialized, running in standard mode" and nothing red. Godot exits 0 even on errors, so read the output.
+
+```
+godot --headless --path . --import
+godot --headless --path . res://scenes/main.tscn --quit-after 240
+```
+
+**Tests.** The 36 headless regression scripts (`t01` to `t36`) and the frame-time probe `perf.gd` are not in the repository. They live only on the owner's PC. They cover the campaign, roster, suspects, classes, crowd, staff manager, Csoki, stamina, scare flash, phone map, rooms, finds, Porta, day 1 story, items, neu_mecha, bodies and furniture, and run with `godot --headless --path . --script <test>.gd`. Each prints PASS or FAIL. A test script extends `SceneTree`, instances `res://scenes/main.tscn`, sets `main.profile.path` to a `user://neu_test_*.cfg` file and drives the clock through `main.daynight.minutes`. The long ones (`t12_full`, `t22_full_people`, `t33_full_demo`) take minutes. Performance on the dev machine (RTX 3070, vsync off) was 1.7 to 3.1 ms average frame at eight spots. Other machines are unmeasured.
+
+**Gotchas.**
+
+- The building is 1.25 times larger than the plan measurements (`FloorData.WORLD_SCALE`, one knob). Plan-tied metre constants scale with it, human-sized ones do not.
+- Navmesh paths float above the floor. `main.gd` calibrates `path_height_offset`. Corridors narrower than twice the agent radius (0.4) are impassable.
+- Build clue and furniture tables before the navmesh bake.
+- Tests that jump the clock must mark lessons resolved (`campaign._resolved.fill(true)` and `_ended.fill(true)`), or the six-skip expulsion fires.
+- Tests must never write `user://profile.cfg`.
+- Fixed waypoints and dog markers use plan coordinates. After a layout change in `floor_data.gd`, re-run the scale, staff manager and Csoki tests.
+- The room lists exist three times (`Classes.STORY`, `Rooms.STORY_ROOMS`, `main.RESERVED_ROOMS`).
+- Ambient teachers are not in group `teachers`. Csoki is in neither.
+
+**Known small issues.**
+
+- The `ending_N` toast and the completionist toast overwrite each other.
+- The settings checkboxes are hard to see.
+- The caretaker never loses the player once spotted.
+- A stale "Day N" message can show under the ending card.
+- Csoki can take the E press meant for a door. It keeps following after an ending.
+- The Porta `go_away` timer runs while the game is paused. Key 14 can also be stolen at night on days 1 to 3.
+- Crowd corridors are separate polylines, so walkers never switch corridors or take the stairs. A class larger than its room's chairs is only partly drawn.
+- Students are capsules without faces. Teachers have procedural low-poly faces seeded from the name, and no real photos by decision.
+- Ambient teachers at the edge of the range can pop in and out as the player walks.
+- The phone map labels small ground-floor rooms poorly.
+- Co-op, touch controls, VR, Android, Quest and the Compatibility renderer have not been tested on real hardware.
+- The Quest APK has no OpenXR loader (Gradle is off), so it likely does not start in VR.
+
+**Ideas for later.** Ambient audio, flashlight and entity interplay, faces for students, a play-through of the real-time feel of the breaks and the caretaker's difficulty by a human tester.
 
 ## Releases
 
