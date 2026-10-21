@@ -36,15 +36,15 @@ A school project from the Neumann János school. The repository holds two separa
 ## Where to start
 
 - To play the horror game: read [HORROR-GAME/README.md](HORROR-GAME/README.md), section How to run. Open `HORROR-GAME/project.godot` in Godot 4.7 and press F5.
-- To host a classroom session on a school PC: read the co-op chapter in [HORROR-GAME/README.md](HORROR-GAME/README.md) and the step by step guide in [HORROR-GAME/server/vm/GUIDE.md](HORROR-GAME/server/vm/GUIDE.md).
-- To build an executable, APK or Quest build: read [HORROR-GAME/docs/BUILD-GUIDE.md](HORROR-GAME/docs/BUILD-GUIDE.md).
+- To host a classroom session on a school PC: read the co-op chapter in [HORROR-GAME/README.md](HORROR-GAME/README.md#the-school-server-vm-ova).
+- To build an executable, APK or Quest build: read the build chapter in [HORROR-GAME/README.md](HORROR-GAME/README.md#build).
 - To run the console RPG: read [RPG-GAME/README.md](RPG-GAME/README.md). It needs Windows and the .NET 10 SDK.
 
 ## Repository layout
 
 | Path | Content |
 |---|---|
-| `HORROR-GAME/` | The Godot project: `scenes/`, `scripts/`, `textures/`, `tools/` (build scripts), `server/` (dedicated server and VM), `docs/` (build guide, multiplayer design note). |
+| `HORROR-GAME/` | The Godot project: `scenes/`, `scripts/`, `textures/`, `tools/` (build scripts), `server/` (dedicated server and VM), `docs/` (multiplayer design note). |
 | `RPG-GAME/` | The C# solution `RPG-GAME.sln` with the game and its libraries. |
 | `docs/` | The static website. |
 | `.github/` | The release workflow and the CI export presets for the horror game. |
