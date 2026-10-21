@@ -18,127 +18,53 @@
 ```
 # Neumann Survival Week
 
-A school project from the Neumann János school in two versions:
+A school project from the Neumann János school. The repository holds two separate games and the project website. The games share a theme and a school setting. They share no code and no assets.
 
-| Version | Folder | Engine | Status |
-|---|---|---|---|
-| **The Empty School**, a 3D horror game | [`HORROR-GAME/`](HORROR-GAME/README.md) | Godot 4.7 | Playable demo |
-| **IKT: Survival Week**, a console RPG | [`RPG-GAME/`](RPG-GAME) | C# / .NET 10 | Unfinished prototype |
+| Part | Folder | Stack | Status | Documentation |
+|---|---|---|---|---|
+| The Empty School, a first-person 3D horror game | [`HORROR-GAME/`](HORROR-GAME) | Godot 4.7, GDScript | Playable demo, the main focus | [HORROR-GAME/README.md](HORROR-GAME/README.md) |
+| IKT: Survival Week, a console RPG | [`RPG-GAME/`](RPG-GAME) | C# on .NET 10 | Unfinished prototype, Windows only | [RPG-GAME/README.md](RPG-GAME/README.md) |
+| Project website | [`docs/`](docs) | Static HTML, CSS, JS | English and Hungarian text | This file, section Website |
 
-The project website lives in [`docs/`](docs/index.html).
+## How the project works
 
-## The Empty School (Godot 3D horror game)
+- Both games came from one idea: you are a student at the Neumann school and you must survive a week. The team first built the console RPG. The horror game replaced it as the main work.
+- The horror game builds the whole school at runtime from floor plan data. It needs no model files and no recorded audio. Textures, furniture, characters and sound are made in code, apart from a few photo textures.
+- The horror game plays alone or in co-op. Co-op runs through the game itself (a player hosts), through a headless dedicated server, or through a virtual machine that hosts several rooms on a school PC.
+- The two games live in separate folders with their own build tools. A change in one folder never needs a change in the other.
 
-Five days at the Neumann school. Something in the building is not what it seems. Attend your lessons, watch the teachers, and find out who it is before it finds you.
+## Where to start
 
-- A three-floor model of the school, built in code from floor plan data.
-- A five-day campaign: three school days with bells, lessons and quizzes, then two hunt days.
-- Deduction: clues point to one of eight invented teachers. Name the right one.
-- An exorcism quest at the Aula altar in four chained steps.
-- A roaming demon that wakes at night, hears sprinting and chases on sight. Lockers hide you.
-- Teachers with routines, a caretaker, his dog, the porter and a student crowd.
-- Eight endings, achievements and saved settings.
+- To play the horror game: read [HORROR-GAME/README.md](HORROR-GAME/README.md), section How to run. Open `HORROR-GAME/project.godot` in Godot 4.7 and press F5.
+- To host a classroom session on a school PC: read the co-op chapter in [HORROR-GAME/README.md](HORROR-GAME/README.md) and the step by step guide in [HORROR-GAME/server/vm/GUIDE.md](HORROR-GAME/server/vm/GUIDE.md).
+- To build an executable, APK or Quest build: read [HORROR-GAME/docs/BUILD-GUIDE.md](HORROR-GAME/docs/BUILD-GUIDE.md).
+- To run the console RPG: read [RPG-GAME/README.md](RPG-GAME/README.md). It needs Windows and the .NET 10 SDK.
 
-Run it: open `HORROR-GAME/project.godot` in Godot 4.7 and press F5. Full documentation, controls and endings: [HORROR-GAME/README.md](HORROR-GAME/README.md).
+## Repository layout
 
-## IKT: Survival Week (C# console game)
+| Path | Content |
+|---|---|
+| `HORROR-GAME/` | The Godot project: `scenes/`, `scripts/`, `textures/`, `tools/` (build scripts), `server/` (dedicated server and VM), `docs/` (build guide, multiplayer design note). |
+| `RPG-GAME/` | The C# solution `RPG-GAME.sln` with the game and its libraries. |
+| `docs/` | The static website. |
+| `.github/` | The release workflow and the CI export presets for the horror game. |
+| `LICENSE` | The licence. |
 
-> **Status: unfinished prototype.** Development stopped at an early stage. The game starts and a few scenes are playable, but the planned quests, scoring and day system were never built.
+## Website
 
-The original plan: you are a new student at the Neumann school and you have to survive the week. You meet NPCs, get quests and make choices that change the outcome. The game draws everything with ASCII art in the console.
+The site in `docs/` is a static page with English and Hungarian text. Open `docs/index.html` in a browser. No build step is needed.
 
-### What works
+- `docs/index.html`: the page, with a section for each game.
+- `docs/JS/script.js`: the mobile menu toggle.
+- `docs/JS/translations.js`: the English and Hungarian texts.
+- `docs/CSS/`: the styles.
 
-- Main menu (Start, Settings, Statistics, Exit) with an ASCII logo.
-- Settings: UI colours, hints, fullscreen.
-- Intro dialog loaded from `Assets/dialogs/intro.json`.
-- Three scenes: Outside, Aula and Classroom.
-- Five NPC conversations with A, B, C choices, in Hungarian and German.
-- A locked classroom door that opens with the key the player starts with.
-- Inventory screen (TAB) and Statistics screen.
+## Rules for contributors
 
-### What is not finished
-
-- **Windows only.** Input uses `user32.dll`, so the game crashes on Linux and macOS.
-- The day picker (Monday to Friday) ignores the choice. Every day starts in the same scene.
-- Dialog choices are stored but nothing reads them. There are no quests, no scoring and no consequences.
-- The statistics counters never change. Name, age and right or wrong answer counts were planned but never added.
-- Planned random events, boss fights and sound effects were never added.
-- The classroom layout is off-screen in part and does not re-centre when the window resizes.
-
-### Run it
-
-Requires Windows and the [.NET 10 SDK](https://dotnet.microsoft.com/download).
-
-```
-cd RPG-GAME/RPG-GAME
-dotnet run
-```
-
-Or start `RPG-GAME/run.bat`.
-
-### Controls
-
-- **W, A, S, D**: move, menu selection (W/S: up/down, A/D: switch)
-- **ENTER**: select in a menu
-- **ESC**: back to the menu or exit
-- **E**: talk to an NPC
-- **TAB**: inventory
-
-### Code documentation
-This project is divided into several libraries, each with a specific responsibility.
-
-#### `RPG-GAME`
-This is the main executable project for the game.
-
-*   **`Program.cs`**: This file is the main entry point of the application. It initializes the game, creates the scenes, menus, and the player object. It also contains the main game logic for handling scene transitions, player updates, and menu navigation.
-
-#### `AssetHandleLib`
-An empty stub. No other project references it.
-
-#### `AssetsLib`
-This library provides utilities for reading and writing asset files.
-
-*   **`Asset.cs`**: This class provides static methods for reading and writing text files from the assets folder.
-
-#### `DataTypesLib`
-This library contains custom data structures used in the game.
-
-*   **`TreeNode.cs`**: A generic tree data structure used to represent conversation trees for dialogs.
-
-#### `GameLogicLib`
-This library forms the core of the game engine.
-
-*   **`Game.cs`**: This class manages the main game loop. It runs the rendering and update logic in two separate threads to ensure a stable frame rate and responsive input. It uses events (`OnStart`, `OnStop`, `OnUpdate`, `OnRender`, `OnResized`) to allow the main application to hook into the game's lifecycle.
-
-#### `GameObjectsLib`
-This library defines the various objects that make up the game world.
-
-*   **`Thing.cs`**: This is the base class for all game objects (e.g., player, NPCs, items). It manages the object's position, size, current animation frame (`Output`), and hitbox. It also includes logic for animation playback and collision detection.
-*   **`Scene.cs`**: This class manages a collection of `Thing` objects that are currently active in the game. It handles showing and hiding objects when the scene changes.
-*   **`Menu.cs`**: This class represents a menu with a list of options.
-*   **`Dialog.cs`**: This class manages the flow of conversations. It uses a `TreeNode<string>` to represent the dialog tree.
-
-#### `InputLib`
-This library is responsible for handling user input.
-
-*   **`Input.cs`**: This class is a static utility class that provides methods to check the state of keyboard keys (`IsPressed`, `IsDown`). It uses P/Invoke to call the Windows `GetAsyncKeyState` function, so it is specific to the Windows platform.
-
-#### `RenderLib`
-This is a sophisticated console rendering engine.
-
-*   **`Pixel.cs`**: Represents a single character on the screen, with foreground and background colors, a character, and a layer for depth.
-*   **`Frame.cs`**: Represents a 2D grid of `Pixel`s. It's used to store sprites, UI elements, and the entire screen buffer.
-*   **`Render.cs`**: The core rendering class. It uses a double-buffering technique (`current` and `next` frames) to render only the changed pixels to the console, which prevents flickering and improves performance. It uses ANSI escape codes to set colors and text styles.
-*   **`Draw.cs`**: A helper class with static methods for creating common UI elements like text, boxes, and text boxes as `Frame` objects.
-
-## Website (`docs`)
-
-A static page with English and Hungarian text. Open `docs/index.html` in a browser.
-
-*   **`index.html`**: The page, with sections for both games.
-*   **`JS/script.js`**: The mobile menu toggle.
-*   **`JS/translations.js`**: The English and Hungarian texts.
+- Keep the two games apart. A change for one game must not touch the other.
+- The roster of real staff names is local only. `HORROR-GAME/scripts/staff.gd` stays gitignored and the repository holds a placeholder roster with invented names.
+- Real student names and photos stay local too. The repository holds invented names and generated faces.
+- Work on a branch and open a pull request. Merge with squash and delete the branch after the merge.
 
 ## Team
 
@@ -148,4 +74,4 @@ A static page with English and Hungarian text. Open `docs/index.html` in a brows
 
 ## Documents
 
-* [License](LICENSE)
+- [License](LICENSE)
