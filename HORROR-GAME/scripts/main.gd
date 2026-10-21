@@ -43,6 +43,8 @@ const WALL_HEIGHT := 3.2
 const WALL_THICKNESS := 0.25
 const DOOR_WIDTH := 1.5
 const DOOR_HEIGHT := 2.2
+const INNER_WINDOWS := {"Porta": "E", "Büfé": "W"}   ## Room -> side with a window in place of a wall.
+const INNER_WINDOW_WIDTH := 1.2
 const WINDOW_SILL := 0.9        ## Windows in the outer walls: sill height, top height, width and spacing.
 const WINDOW_TOP := 2.4
 const WINDOW_WIDTH := 1.6
@@ -1154,7 +1156,10 @@ func _build_room(room: Array, locked := false) -> void:
 		var a: Vector2 = edges[side][0]
 		var b: Vector2 = edges[side][1]
 		if not doors.has(side):
-			_wall(a, b)
+			if INNER_WINDOWS.get(room[0], "") == side:
+				_inner_window(a, b, room[0] == "Porta")
+			else:
+				_wall(a, b)
 			continue
 		var along_x := side == "N" or side == "S"
 		var centre := (a + b) * 0.5
@@ -1211,6 +1216,23 @@ func _wall_windows(a: Vector2, b: Vector2) -> bool:
 	for i in count:
 		_window_pane((cuts[i * 2 + 1] + cuts[i * 2 + 2]) * 0.5, fixed, horizontal)
 	return true
+
+
+## The Porta's east wall has a small serving window to the Buffet (plan: the two share only a window). Both rooms draw
+## the wall, so both cut the same opening and only the Porta adds the glass.
+func _inner_window(a: Vector2, b: Vector2, with_glass: bool) -> void:
+	var lo := minf(a.y, b.y)
+	var hi := maxf(a.y, b.y)
+	var half := WALL_THICKNESS * 0.5
+	var centre := (lo + hi) * 0.5
+	var from := centre - INNER_WINDOW_WIDTH * 0.5
+	var to := centre + INNER_WINDOW_WIDTH * 0.5
+	_wall_strip(lo - half, from, a.x, false, 0.0, WALL_HEIGHT)
+	_wall_strip(to, hi + half, a.x, false, 0.0, WALL_HEIGHT)
+	_wall_strip(from, to, a.x, false, 0.0, WINDOW_SILL)
+	_wall_strip(from, to, a.x, false, WINDOW_TOP, WALL_HEIGHT)
+	if with_glass:
+		_window_pane(centre, a.x, false)
 
 
 func _wall_strip(from: float, to: float, fixed: float, horizontal: bool, y0: float, y1: float) -> void:
@@ -2004,10 +2026,8 @@ func _build_front_door() -> void:
 	door.name = "FrontDoor"
 	_front_door = door
 	door.handler = func(_by: Node) -> void: campaign.use_front_door()
-	# Garden door on the entrance hall's east wall (plan x 42.5), beside the front door. Closed in the demo.
-	_select_floor(0)
-	var east := _to_world(42.5, 0.0).x - WALL_THICKNESS * 0.5 - 0.1
-	var garden := _box(self, Vector3(east, 1.1, hall.z), Vector3(0.2, 2.2, 1.4), _closed_material, true, InteractableScript)
+	# Garden door in the entrance hall's south wall, at its east end beside the Porta (the gap in the plan's wall).
+	var garden := _box(self, hall + Vector3(2.2, 1.1, 1.3 * WS), Vector3(1.4, 2.2, 0.2), _closed_material, true, InteractableScript)
 	garden.name = "GardenDoor"
 	garden.prompt = "Garden"
 	garden.handler = func(by: Node) -> void: by.inspected.emit("Garden: not available in the demo.")
