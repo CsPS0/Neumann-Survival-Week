@@ -53,7 +53,7 @@ const STAIR_STEPS := 22
 const FLOOR_NAMES := ["Ground floor", "1st floor", "2nd floor"]
 const TEACHER_ORDER: Array = Lessons.SUSPECT_IDS   ## Accusation options, in button order.
 
-## Stairwell footprints in metres (identical on every floor), plan sized times WORLD_SCALE. Each flight climbs towards +Z.
+## Stairwell footprints in metres (identical on every floor), plan sized times WORLD_SCALE. Each flight climbs towards -Z.
 const STAIR_X := [[-7.8 * WS, -6.0 * WS], [6.0 * WS, 7.8 * WS]]
 const STAIR_Z := [[-9.76 * WS, -2.24 * WS], [4.0 * WS, 11.52 * WS]]
 
@@ -1452,7 +1452,7 @@ func _build_flight(rect: Rect2, y0: float, top_flight: bool) -> void:
 	var length := rect.size.y
 	var xc := rect.get_center().x
 	var z0 := rect.position.y
-	var z1 := rect.end.y
+	var z1 := rect.end.y   # The flight starts here and climbs towards z0.
 	var rise := FLOOR_HEIGHT / STAIR_STEPS
 	var depth := length / STAIR_STEPS
 
@@ -1460,13 +1460,13 @@ func _build_flight(rect: Rect2, y0: float, top_flight: bool) -> void:
 		# The lower flight is a solid wedge; the upper one is a thin sawtooth so it leaves headroom below.
 		var top := (k + 1) * rise
 		var height := minf(top, 0.5) if top_flight else top
-		_box(self, Vector3(xc, y0 + top - height * 0.5, z0 + (k + 0.5) * depth),
+		_box(self, Vector3(xc, y0 + top - height * 0.5, z1 - (k + 0.5) * depth),
 				Vector3(width, height, depth), _stair_material, false)
 
 	var ramp := StaticBody3D.new()
 	var angle := atan2(FLOOR_HEIGHT, length)
 	ramp.position = Vector3(xc, y0 + FLOOR_HEIGHT * 0.5 - 0.15, rect.get_center().y)
-	ramp.rotation.x = -angle
+	ramp.rotation.x = angle
 	var ramp_shape := CollisionShape3D.new()
 	var ramp_box := BoxShape3D.new()
 	ramp_box.size = Vector3(width, 0.3, sqrt(length * length + FLOOR_HEIGHT * FLOOR_HEIGHT))
@@ -1481,11 +1481,11 @@ func _build_flight(rect: Rect2, y0: float, top_flight: bool) -> void:
 				Vector3(0.1, wall_height, length), _wall_material, true)
 	if top_flight:
 		# Nothing boards here on the top floor, so rail off the open end of the hole.
-		_box(_region, Vector3(xc, y0 + FLOOR_HEIGHT + 0.5, z0 + 0.05),
+		_box(_region, Vector3(xc, y0 + FLOOR_HEIGHT + 0.5, z1 - 0.05),
 				Vector3(width, 1.0, 0.1), _wall_material, true)
 	else:
 		# Close the space under the flight; stops short of the floor so the player can step off the ramp's end.
-		_box(_region, Vector3(xc, y0 + (FLOOR_HEIGHT - 0.4) * 0.5, z1 - 0.05),
+		_box(_region, Vector3(xc, y0 + (FLOOR_HEIGHT - 0.4) * 0.5, z0 + 0.05),
 				Vector3(width, FLOOR_HEIGHT - 0.4, 0.1), _wall_material, true)
 
 
