@@ -1,6 +1,7 @@
 extends Node
 ## Co-op session: Godot ENet on one UDP port. The host (a player or a headless dedicated server) listens, clients join
-## by address. The room code is the host address and port packed into ten letters, see make_room_code.
+## by address. The room code is four digits. The host announces code and address by UDP broadcast on the local network
+## and a joining player looks the code up there. Off the local network, players join by address.
 
 signal session_started(is_host: bool)
 signal session_ended
@@ -9,14 +10,17 @@ signal player_left(peer_id: int)
 signal connection_succeeded
 signal connection_failed
 signal lan_room_found(code: String, address: String)
+signal room_code_changed(code: String)
 
 const DEFAULT_PORT = 7777
 const DISCOVERY_PORT = 7778
 const MAX_CLIENTS = 4
-const CODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+const CODE_LENGTH = 4
+const ROOM_TIMEOUT = 4.0
 
 var server_is_dedicated := false
 var last_error := ""
+## Rooms seen on the network: code -> {"address", "seen"} where seen is a time in seconds.
 var lan_rooms := {}
 
 var _peer: ENetMultiplayerPeer
@@ -25,11 +29,14 @@ var _listener: PacketPeerUDP
 var _broadcasting := false
 var _broadcast_timer := 0.0
 var _room_code := ""
+var _forced_code := ""
 var _address := ""
 var _is_host := false
 var _connected := false
 
 func _ready() -> void:
+	# The menus pause the tree. Discovery and the session must keep running there.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
@@ -66,7 +73,7 @@ func get_remote_players() -> Array[int]:
 	return ids
 
 func host_session(port: int = DEFAULT_PORT, max_clients: int = MAX_CLIENTS, dedicated := false,
-		public_host := "") -> Error:
+		public_host := "", room_code := "") -> Error:
 	leave_session()
 	last_error = ""
 	_peer = ENetMultiplayerPeer.new()
@@ -82,12 +89,15 @@ func host_session(port: int = DEFAULT_PORT, max_clients: int = MAX_CLIENTS, dedi
 	server_is_dedicated = dedicated
 	var host := public_host if public_host != "" else get_local_address()
 	_address = "%s:%d" % [host, port]
-	_room_code = make_room_code(host, port)
+	_forced_code = room_code if is_valid_code(room_code) else ""
+	start_lan_discovery()
+	_room_code = _forced_code if _forced_code != "" else _pick_free_code()
 	_start_lan_broadcast()
 	session_started.emit(true)
 	return OK
 
-## Joins by room code, "host", "host:port" or "ip:port". Returns OK when the connection attempt started.
+## Joins by "host", "host:port" or "ip:port". A room code needs resolve_room first. Returns OK when the connection
+## attempt started.
 func join_session(target: String, port: int = DEFAULT_PORT) -> Error:
 	leave_session()
 	last_error = ""
@@ -106,7 +116,6 @@ func join_session(target: String, port: int = DEFAULT_PORT) -> Error:
 	_is_host = false
 	_connected = false
 	_address = "%s:%d" % [parsed["host"], parsed["port"]]
-	_room_code = make_room_code(parsed["host"], parsed["port"])
 	session_started.emit(false)
 	return OK
 
@@ -120,17 +129,18 @@ func leave_session() -> void:
 	_connected = false
 	server_is_dedicated = false
 	_room_code = ""
+	_forced_code = ""
 	_address = ""
 	_stop_lan_broadcast()
+	stop_lan_discovery()
 	if was_active:
 		session_ended.emit()
 
 func get_room_code() -> String:
 	return _room_code
 
-## The room code as shown to players: XXXXX-XXXXX.
 func get_display_code() -> String:
-	return _room_code.substr(0, 5) + "-" + _room_code.substr(5) if _room_code.length() == 10 else _room_code
+	return _room_code
 
 func get_address() -> String:
 	return _address
@@ -149,48 +159,57 @@ func get_local_address() -> String:
 			fallback = a
 	return fallback if fallback != "" else "127.0.0.1"
 
-## Packs an IPv4 address and a port into ten letters (A to Z, 2 to 7). Other hosts return an empty code.
-static func make_room_code(host: String, port: int) -> String:
-	var parts := host.split(".")
-	if parts.size() != 4 or port < 1 or port > 65535:
+static func is_valid_code(text: String) -> bool:
+	if text.length() != CODE_LENGTH:
+		return false
+	for c in text:
+		if c < "0" or c > "9":
+			return false
+	return true
+
+## A random four digit code that no room on the network announces right now.
+func _pick_free_code() -> String:
+	_prune_rooms()
+	for i in 200:
+		var code := "%04d" % (randi() % 10000)
+		if not lan_rooms.has(code):
+			return code
+	return "%04d" % (randi() % 10000)
+
+## Looks a room code up on the local network. A query goes out by broadcast, and by loopback for a host on this
+## computer, and the host that holds the code answers with its address. Returns "" after the timeout.
+func resolve_room(code: String, timeout := 3.0) -> String:
+	var clean := code.strip_edges()
+	if not is_valid_code(clean):
 		return ""
-	var value := 0
-	for p in parts:
-		if not p.is_valid_int() or int(p) < 0 or int(p) > 255:
-			return ""
-		value = (value << 8) | int(p)
-	value = (value << 16) | port
-	var code := ""
-	for i in 10:
-		code = CODE_ALPHABET[value & 31] + code
-		value >>= 5
-	return code
+	var query := PacketPeerUDP.new()
+	query.set_broadcast_enabled(true)
+	var waited := 0.0
+	var next_send := 0.0
+	var address := ""
+	while waited <= timeout and address == "":
+		if waited >= next_send:
+			next_send = waited + 0.5
+			for target in ["255.255.255.255", "127.0.0.1"]:
+				query.set_dest_address(target, DISCOVERY_PORT)
+				query.put_packet(("NEUMANN_FIND:%s" % clean).to_utf8_buffer())
+		while query.get_available_packet_count() > 0:
+			var fields := query.get_packet().get_string_from_utf8().split(":", true, 2)
+			if fields.size() == 3 and fields[0] == "NEUMANN_ROOM" and fields[1] == clean:
+				address = fields[2]
+		if address == "":
+			await get_tree().create_timer(0.1).timeout
+			waited += 0.1
+	query.close()
+	return address
 
-## Reverses make_room_code. Returns {"host", "port"} or an empty dictionary.
-static func decode_room_code(text: String) -> Dictionary:
-	var clean := text.strip_edges().to_upper().replace("-", "").replace(" ", "")
-	if clean.length() != 10:
-		return {}
-	var value := 0
-	for c in clean:
-		var idx := CODE_ALPHABET.find(c)
-		if idx < 0:
-			return {}
-		value = (value << 5) | idx
-	var port := value & 0xFFFF
-	var ip := value >> 16
-	if port == 0 or ip > 0xFFFFFFFF:
-		return {}
-	return {"host": "%d.%d.%d.%d" % [(ip >> 24) & 255, (ip >> 16) & 255, (ip >> 8) & 255, ip & 255], "port": port}
-
-## Accepts a room code, "host", "host:port" or "ip:port". Returns {"host", "port"} or an empty dictionary.
+## Accepts "host", "host:port" or "ip:port". Returns {"host", "port"} or an empty dictionary.
 static func parse_address(text: String, default_port: int = DEFAULT_PORT) -> Dictionary:
 	var t := text.strip_edges()
 	if t == "":
 		return {}
-	var decoded := decode_room_code(t)
-	if not decoded.is_empty() and not t.contains(".") and not t.contains(":"):
-		return decoded
+	if is_valid_code(t):
+		return {}
 	var host := t
 	var port := default_port
 	if t.count(":") == 1:
@@ -220,7 +239,6 @@ func _stop_lan_broadcast() -> void:
 
 ## Starts listening for rooms that hosts announce on the local network.
 func start_lan_discovery() -> void:
-	lan_rooms.clear()
 	if _listener != null:
 		return
 	_listener = PacketPeerUDP.new()
@@ -231,6 +249,13 @@ func stop_lan_discovery() -> void:
 	if _listener:
 		_listener.close()
 		_listener = null
+	lan_rooms.clear()
+
+func _prune_rooms() -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	for code in lan_rooms.keys():
+		if now - float(lan_rooms[code]["seen"]) > ROOM_TIMEOUT:
+			lan_rooms.erase(code)
 
 func _process(delta: float) -> void:
 	if _broadcasting and _udp_peer:
@@ -242,9 +267,23 @@ func _process(delta: float) -> void:
 		while _listener.get_available_packet_count() > 0:
 			var msg := _listener.get_packet().get_string_from_utf8()
 			var fields := msg.split(":", true, 2)
-			if fields.size() == 3 and fields[0] == "NEUMANN_ROOM" and not lan_rooms.has(fields[1]):
-				lan_rooms[fields[1]] = fields[2]
-				lan_room_found.emit(fields[1], fields[2])
+			if fields.size() == 3 and fields[0] == "NEUMANN_ROOM" and is_valid_code(fields[1]):
+				_on_room_announced(fields[1], fields[2])
+			elif fields.size() == 2 and fields[0] == "NEUMANN_FIND" and _is_host and fields[1] == _room_code:
+				_listener.set_dest_address(_listener.get_packet_ip(), _listener.get_packet_port())
+				_listener.put_packet(("NEUMANN_ROOM:%s:%s" % [_room_code, _address]).to_utf8_buffer())
+
+func _on_room_announced(code: String, address: String) -> void:
+	if address == _address and _is_host:
+		return
+	var is_new: bool = not lan_rooms.has(code) or lan_rooms[code]["address"] != address
+	lan_rooms[code] = {"address": address, "seen": Time.get_ticks_msec() / 1000.0}
+	if is_new:
+		lan_room_found.emit(code, address)
+	# Two hosts picked the same code. The host with the larger address picks a new one.
+	if _is_host and code == _room_code and _forced_code == "" and address < _address:
+		_room_code = _pick_free_code()
+		room_code_changed.emit(_room_code)
 
 func _on_peer_connected(id: int) -> void:
 	if multiplayer.is_server():
