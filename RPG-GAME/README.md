@@ -92,9 +92,9 @@ This is a sophisticated console rendering engine.
 
 ## Assets
 
-- `Assets/dialogs/`: dialog trees as JSON, loaded at runtime.
-- `Assets/stickman/`: ASCII art frames for the characters.
-- `Assets/asciiart.py`: a helper script that converts images into ASCII art.
+- `Assets/dialogs/intro.json`: the intro dialog, loaded at runtime.
+- `Assets/stickman/`: Python files (`walk.py`, `run.py`) that hold the stickman ASCII art frames.
+- `Assets/asciiart.py`: ASCII art character notes.
 
 ## Build
 
