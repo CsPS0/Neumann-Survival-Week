@@ -1,6 +1,6 @@
 extends StaticBody3D
 ## A collectable item with a small procedural model. Layer 16: the interact ray sees it, nothing collides with it.
-## kind: key, salt, vial, bell, note, fuse, battery, page, secret, card, form, key_card, biscuit, mecha
+## kind: key, salt, vial, bell, note, fuse, battery, page, secret, card, form, key_card, biscuit, mecha, photo_piece
 
 const SoundBank := preload("res://scripts/sound_bank.gd")
 const Mecha := preload("res://scripts/mecha.gd")
@@ -41,12 +41,14 @@ func interact(by: Node = null) -> void:
 	if kind == "biscuit" and by.has_item("biscuit"):
 		by.inspected.emit("Your pocket already holds a biscuit.")
 		return
-	if kind not in ["battery", "mecha"] and by.has_method(&"can_carry") and not by.can_carry():
+	if kind not in ["battery", "mecha", "photo_piece"] and by.has_method(&"can_carry") and not by.can_carry():
 		by.inspected.emit("Your hand and pockets are full, and the bag is full or on the floor.")
 		return
 	if kind == "battery":
 		by.add_battery(battery_amount)
 		by.inspected.emit("Battery +%d%%" % int(battery_amount))
+	elif kind == "photo_piece":   # Not an inventory item: finds.gd counts it, the frame in the Aula takes it.
+		by.inspected.emit(message)
 	elif kind != "mecha":   # The chameleon is no inventory item: mecha.gd shows the message and the reward.
 		by.give_item(item_id, display_name, message)
 	taken.emit(item_id)
@@ -102,6 +104,10 @@ func _build_model() -> void:
 		"page":
 			_box(Vector3(0.18, 0.003, 0.24), Vector3.ZERO, _paper_material(Color(0.97, 0.95, 0.88), 2))
 			_box(Vector3(0.18, 0.001, 0.003), Vector3(0, 0.002, 0.118), _material(Color(0.55, 0.5, 0.42), 0.0, 0.9))
+			_model.rotation.y = randf() * TAU
+		"photo_piece":
+			_box(Vector3(0.16, 0.004, 0.12), Vector3.ZERO, _material(Color(0.82, 0.76, 0.62), 0.0, 0.9))
+			_box(Vector3(0.14, 0.005, 0.1), Vector3(0, 0.001, 0), _material(Color(0.35, 0.4, 0.45), 0.0, 0.7))
 			_model.rotation.y = randf() * TAU
 		"form":
 			_box(Vector3(0.21, 0.003, 0.29), Vector3.ZERO, _paper_material(Color(0.97, 0.97, 0.95), 3))

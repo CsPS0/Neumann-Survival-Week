@@ -297,9 +297,10 @@ func items_text() -> String:
 	var finds := get_tree().get_first_node_in_group("finds")
 	if finds == null:
 		return ""
+	var photo: String = "   Photo pieces  %d/%d" % [finds.pieces_held.size() + finds.pieces_placed.size(), finds.PIECES]
 	if finds.items_total > 0:
-		return "Items  %d/%d" % [finds.items_found, finds.items_total]
-	return "Items  %d" % finds.items_found
+		return "Items  %d/%d%s" % [finds.items_found, finds.items_total, photo]
+	return "Items  %d%s" % [finds.items_found, photo]
 
 
 ## Page 3: per category a count, then the found titles in the order found and "???" for the rest, in two columns.

@@ -176,6 +176,8 @@ var _clue_rooms: Array = []               ## Classrooms picked for the open clue
 var _clue_spots: Array[Vector3] = []      ## Pickup positions on the clue tables, index = clue number.
 var _find_spots := {}                     ## Find id -> pickup position on its table.
 var _item_spots := {}                     ## ITEM_SPOTS id -> pickup position on its table.
+var _piece_spots: Array[Dictionary] = []   ## The 20 Aula photo pieces: {"floor", "room", "slot", "pos"}, index = piece number.
+var _aula_frame: Node3D                  ## The photo frame in the Aula; E puts the found pieces in.
 var _drawers := {}                        ## Find or item id -> the drawer front (Interactable) its pickup hides in.
 var _form_spot := Vector3.ZERO            ## The signed form's table (day-1 sticker task).
 var _form_room_label := ""
@@ -1703,6 +1705,41 @@ func _build_find_tables() -> void:
 		_find_spots[f["id"]] = _hide_spot(f["id"], f["floor"], f["room"], f["slot"], false)
 	for f: Dictionary in ITEM_SPOTS:
 		_item_spots[f["id"]] = _hide_spot(f["id"], f["floor"], f["room"], f["slot"], true)
+	_piece_spots = _choose_piece_spots()
+	for i in _piece_spots.size():
+		var spot := _piece_spots[i]
+		spot["pos"] = _hide_spot("piece_%d" % i, spot["floor"], spot["room"], spot["slot"], true)
+
+
+## The 20 hiding places of the Aula photo pieces: free corner slots of open rooms on all floors, one room each while
+## there are enough rooms. A different set every run.
+func _choose_piece_spots() -> Array[Dictionary]:
+	var taken := {}
+	for f: Dictionary in FindsScript.all() + FindsScript.MECHA + ITEM_SPOTS:
+		taken["%d:%s:%d" % [f["floor"], f["room"], f["slot"]]] = true
+	var free: Array[Dictionary] = []
+	for floor_index in FloorData.FLOORS.size():
+		var seen := {}
+		for room: Array in FloorData.FLOORS[floor_index]["rooms"]:
+			var label: String = room[0]
+			if seen.has(label) or not Rooms.is_open(label) or label in Rooms.ENTRANCE:
+				continue
+			seen[label] = true
+			for slot in 4:
+				if not taken.has("%d:%s:%d" % [floor_index, label, slot]):
+					free.append({"floor": floor_index, "room": label, "slot": slot})
+	free.shuffle()
+	var chosen: Array[Dictionary] = []
+	var rooms_used := {}
+	for spot: Dictionary in free:   # First pass: one piece per room.
+		var key := "%d:%s" % [spot["floor"], spot["room"]]
+		if chosen.size() < FindsScript.PIECES and not rooms_used.has(key):
+			rooms_used[key] = true
+			chosen.append(spot)
+	for spot: Dictionary in free:   # Second pass: more rooms are needed.
+		if chosen.size() < FindsScript.PIECES and not chosen.has(spot):
+			chosen.append(spot)
+	return chosen
 
 
 ## Builds the hiding place for one collectible in a room corner and returns the pickup position. The style follows
@@ -1810,6 +1847,37 @@ func _place_finds() -> void:
 		item.add_to_group("find")
 		item.taken.connect(func(_id: String) -> void: finds.mark(id))
 		_attach_drawer(id, item)
+	_place_photo_pieces()
+
+
+## The photo pieces: not inventory items. Finds counts them, the frame in the Aula takes them.
+func _place_photo_pieces() -> void:
+	for i in _piece_spots.size():
+		var id := "piece_%d" % i
+		var item := _item("photo_piece", id, "photo piece", _piece_spots[i]["pos"],
+				"A torn piece of the Aula photo. Put it in the frame in the Aula.", false)
+		item.taken.connect(func(_id: String) -> void:
+			if finds.collect_piece(i):
+				_show_message("Photo piece %d of %d. Put it in the frame in the Aula." % [
+						finds.pieces_held.size() + finds.pieces_placed.size(), FindsScript.PIECES]))
+		_attach_drawer(id, item)
+
+
+func _put_pieces_in_frame(by: Node) -> void:
+	if finds.pieces_placed.size() == FindsScript.PIECES:
+		by.inspected.emit("The photo is whole again.")
+		return
+	var placed := finds.place_pieces()
+	if placed.is_empty():
+		var found: int = finds.pieces_placed.size()
+		by.inspected.emit("%d of %d pieces are in the frame. The rest are hidden around the school." % [found, FindsScript.PIECES])
+		return
+	for index in placed:
+		AulaPhotoScript.show_piece(_aula_frame, index)
+	if finds.pieces_placed.size() == FindsScript.PIECES:
+		by.inspected.emit("The last piece fits. The photo is whole again.")
+	else:
+		by.inspected.emit("%d pieces in the frame, %d to go." % [finds.pieces_placed.size(), FindsScript.PIECES - finds.pieces_placed.size()])
 
 
 ## A pickup whose spot is a drawer stays hidden until E opens the drawer.
@@ -1917,7 +1985,12 @@ func _build_aula_photo() -> void:
 	_select_floor(0)
 	var wall := _to_world(29.0, 22.3)
 	var at := Vector3(wall.x + WALL_THICKNESS * 0.5 + 0.03, 1.7, wall.y)
-	AulaPhotoScript.build(self, at, Vector3.RIGHT, 1.3)
+	_aula_frame = AulaPhotoScript.build(self, at, Vector3.RIGHT, 1.3)
+	var size: Vector2 = _aula_frame.get_meta("size")
+	var hit := _box(_aula_frame, Vector3(0.0, 0.0, 0.05), Vector3(size.x, size.y, 0.1), _door_material, true, InteractableScript)
+	hit.get_child(0).visible = false
+	hit.prompt = "Put the photo pieces in the frame"
+	hit.handler = _put_pieces_in_frame
 
 
 ## Front door in the entrance hall: interact to go home (after the last bell on days 1-3) or leave for good.
