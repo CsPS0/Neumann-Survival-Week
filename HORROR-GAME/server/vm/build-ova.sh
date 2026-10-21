@@ -3,6 +3,26 @@
 # Usage: server/vm/build-ova.sh [memory in MB]
 set -euo pipefail
 
+# Add common installation paths if running on Windows / Git Bash
+if ! command -v VBoxManage >/dev/null 2>&1; then
+	if [ -d "/c/Program Files/Oracle/VirtualBox" ]; then
+		export PATH="/c/Program Files/Oracle/VirtualBox:$PATH"
+	elif [ -n "${VBOX_MSI_INSTALL_PATH:-}" ] && [ -d "$VBOX_MSI_INSTALL_PATH" ]; then
+		export PATH="$VBOX_MSI_INSTALL_PATH:$PATH"
+	fi
+fi
+
+if ! command -v packer >/dev/null 2>&1; then
+	if [ -n "${LOCALAPPDATA:-}" ] && [ -d "$LOCALAPPDATA/Microsoft/WinGet/Links" ]; then
+		export PATH="$LOCALAPPDATA/Microsoft/WinGet/Links:$PATH"
+	fi
+fi
+
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+	echo "Usage: $0 [memory in MB]"
+	exit 0
+fi
+
 vm_dir="$(cd "$(dirname "$0")" && pwd)"
 game_dir="$(cd "$vm_dir/../.." && pwd)"
 memory="${1:-1024}"

@@ -5,6 +5,7 @@ const GraphicsSettings := preload("res://scripts/graphics.gd")
 
 var _profile: Node
 var _controls := {}   ## setting key -> its control, so a preset can move them all.
+var _val_labels := {} ## setting key -> its value Label.
 var _preset: OptionButton
 var _on_change: Callable
 var _dragging := false
@@ -13,27 +14,56 @@ var _dragging := false
 func setup(profile: Node, on_change: Callable) -> void:
 	_profile = profile
 	_on_change = on_change
-	add_theme_constant_override("separation", 8)
-	_slider("Master volume", "volume", 0.0, 1.0, 0.05)
-	_slider("Mouse sensitivity", "sensitivity", 0.001, 0.006, 0.0002)
-	_slider("Field of view", "fov", 60.0, 100.0, 1.0)
-	_slider("Brightness", "brightness", 0.6, 1.6, 0.05)
-	_check("Invert Y axis", "invert_y")
+	add_theme_constant_override("separation", 10)
+
+	_category("AUDIO & DISPLAY")
+	_slider("Master volume", "volume", 0.0, 1.0, 0.05, func(v: float) -> String: return "%d%%" % int(round(v * 100.0)))
+	_slider("Brightness", "brightness", 0.6, 1.6, 0.05, func(v: float) -> String: return "%.2fx" % v)
+	_slider("Field of view", "fov", 60.0, 100.0, 1.0, func(v: float) -> String: return "%d°" % int(round(v)))
 	_check("Fullscreen", "fullscreen")
-	_check("Scare flashes", "scare_flash")
-	_check("Easy map (show my position)", "easy_map")
+
+	_category("CONTROLS")
+	_slider("Mouse sensitivity", "sensitivity", 0.001, 0.006, 0.0002, func(v: float) -> String: return "%.4f" % v)
+	_check("Invert Y axis", "invert_y")
+
+	_category("GAMEPLAY & ACCESSIBILITY")
+	_check("Easy map (show player position)", "easy_map")
+	_check("Scare flashes (screen blackouts & stings)", "scare_flash")
+
 	_graphics_rows()
+
+
+func _category(title: String, subtitle := "") -> void:
+	var cat_box := VBoxContainer.new()
+	cat_box.add_theme_constant_override("separation", 2)
+	var sep := HSeparator.new()
+	sep.add_theme_constant_override("separation", 12)
+	cat_box.add_child(sep)
+
+	var label := Label.new()
+	label.text = title
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", Color(0.95, 0.82, 0.45))
+	cat_box.add_child(label)
+
+	if subtitle != "":
+		var sub := Label.new()
+		sub.text = subtitle
+		sub.add_theme_font_size_override("font_size", 12)
+		sub.add_theme_color_override("font_color", Color(0.7, 0.72, 0.78))
+		cat_box.add_child(sub)
+
+	add_child(cat_box)
 
 
 ## Graphics: a preset on top, then every setting it sets. Changing one of them switches the preset to Custom.
 func _graphics_rows() -> void:
-	var heading := Label.new()
-	heading.text = "Graphics (turn lamps off and lower the render scale on slow PCs)"
-	add_child(heading)
+	_category("GRAPHICS & PERFORMANCE", "Lower preset, turn off lamps and reduce render scale on older school PCs.")
+
 	var row := HBoxContainer.new()
 	var name_label := Label.new()
-	name_label.text = "Preset"
-	name_label.custom_minimum_size = Vector2(220.0, 0.0)
+	name_label.text = "Quality preset"
+	name_label.custom_minimum_size = Vector2(240.0, 0.0)
 	row.add_child(name_label)
 	_preset = OptionButton.new()
 	_preset.name = "preset"
@@ -43,14 +73,15 @@ func _graphics_rows() -> void:
 	_preset.item_selected.connect(_choose_preset)
 	row.add_child(_preset)
 	add_child(row)
-	_slider("Render scale", "render_scale", 0.5, 1.0, 0.05)
-	_check("Real-time lamps (off: flat ambient light, much faster)", "dynamic_lighting")
+
+	_slider("Render scale", "render_scale", 0.5, 1.0, 0.05, func(v: float) -> String: return "%d%%" % int(round(v * 100.0)))
+	_check("Real-time lamps (off uses flat ambient light, much faster)", "dynamic_lighting")
 	_option("Shadows", "shadows", ["Off", "Sun and flashlight", "All lamps"])
-	_slider("View distance (metres)", "view_distance", 40.0, 250.0, 10.0)
+	_slider("View distance", "view_distance", 40.0, 250.0, 10.0, func(v: float) -> String: return "%d m" % int(round(v)))
 	_check("Ambient occlusion and volumetric fog", "effects")
 	_option("Anti-aliasing", "aa", ["Off", "FXAA", "MSAA 2x"])
 	_check("VSync", "vsync")
-	_slider("FPS limit (0 unlimited)", "fps_cap", 0.0, 240.0, 10.0)
+	_slider("FPS limit", "fps_cap", 0.0, 240.0, 10.0, func(v: float) -> String: return "Unlimited" if v <= 0.0 else ("%d FPS" % int(round(v))))
 	_sync_preset()
 
 
@@ -64,6 +95,9 @@ func _choose_preset(index: int) -> void:
 		var control: Control = _controls[key]
 		if control is Range:
 			(control as Range).set_value_no_signal(float(values[key]))
+			if _val_labels.has(key):
+				var fmt: Callable = _val_labels[key]["fmt"]
+				_val_labels[key]["label"].text = fmt.call(float(values[key]))
 		elif control is CheckBox:
 			(control as CheckBox).set_pressed_no_signal(bool(values[key]))
 		elif control is OptionButton:
@@ -85,7 +119,7 @@ func _option(label: String, key: String, choices: Array) -> void:
 	var row := HBoxContainer.new()
 	var name_label := Label.new()
 	name_label.text = label
-	name_label.custom_minimum_size = Vector2(220.0, 0.0)
+	name_label.custom_minimum_size = Vector2(240.0, 0.0)
 	row.add_child(name_label)
 	var button := OptionButton.new()
 	button.name = key
@@ -98,25 +132,48 @@ func _option(label: String, key: String, choices: Array) -> void:
 	add_child(row)
 
 
-func _slider(label: String, key: String, low: float, high: float, step: float) -> void:
+func _slider(label: String, key: String, low: float, high: float, step: float, formatter: Callable = Callable()) -> void:
 	var row := HBoxContainer.new()
 	var name_label := Label.new()
 	name_label.text = label
-	name_label.custom_minimum_size = Vector2(220.0, 0.0)
+	name_label.custom_minimum_size = Vector2(240.0, 0.0)
 	row.add_child(name_label)
+
+	var cur_val := float(_profile.get_setting(key))
+
 	var slider := HSlider.new()
 	slider.name = key
 	slider.min_value = low
 	slider.max_value = high
 	slider.step = step
-	slider.value = float(_profile.get_setting(key))
-	slider.custom_minimum_size = Vector2(320.0, 0.0)
+	slider.value = cur_val
+	slider.custom_minimum_size = Vector2(260.0, 0.0)
+	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	slider.drag_started.connect(func() -> void: _dragging = true)
 	slider.drag_ended.connect(func(_changed: bool) -> void:
 		_dragging = false
 		_profile.save())
-	slider.value_changed.connect(func(v: float) -> void: _store(key, v, not _dragging))
+
+	var val_label: Label = null
+	if formatter.is_valid():
+		val_label = Label.new()
+		val_label.custom_minimum_size = Vector2(70.0, 0.0)
+		val_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		val_label.text = formatter.call(cur_val)
+		val_label.add_theme_font_size_override("font_size", 14)
+		val_label.add_theme_color_override("font_color", Color(0.8, 0.85, 0.9))
+		_val_labels[key] = {"label": val_label, "fmt": formatter}
+
+	slider.value_changed.connect(func(v: float) -> void:
+		if val_label and formatter.is_valid():
+			val_label.text = formatter.call(v)
+		_store(key, v, not _dragging)
+	)
+
 	row.add_child(slider)
+	if val_label:
+		row.add_child(val_label)
+
 	_controls[key] = slider
 	add_child(row)
 

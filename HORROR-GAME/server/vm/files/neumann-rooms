@@ -6,7 +6,12 @@ set -eu
 issue_file=/etc/issue.d/10-neumann.issue
 
 find_ip() {
-	hostname -I 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true
+	candidate="$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.*src \([0-9.]*\).*/\1/p' || true)"
+	if [ -n "$candidate" ]; then
+		printf '%s\n' "$candidate"
+		return 0
+	fi
+	hostname -I 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | grep -v -E '^(172\.(1[6-9]|2[0-9]|3[0-1])\.|127\.)' | head -n 1 || true
 }
 
 ip=""
