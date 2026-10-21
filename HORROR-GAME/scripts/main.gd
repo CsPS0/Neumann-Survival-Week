@@ -1,5 +1,5 @@
 extends Node3D
-## Builds the three-floor school from scripts/floor_data.gd (plan pixels -> metres), places the story
+## Builds the three-floor school from scripts/floor_data.gd (plan units -> metres), places the story
 ## objects, teachers and lights, bakes one navigation mesh, and runs the HUD, menu and game flow.
 
 const DoorScript := preload("res://scripts/door.gd")
@@ -49,8 +49,8 @@ const FLOOR_NAMES := ["Ground floor", "1st floor", "2nd floor"]
 const TEACHER_ORDER: Array = Lessons.SUSPECT_IDS   ## Accusation options, in button order.
 
 ## Stairwell footprints in metres (identical on every floor), plan sized times WORLD_SCALE. Each flight climbs towards +Z.
-const STAIR_X := [[-8.8 * WS, -7.0 * WS], [7.0 * WS, 8.8 * WS]]
-const STAIR_Z := [[-11.9 * WS, -4.4 * WS], [6.4 * WS, 13.9 * WS]]
+const STAIR_X := [[-7.8 * WS, -6.0 * WS], [6.0 * WS, 7.8 * WS]]
+const STAIR_Z := [[-9.76 * WS, -2.24 * WS], [4.0 * WS, 11.52 * WS]]
 
 const DOOR_SWING := {"N": -1.0, "S": 1.0, "W": 1.0, "E": -1.0}
 const OUTWARD := {"N": Vector2(0, -1), "S": Vector2(0, 1), "W": Vector2(-1, 0), "E": Vector2(1, 0)}
@@ -82,16 +82,16 @@ const ITEM_INFO := {   ## kind -> [inventory id, name, pickup message]
 	"battery": ["battery", "Battery", ""],
 }
 
-## id, name, floor, shirt colour, routine waypoints (plan pixels of that floor).
+## id, name, floor, shirt colour, routine waypoints (plan units of that floor).
 const TEACHERS := [
-	["karpati", "Kárpáti Lajos", 1, Color(0.25, 0.3, 0.55), [Vector2(351, 250), Vector2(540, 289), Vector2(729, 250), Vector2(540, 655)]],
-	["szentgyorgyi", "Dr. Szentgyörgyi Aranka", 1, Color(0.5, 0.25, 0.45), [Vector2(729, 250), Vector2(729, 500), Vector2(729, 780)]],
-	["halmos", "Halmos Ervin", 0, Color(0.3, 0.45, 0.45), [Vector2(453, 420), Vector2(453, 575), Vector2(560, 580)]],
-	["voros", "Vörös Ildikó", 0, Color(0.55, 0.25, 0.3), [Vector2(103, 300), Vector2(103, 146), Vector2(320, 146)]],
-	["pasztor", "Pásztor Margit", 1, Color(0.25, 0.5, 0.35), [Vector2(729, 780), Vector2(540, 655), Vector2(351, 780)]],
-	["onodi", "Ónodi Bence", 0, Color(0.4, 0.4, 0.2), [Vector2(200, 540), Vector2(330, 580), Vector2(103, 400)]],
-	["fekete", "Fekete Zsombor", 2, Color(0.3, 0.3, 0.5), [Vector2(351, 250), Vector2(540, 289), Vector2(729, 250)]],
-	["lazar", "Lázár Tivadar", 2, Color(0.2, 0.2, 0.22), [Vector2(351, 700), Vector2(351, 500), Vector2(540, 655)]],
+	["karpati", "Kárpáti Lajos", 1, Color(0.25, 0.3, 0.55), [Vector2(9.4, 10), Vector2(20.3, 21.5), Vector2(31.2, 10), Vector2(17.0, 24)]],
+	["szentgyorgyi", "Dr. Szentgyörgyi Aranka", 1, Color(0.5, 0.25, 0.45), [Vector2(31.2, 10), Vector2(31.2, 22), Vector2(31.2, 36)]],
+	["halmos", "Halmos Ervin", 0, Color(0.3, 0.45, 0.45), [Vector2(47.5, 24), Vector2(47.5, 36), Vector2(54, 36.6)]],
+	["voros", "Vörös Ildikó", 0, Color(0.55, 0.25, 0.3), [Vector2(10, 26), Vector2(10, 8), Vector2(26, 8)]],
+	["pasztor", "Pásztor Margit", 1, Color(0.25, 0.5, 0.35), [Vector2(31.2, 36), Vector2(20.3, 21.5), Vector2(9.4, 36)]],
+	["onodi", "Ónodi Bence", 0, Color(0.4, 0.4, 0.2), [Vector2(20, 36.6), Vector2(30, 36.6), Vector2(10, 24)]],
+	["fekete", "Fekete Zsombor", 2, Color(0.3, 0.3, 0.5), [Vector2(9.4, 10), Vector2(20.3, 21.5), Vector2(31.2, 10)]],
+	["lazar", "Lázár Tivadar", 2, Color(0.2, 0.2, 0.22), [Vector2(9.4, 36), Vector2(9.4, 22), Vector2(17.0, 24)]],
 ]
 
 @onready var player := $Player
@@ -190,7 +190,7 @@ var _class_timer := 0.0
 var csoki: Node         ## The caretaker's dog; lives in the ground-floor hall all week.
 var _last_door: Node
 var _patrol_markers: Array[Marker3D] = []
-var _spawn_point := Vector3(-2.75 * WS, 0.1, 17.4 * WS)
+var _spawn_point := Vector3(-2.4 * WS, 0.1, 13.4 * WS)
 var _nav_offset := 0.3
 var _altar: StaticBody3D
 var _fuse_box: Node3D
@@ -342,12 +342,12 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
-## Title screen: a slow dolly down the ground-floor corridor with the entity standing frozen at the far end.
+## Title screen: a slow dolly down the east ground-floor corridor with the entity standing frozen at the far end.
 ## The entity stays asleep (processing disabled, so physics never moves it); only its visibility is switched on.
 func _start_title_scene() -> void:
 	_select_floor(0)
-	var a := _to_world(330.0, 146.0)
-	var b := _to_world(850.0, 146.0)
+	var a := _to_world(58.0, 8.0)
+	var b := _to_world(101.5, 8.0)
 	add_child(_menu_camera)
 	_menu_camera.position = Vector3(a.x, 1.6, a.y)
 	_menu_camera.rotation.y = -PI * 0.5
@@ -1633,9 +1633,9 @@ func _build_porta() -> void:
 	_box(_region, c + Vector3(1.0, 0.45, -0.05), Vector3(1.4, 0.9, 0.7), _door_material, true)
 	_desk_position = c + Vector3(1.0, 0.0, 1.05)
 	_select_floor(0)
-	var west := _to_world(454.0, 0.0).x + WALL_THICKNESS * 0.5 + 0.05
+	var west := _to_world(42.5, 0.0).x + WALL_THICKNESS * 0.5 + 0.05
 	_build_key_board(west, c.z)
-	var wc := _to_world(582.0, 622.0)
+	var wc := _to_world(53.1, 41.7)
 	_wc_point = Vector3(wc.x, 0.0, wc.y)
 
 
@@ -1848,20 +1848,20 @@ func _place_lockers() -> void:
 	# Lockers stand flat against corridor walls, between the classroom doors, and face into the corridor.
 	# Each is [floor, plan x, plan y, yaw]. Yaw PI/2 faces east, -PI/2 west, 0 south, PI north.
 	var spots := [
-		[0, 92.0, 280.0, PI * 0.5],      # West corridor, west wall.
-		[0, 92.0, 433.0, PI * 0.5],
-		[0, 140.0, 131.0, 0.0],          # North corridor, between the doors of 19 and GT11-12.
-		[0, 230.0, 162.0, PI],           # Planter block facing the north corridor.
-		[0, 750.0, 250.0, -PI * 0.5],    # East corridor, gym wall.
-		[0, 729.0, 480.0, PI * 0.5],     # East corridor, planter block.
-		[1, 310.0, 256.0, PI * 0.5],     # West corridor, between 107 and 108.
-		[1, 310.0, 624.0, PI * 0.5],
-		[1, 770.0, 321.0, -PI * 0.5],    # East corridor, between 127 and 128.
-		[1, 770.0, 558.0, -PI * 0.5],
-		[2, 310.0, 321.0, PI * 0.5],
-		[2, 310.0, 623.0, PI * 0.5],
-		[2, 770.0, 256.0, -PI * 0.5],
-		[2, 770.0, 687.0, -PI * 0.5],
+		[0, 9.0, 20.4, PI * 0.5],        # West corridor, west wall, between the doors of 14 and 8.
+		[0, 9.0, 26.4, PI * 0.5],        # West corridor, west wall, between the doors of 8 and GT2.
+		[0, 11.0, 6.7, 0.0],             # North corridor, between the doors of GT11-12 and 19.
+		[0, 22.0, 9.3, PI],              # Courtyard block facing the north corridor.
+		[0, 70.5, 15.5, -PI * 0.5],      # East corridor, gym wall.
+		[0, 68.5, 31.0, PI * 0.5],       # East corridor, courtyard block.
+		[1, 8.0, 14.0, PI * 0.5],        # West corridor, between the WC and the store.
+		[1, 8.0, 24.5, PI * 0.5],
+		[1, 32.6, 14.0, -PI * 0.5],      # East corridor, same places.
+		[1, 32.6, 24.5, -PI * 0.5],
+		[2, 8.0, 14.0, PI * 0.5],
+		[2, 8.0, 24.5, PI * 0.5],
+		[2, 32.6, 14.0, -PI * 0.5],
+		[2, 32.6, 24.5, -PI * 0.5],
 	]
 	for sp in spots:
 		_select_floor(sp[0])
@@ -1875,7 +1875,7 @@ func _place_lockers() -> void:
 ## Stone altar in the Aula with proxies for the three ritual items and candles lit during the ritual.
 func _build_altar() -> void:
 	_select_floor(0)
-	var pos2 := _to_world(453.0, 440.0)
+	var pos2 := _to_world(42.6, 32.5)
 	var base := Vector3(pos2.x, 0.0, pos2.y)
 	_altar = _box(_region, base + Vector3(0.0, 0.45, 0.0), Vector3(1.6, 0.9, 0.8), _stone_material, true, InteractableScript) as StaticBody3D
 	_altar.prompt = "Altar"
@@ -1911,7 +1911,7 @@ func _build_altar() -> void:
 ## Framed photo on the Aula's west wall (the east face of rooms 23 and 24), between their two doors.
 func _build_aula_photo() -> void:
 	_select_floor(0)
-	var wall := _to_world(313.0, 352.0)
+	var wall := _to_world(29.0, 22.3)
 	var at := Vector3(wall.x + WALL_THICKNESS * 0.5 + 0.03, 1.7, wall.y)
 	AulaPhotoScript.build(self, at, Vector3.RIGHT, 1.3)
 
@@ -1923,9 +1923,9 @@ func _build_front_door() -> void:
 	door.name = "FrontDoor"
 	_front_door = door
 	door.handler = func(_by: Node) -> void: campaign.use_front_door()
-	# Garden door on the entrance hall's east wall (x = 454 px), beside the front door. Closed in the demo.
+	# Garden door on the entrance hall's east wall (plan x 42.5), beside the front door. Closed in the demo.
 	_select_floor(0)
-	var east := _to_world(454.0, 0.0).x - WALL_THICKNESS * 0.5 - 0.1
+	var east := _to_world(42.5, 0.0).x - WALL_THICKNESS * 0.5 - 0.1
 	var garden := _box(self, Vector3(east, 1.1, hall.z), Vector3(0.2, 2.2, 1.4), _closed_material, true, InteractableScript)
 	garden.name = "GardenDoor"
 	garden.prompt = "Garden"
@@ -1952,7 +1952,7 @@ func _place_batteries() -> void:
 		_select_floor(floor_index)
 		var lamps: Array = FloorData.FLOORS[floor_index]["lights"]
 		var lamp: Vector2 = lamps.pick_random()
-		var pos := _to_world(lamp.x + randf_range(-20.0, 20.0), lamp.y + randf_range(-20.0, 20.0))
+		var pos := _to_world(lamp.x + randf_range(-2.0, 2.0), lamp.y + randf_range(-2.0, 2.0))
 		_item("battery", "battery", "Battery", Vector3(pos.x, _y + 0.2, pos.y))
 
 

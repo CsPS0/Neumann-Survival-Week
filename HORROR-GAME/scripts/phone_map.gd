@@ -186,8 +186,8 @@ func _draw_full_map(player: Node3D, font: Font, ui: float) -> void:
 			fill = Color(0.6, 0.1, 0.1).lerp(Color(0.2, 0.1, 0.2), 0.5 + 0.5 * sin(_time * 5.0))
 		draw_rect(rect, fill)
 		draw_rect(rect, Color(0.25, 0.27, 0.32) if closed else Color(0.3, 0.45, 0.8), false, 1.0)
-		if label != "" and rect.size.x >= 22.0:
-			var font_size := clampi(roundi(rect.size.x * 0.28), 8, 24)
+		if label != "" and rect.size.x >= 16.0:
+			var font_size := clampi(roundi(minf(rect.size.x * 0.28, rect.size.x / (label.length() * 0.6))), 8, 24)
 			draw_string(font, rect.get_center() + Vector2(-rect.size.x * 0.5, font_size * 0.35), label,
 					HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, font_size, Color(0.45, 0.47, 0.52) if closed else Color(0.8, 0.9, 1.0))
 		if closed and rect.size.x >= 40.0 and rect.size.y >= 30.0:
