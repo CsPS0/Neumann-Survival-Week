@@ -31,6 +31,7 @@ const LIST := {
 	"full_deck": ["Full Deck", "Collect all 8 teacher cards."],
 	"key_collector": ["Key Collector", "Borrow 5 different keys."],
 	"sticky_fingers": ["Sticky Fingers", "Steal the key to Lab 14."],
+	"photo_puzzle": ["Whole Picture", "Put the torn Aula photo back together."],
 	"mecha_master": ["Mecha Master", "Find all 5 neu_mecha chameleons."],
 }
 

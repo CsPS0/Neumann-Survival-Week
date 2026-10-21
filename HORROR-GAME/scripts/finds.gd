@@ -88,6 +88,9 @@ var campaign: Node
 var found: Dictionary = {}   ## id -> true, in the order found.
 var items_found := 0         ## Useful items taken (main's ITEM_SPOTS); not finds, only the page's "Items" line.
 var items_total := 0
+const PIECES := 20            ## The Aula photo is torn into 20 pieces (5 columns, 4 rows) hidden around the school.
+var pieces_held: Dictionary = {}     ## Piece index -> true: found, not yet put in the frame.
+var pieces_placed: Dictionary = {}   ## Piece index -> true: in the frame.
 
 
 func _ready() -> void:
@@ -112,6 +115,26 @@ func mark(id: String) -> bool:
 				if count("card") == CARDS.size():
 					campaign.event.emit("full_deck", {})
 	return true
+
+
+## A piece was picked up. False when it was already counted.
+func collect_piece(index: int) -> bool:
+	if pieces_held.has(index) or pieces_placed.has(index):
+		return false
+	pieces_held[index] = true
+	return true
+
+
+## Moves every held piece into the frame and returns the indices that were placed.
+func place_pieces() -> Array[int]:
+	var placed_now: Array[int] = []
+	for index: int in pieces_held:
+		pieces_placed[index] = true
+		placed_now.append(index)
+	pieces_held.clear()
+	if pieces_placed.size() == PIECES and campaign:
+		campaign.event.emit("photo_puzzle", {})
+	return placed_now
 
 
 static func kind_of(id: String) -> String:
