@@ -6,7 +6,7 @@ Status: both modes are built. Hide and Seek came first; Social Deduction is the 
 
 ## Shared rules
 
-- **Session.** The host or the dedicated server from [Co-op and dedicated server](../README.md#co-op-and-dedicated-server). Up to 4 clients, plus the host when the host plays.
+- **Session.** The host or the dedicated server from [Co-op](../README.md#co-op). Up to 4 clients, plus the host when the host plays.
 - **Authority.** Peer 1 owns the match: roles, phase, timers and the win check. This is the hosting player, or the dedicated server, which runs `scripts/match.gd` without a world. Other peers send reports and mirror what peer 1 broadcasts. The game still runs on each device: peer 1 does not simulate the school.
 - **Start.** Any player in the lobby can start a round. The first round uses the options picked in the lobby. Later rounds start by themselves 12 seconds after a result, with the same options. Leaving the match from the pause menu returns to the title screen.
 - **Late joiners** watch the running round as spectators and play from the next round.

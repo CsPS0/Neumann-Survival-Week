@@ -6,6 +6,19 @@ Five days at the Neumann school. Something in the building is not what it seems.
 
 Status: playable demo. Rooms marked "Not available in the demo." stay closed.
 
+Contents:
+
+- [How to run](#how-to-run)
+- [Platforms and builds](#platforms-and-builds)
+- [Controls](#controls)
+- [The school](#the-school) and [the five-day campaign](#the-five-day-campaign)
+- [Characters](#characters) and [endings](#endings)
+- [Extras and graphics settings](#extras)
+- [Co-op](#co-op) with [the school server VM](#the-school-server-vm-ova) and [troubleshooting](#co-op-troubleshooting)
+- [Multiplayer modes](#multiplayer-modes)
+- [Code layout](#code-layout) and [releases](#releases)
+- Other documents: [build guide](docs/BUILD-GUIDE.md), [multiplayer design note](docs/multiplayer-modes.md), [server folder](server/README.md), [VM guide](server/vm/GUIDE.md), [handoff notes](HANDOFF.md)
+
 ## How to run
 
 1. Install [Godot 4.7](https://godotengine.org/download) (standard build, no .NET needed).
@@ -18,6 +31,22 @@ Notes:
 - Two named students (in the player's class during lessons, in the corridors during breaks) show a face wrapped over the head with three expressions: neutral in lessons, smile in breaks, sad once the entity is awake. The real names and photos are gitignored (`scripts/student_faces_local.gd` and `assets/faces_local/`). A fresh clone falls back to `scripts/student_faces_placeholder.gd`, which holds invented names and generated faces.
 - On Windows the renderer uses Direct3D 12. Other platforms use Godot's default driver.
 - Export presets and builds are not committed (`export_presets.cfg` and `build/` are gitignored). Create your own export preset in Godot to build an executable or APK. Tagged releases are built by GitHub Actions, see Releases below.
+
+## Platforms and builds
+
+| Platform | Output | Status |
+|---|---|---|
+| Windows | One `.exe` with the data pack embedded (about 111 MB). Unsigned, so SmartScreen warns. | Built and checked on Arch with Godot 4.7.2. |
+| Linux | One `.x86_64` file (about 75 MB). Needs a Vulkan driver. | Built and booted headless. |
+| Windows VR | OpenXR build. | Not verified. |
+| Android phone | Debug or release APK with touch controls. | Built. Not tested on a real phone. |
+| Meta Quest | APK with the OpenXR rig. | Built. Not tested on a headset. |
+| macOS | Unsigned build. | Not verified. Needs a local preset. |
+
+- Builds are not committed. `export_presets.cfg` and `build/` are gitignored. The tracked preset file is `.github/godot/export_presets.ci.cfg`.
+- The quickest build is `tools/build.sh` (Linux and macOS) or `tools/build.bat` (Windows), run from this folder. Both check Godot and the export templates, copy the CI presets and print a summary.
+- Every command, prerequisite and Android note is in [docs/BUILD-GUIDE.md](docs/BUILD-GUIDE.md).
+- Build the Windows client at home, not at school. School PCs usually have no Godot, no export templates and a restricted network.
 
 ## Controls
 
@@ -141,23 +170,37 @@ All character names in the committed code are invented.
 These features exist in the code but are early and untested on real hardware:
 
 - **Touch controls (Android):** the overlay shows by itself on Android and hides while a menu, dialog or the safe keypad is open, or when a physical keyboard or mouse is used. Left half of the screen: floating stick (push to the edge to sprint). Right half: look. Buttons: E, F, Q, Tab, Hands, Bag, Swap, Stow, Pause (the Back button also pauses), Name (day 4), Ping (co-op), hold breath while hiding, and on the phone: floor, zoom and pan. The answer sheet has a Hand in button, the safe has a keypad and the ending card has a Play again button. Try it on a desktop with `godot --path . -- --touch`. Mobile devices use a lower render scale and the game runs in landscape.
-- **Co-op (up to 4 players):** Host Co-op and Join Co-op in the main menu, with a lobby, a ping marker (middle mouse button) and proximity voice. The host sees a four digit room code and an address in the lobby. Joining players type the code or the address. See [Co-op and dedicated server](#co-op-and-dedicated-server).
+- **Co-op:** Host Co-op and Join Co-op in the main menu, with a lobby, a ping marker (middle mouse button) and proximity voice. See [Co-op](#co-op).
 - **Hide and Seek and Social Deduction (multiplayer):** from the Co-op lobby, one entity hunts the other players through the empty school, or one secret entity hides among the crew. See [Multiplayer modes](#multiplayer-modes).
 - **VR (OpenXR):** the game switches to VR when an OpenXR runtime is present, otherwise it runs in standard mode.
 
-## Co-op and dedicated server
+## Co-op
 
-Co-op uses Godot's ENet multiplayer on one UDP port. The default is 7777, for up to 4 players. The game runs on each player's device. The host only relays positions and events.
+Co-op uses Godot's ENet multiplayer over UDP. The game runs on each player's device. The host or server only relays positions and events. There are three ways to run a session:
 
-**Host from the game.** Choose Host Co-op. The lobby shows a four digit room code (for example `4821`) and the address (for example `192.168.1.20:7777`). The host needs UDP port 7777 reachable.
+| Way | Players | Use it when |
+|---|---|---|
+| A player hosts from the game | Up to 4 joining players | You play at home or on a small network. |
+| A headless dedicated server (script or Docker) | Set with `--max-players` | A spare PC or server runs the room. |
+| The school server VM (.ova) | 4 rooms with up to 10 players each by default | You host a class on the teacher's Windows PC. |
 
-**Join.** Choose Join Co-op and type the four digit code, or an address (`host` or `host:port`). Rooms found on the local network also appear as buttons on that page.
+Social Deduction needs 3 to 5 players. Hide and Seek needs at least 2 players when a player is the entity.
 
-**Room code.** The code is four digits. The host announces its code and address by UDP broadcast on the local network. A joining player broadcasts a query for the code, and the host that holds it answers with its address. So a code works for players on the same Wi-Fi or network as the host, and for a host on the same computer. For players on another network, use the address.
+### Host and join from the game
 
-**Code collisions.** A host picks a code that no room on its network announces. If two hosts end up with the same code, the host with the larger address picks a new code and the lobby shows it. A dedicated server accepts a fixed code with `--code 4821` (or `NEUMANN_CODE`), which is never changed.
+1. The host chooses Host Co-op. The lobby shows a four digit room code (for example `4821`) and an address (for example `192.168.1.20:7777`).
+2. Other players choose Join Co-op, then type the code or the address and press Join. Rooms found on the local network also appear as buttons.
+3. Any player in the lobby starts a match mode. See [Multiplayer modes](#multiplayer-modes).
 
-**Dedicated server.** A headless server needs no window and does not play. Players join it like any host. Start it with the Godot 4.7 binary, from this folder:
+How the room code works:
+
+- The code has four digits. The host announces its code and address by UDP broadcast on the local network (port 7778). A joining player broadcasts a query and the host that holds the code answers with its address.
+- A code therefore works for players on the same Wi-Fi or network, and for a host on the same computer. For players on another network, use the address.
+- A host picks a code that no room on its network announces. If two hosts end up with the same code, the host with the larger address picks a new code and the lobby shows it.
+
+### Dedicated server
+
+A headless server needs no window and does not play. Players join it like any host. Start it with the Godot 4.7 binary, from this folder:
 
 | Platform | Command |
 |---|---|
@@ -166,17 +209,96 @@ Co-op uses Godot's ENet multiplayer on one UDP port. The default is 7777, for up
 | Any | `godot --headless --path . res://scenes/dedicated_server.tscn -- --port 7777` |
 | Docker | `docker compose -f server/docker-compose.yml up --build` |
 | Docker (plain) | `docker build -f server/Dockerfile -t empty-school-server .` then `docker run --rm -p 7777:7777/udp -e NEUMANN_PUBLIC_HOST=203.0.113.5 empty-school-server` |
-| Virtual machine | Import an .ova on a Windows PC with VirtualBox. It runs several rooms of up to 10 players. See [server/vm/GUIDE.md](server/vm/GUIDE.md). |
 
-The scripts use `godot` from the PATH. Set `GODOT` to the binary path otherwise, for example `/Applications/Godot.app/Contents/MacOS/Godot` on macOS. Options: `--port`, `--max-players`, `--public-host`, `--code`. Docker reads `NEUMANN_PORT`, `NEUMANN_MAX_PLAYERS`, `NEUMANN_PUBLIC_HOST` and `NEUMANN_CODE`.
+The scripts use `godot` from the PATH. Set `GODOT` to the binary path otherwise, for example `/Applications/Godot.app/Contents/MacOS/Godot` on macOS. Options: `--port`, `--max-players`, `--public-host`, `--code`. Docker reads `NEUMANN_PORT`, `NEUMANN_MAX_PLAYERS`, `NEUMANN_PUBLIC_HOST` and `NEUMANN_CODE`. A fixed code (`--code 4821`) is never changed.
 
-The server prints its address and room code at start. The address is the one of this machine on the local network. Pass `--public-host` (or `NEUMANN_PUBLIC_HOST`) with the address players use to reach it, so the code leads players to the right address. Examples: `127.0.0.1` for the same computer, the LAN address for a local network, the public IP for the internet.
+The server prints its address and room code at start. Pass `--public-host` with the address players use to reach it, so the code leads players to the right address: `127.0.0.1` for the same computer, the LAN address for a local network, the public IP for the internet.
 
-**Ports.** UDP 7777 for the game (change it with `--port`). UDP 7778 for room code lookup on the local network only. Forward UDP 7777 on the router for players on other networks. TCP is not used.
+### The school server VM (.ova)
 
-**Android.** The Android presets grant the INTERNET permission. Without it the phone cannot open a network socket and hosting fails with `Could not open UDP port 7777 (error 20)`. `tools/build.sh` and `tools/build.bat` add the permission to an existing local `export_presets.cfg`. Rebuild and reinstall the APK after pulling this change.
+The VM is a Debian 12 appliance with Docker. It boots straight into a running game server with no desktop. It starts 4 dedicated server containers, one per room, on UDP ports 7777 to 7780. Each room holds up to 10 players by default. Use it to host a class on the teacher's Windows 10 PC, which needs no Godot.
 
-**Limits.** Connections are direct. There is no relay service, so players on different networks need a reachable host: a forwarded port or a server with a public address. Android players join with the room code or address like everyone else. Docker on macOS and Windows does not pass LAN broadcasts, so the code does not work for those servers. Use the address.
+The files are in [`server/vm/`](server/vm). The longer guide with a pendrive checklist is [server/vm/GUIDE.md](server/vm/GUIDE.md).
+
+**Status.** The build script and the guide state that the appliance was built, imported into VirtualBox and tested with 40 players, and report the CPU and RAM use. The `.ova` is not in the repository (about 574 MB, gitignored). Each person who needs it builds it. Check this section after your first import and correct it if a step differs.
+
+**1. Build the .ova (once, at home).** You need Oracle VirtualBox 7 or newer (with `VBoxManage`), HashiCorp Packer 1.10 or newer, `tar`, an internet connection and about 10 GB of free disk. The build takes 20 to 40 minutes.
+
+| Machine | Command, from this folder |
+|---|---|
+| Windows | `.\server\vm\build-ova.ps1` or `.\server\vm\build-ova.bat`. Install Packer first with `winget install Hashicorp.Packer`. |
+| Linux, or Git Bash on Windows | `server/vm/build-ova.sh` |
+
+Add the RAM in MB as an argument to change the default of 1024, for example `server/vm/build-ova.sh 2048`. The result is `server/vm/output/TheEmptySchoolServer.ova`. The build excludes `scripts/staff.gd`, so the server image holds no real names.
+
+**2. Carry it to school.** Copy the `.ova`, the prebuilt Windows client (`TheEmptySchool.exe`) and, as a fallback, the VirtualBox installer to a USB drive.
+
+**3. Import it on the teacher's PC.**
+
+1. Install VirtualBox if it is missing.
+2. Open VirtualBox and choose File, Import Appliance.
+3. Select `TheEmptySchoolServer.ova` and choose Import.
+4. Open the VM settings, then Network, then Adapter 1. Set Attached to `Bridged Adapter` and select the PC's active network adapter. A wired connection is best.
+
+Use a bridged adapter. The VM then has its own address on the school network and needs no port forwarding. The default NAT mode hides the rooms from the other PCs.
+
+**4. Start it.** Select the VM and choose Start. The rooms start by themselves after about 20 to 30 seconds. The console shows the address and one line per room:
+
+```text
+  The Empty School server
+  Address: 192.168.1.50
+  4 rooms, up to 10 players each.
+
+  Room 1: 192.168.1.50:7777   code 4535
+  Room 2: 192.168.1.50:7778   code 0699
+  Room 3: 192.168.1.50:7779   code 3742
+  Room 4: 192.168.1.50:7780   code 4146
+```
+
+Leave the VM running. You can minimize its window. No login is needed. The codes are random and change each time the rooms start.
+
+**5. Join the rooms.**
+
+1. Start `TheEmptySchool.exe` on each student PC.
+2. Choose Join Co-op.
+3. Type the address and port of the room, for example `192.168.1.50:7777`. Use the address first: the VM runs the rooms in Docker's own network, and the code lookup by broadcast was not confirmed to cross it. If the four digit code finds the room on your network, you can use it too.
+4. Give each group its own room: group 1 in room 1, group 2 in room 2, and so on.
+5. In the lobby, any player starts a mode. See [Multiplayer modes](#multiplayer-modes).
+
+All PCs must be on the same network as the VM. A guest or isolated Wi-Fi often blocks traffic between devices.
+
+**6. Manage the VM.** Log in at the VM console as `neumann` with the password `neumann`. Change the password if the VM stays on a shared network.
+
+| Task | Command |
+|---|---|
+| Change rooms, first port or players per room | Edit `/etc/neumann/rooms.conf` (`ROOMS`, `FIRST_PORT`, `MAX_PLAYERS`), then run `sudo systemctl restart neumann-rooms` |
+| Show the new address and codes after a network change | `sudo systemctl restart neumann-rooms` |
+| Read a room log | `sudo docker logs -f neumann-room-1` |
+| Turn on SSH (off by default) | `sudo systemctl enable --now ssh` |
+
+**Known limits.** The in-game Host Co-op still accepts 4 joining players. Only the VM and the dedicated server reach 10 per room. Social Deduction caps at 5 players. The measured RAM and CPU figures in the guide come from one test run. Re-check them on the teacher's low-spec PC.
+
+### Ports
+
+- UDP 7777 for the game (change it with `--port`). The VM uses 7777 to 7780, one port per room.
+- UDP 7778 for room code lookup on the local network. In the VM this port is also the second room's game port.
+- Forward the game port on the router for players on other networks. TCP is not used.
+
+### Co-op troubleshooting
+
+| Problem | Fix |
+|---|---|
+| The VM console says "No network address yet" | The adapter is not bridged or has no network. Set Adapter 1 to Bridged Adapter, then run `sudo systemctl restart neumann-rooms`. |
+| Players cannot reach the VM | Check that the student PC and the VM share a network. Test the address from the PC. Allow VirtualBox and UDP 7777 to 7780 in the Windows firewall on the host. |
+| "No room 1234 found on this network" | The code lookup uses broadcast, which Wi-Fi isolation, VLANs and Docker bridges block. Join with the address and port instead. |
+| The address shown by the VM is wrong after a move | The address comes from DHCP. Restart the rooms with `sudo systemctl restart neumann-rooms`. |
+| VirtualBox says VT-x or AMD-V is disabled | Turn on virtualization in the BIOS of the teacher's PC. Hyper-V can conflict on Windows 10. |
+| A room is full | Join another room, or raise `MAX_PLAYERS` in `rooms.conf` and restart the rooms. |
+| Hosting on Android fails with `Could not open UDP port 7777 (error 20)` | The APK lacks the INTERNET permission. Rebuild with `tools/build.sh` or `tools/build.bat`, which add it, and reinstall. |
+| Docker on macOS or Windows shows no codes | Docker there does not pass LAN broadcasts. Join with the address. |
+| The game is slow on a school PC | Use Settings, Graphics: preset Low, real-time lamps off, render scale 60 to 75 percent, FPS limit 30 or 60. |
+
+Limits of all modes: connections are direct and there is no relay service. Players on different networks need a reachable host, either a forwarded port or a server with a public address. Android players join with the code or the address like everyone else.
 
 ## Multiplayer modes
 
