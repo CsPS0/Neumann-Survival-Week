@@ -9,16 +9,23 @@ Status: playable demo. Rooms marked "Not available in the demo." stay closed.
 Contents:
 
 - [How to run](#how-to-run)
-- [Platforms and builds](#platforms-and-builds)
-- [Controls](#controls)
-- [The school](#the-school) and [the five-day campaign](#the-five-day-campaign)
+- [Controls and inventory](#controls)
+- [The school](#the-school)
+- [The five-day campaign](#the-five-day-campaign)
 - [Characters](#characters) and [endings](#endings)
 - [Extras and graphics settings](#extras)
-- [Co-op](#co-op) with [hosting on Arch Linux](#hosting-on-arch-linux), [the school server VM](#the-school-server-vm-ova) and [troubleshooting](#co-op-troubleshooting)
-- [Multiplayer modes](#multiplayer-modes)
-- [Code layout](#code-layout) and [releases](#releases)
+- [Experimental features](#experimental-features)
+- [Co-op and multiplayer](#co-op)
+  - [Host and join from the game](#host-and-join-from-the-game)
+  - [Dedicated server](#dedicated-server)
+  - [School server VM & student setup](docs/teacher-vm-setup.md)
+  - [Hosting on Arch Linux](docs/arch-linux-hosting.md)
+  - [Multiplayer modes](#multiplayer-modes) ([design note](docs/multiplayer-modes.md))
+  - [Ports](#ports) and [troubleshooting](#co-op-troubleshooting)
+- [Platforms and builds](#platforms-and-builds)
+- [Code layout](#code-layout)
 - [Developing and testing](#developing-and-testing)
-- Other document: [multiplayer design note](docs/multiplayer-modes.md)
+- [Releases](#releases)
 
 ## How to run
 
@@ -276,144 +283,64 @@ The server prints its address and room code at start. Pass `--public-host` with 
 
 ### Hosting on Arch Linux
 
-Hosting directly from an Arch Linux laptop or desktop is the lightest and lowest-latency way to run the dedicated server (no VM hypervisor overhead, ~40 MB RAM per room, near-zero CPU idle).
+Arch Linux provides the lightest, lowest-latency host for dedicated rooms (~40 MB RAM per room, near-zero CPU idle, native UDP socket handling).
 
-**Option 1: Native Godot (recommended)**
-
-1. Install Godot:
-   ```bash
-   sudo pacman -S godot
-   ```
-   *(Or place the official `Godot_v4.7.x_linux.x86_64` binary in your PATH).*
-2. Start one room from the `HORROR-GAME/` folder:
-   ```bash
-   chmod +x server/run-server.sh
-   ./server/run-server.sh --port 7777 --max-players 10
-   ```
-3. Run 4 rooms concurrently in the background (ports 7777 to 7780):
-   ```bash
-   for port in 7777 7778 7779 7780; do
-       ./server/run-server.sh --port "$port" --max-players 10 &
-   done
-   ```
-   To stop all rooms: `killall godot`.
-
-**Option 2: Docker / Docker Compose**
-
+Quick start (native Godot):
 ```bash
-sudo pacman -S docker docker-compose
-sudo systemctl enable --now docker
-docker compose -f server/docker-compose.yml up --build
+sudo pacman -S godot
+chmod +x server/run-server.sh
+./server/run-server.sh --port 7777 --max-players 10
 ```
 
-**Option 3: VirtualBox Appliance (.ova) on Arch**
-
+To run 4 concurrent rooms (ports 7777 to 7780) in the background:
 ```bash
-sudo pacman -S virtualbox virtualbox-host-modules-arch
-sudo modprobe vboxdrv
+for port in 7777 7778 7779 7780; do
+    ./server/run-server.sh --port "$port" --max-players 10 &
+done
 ```
-Import `TheEmptySchoolServer.ova` in VirtualBox, set Adapter 1 to Bridged Adapter on your active Wi-Fi or Ethernet card, and boot it.
+Stop all rooms with `killall godot`.
 
-**Network and school Wi-Fi checklist on Arch**
-
-- **Firewall (UDP 7777 to 7780):**
-  - With `ufw`: `sudo ufw allow 7777:7780/udp`
-  - With `firewalld`: `sudo firewall-cmd --add-port=7777-7780/udp --permanent && sudo firewall-cmd --reload`
-  - Without a firewall (Arch default): incoming UDP is already accepted.
-- **Find your LAN IP:** `ip -br a` or `hostname -I`.
-- **School Wi-Fi client isolation workaround:** If the school Wi-Fi blocks direct connections between student PCs and your laptop, create an ad-hoc Wi-Fi hotspot directly on Arch:
-  ```bash
-  nmcli device wifi hotspot ssid "NeumannGame" password "survival123"
-  ```
-  Have students join the hotspot to play with zero router filtering and minimal latency.
+For complete instructions including Docker setup, firewall rules (`ufw`/`firewalld`), and creating an ad-hoc Wi-Fi hotspot (`nmcli`) to bypass school Wi-Fi isolation, see the dedicated guide:
+👉 **[Arch Linux Dedicated Server & Hosting Guide](docs/arch-linux-hosting.md)**
 
 ### The school server VM (.ova)
 
-The VM is a Debian 12 appliance with Docker. It boots straight into a running game server with no desktop. It starts 4 dedicated server containers, one per room, on UDP ports 7777 to 7780. Each room holds up to 10 players by default. Use it to host a class on the teacher's Windows 10 PC, which needs no Godot.
+For school or classroom play where the host is the teacher's Windows 10/11 computer, use the pre-configured **Debian 12 VirtualBox appliance (`TheEmptySchoolServer.ova`)**.
 
-The files are in [`server/vm/`](server/vm): a Packer template with a Debian 12 preseed, the build scripts, and `files/` with the room service and `rooms.conf`.
+- **What it does:** Boots headless directly into 4 dedicated server containers (UDP ports 7777 to 7780), supporting up to 10 players per room.
+- **Teacher PC:** Needs only VirtualBox; requires no Godot installation, code, or command-line gaming knowledge.
+- **Student PCs:** Run the standalone portable `TheEmptySchool.exe` client (no install or admin rights needed).
 
-**Status.** The owner built the appliance, imported it into VirtualBox and ran 40 simulated headless clients against it: 10 per room, in Hide and Seek with the computer entity, Hide and Seek with a player entity, Social Deduction and the five-day co-op campaign. The simulated clients ran with a 15 to 20 FPS cap, processing hitches and throttled position sync. It has not run with 40 real players or on the teacher's low-spec PC. The `.ova` is not in the repository (about 574 MB, gitignored), so you build it yourself.
+Quick workflow:
+1. **At home:** Build `TheEmptySchoolServer.ova` using `.\server\vm\build-ova.ps1` (or `build-ova.bat` / `build-ova.sh`). Copy the `.ova` and `TheEmptySchool.exe` to a USB stick.
+2. **On the teacher's PC:** Install VirtualBox, import `TheEmptySchoolServer.ova`, and set Adapter 1 to **Bridged Adapter** on the active network card.
+3. **Start the VM:** The console displays the local IP and room join codes. Minimize the window.
+4. **On student PCs:** Launch `TheEmptySchool.exe`, select **Join Co-op**, enter the teacher's server IP and room port (e.g. `192.168.1.50:7777`), and start playing.
 
-Measured in that test, on 1 virtual core: about 2.5 percent CPU per room (about 10 percent in total), 38 to 41 MB of RAM per room (about 160 MB for four rooms), and the whole Debian VM near 600 MB of its 1024 MB. There were no disconnects. Position sync runs at about 4 Hz, which keeps bandwidth low on a busy school network.
-
-**1. Build the .ova (once, at home).** You need Oracle VirtualBox 7 or newer (with `VBoxManage`), HashiCorp Packer 1.10 or newer, `tar`, an internet connection and about 10 GB of free disk. The build takes 20 to 40 minutes.
-
-| Machine | Command, from this folder |
-|---|---|
-| Windows | `.\server\vm\build-ova.ps1` or `.\server\vm\build-ova.bat`. Install Packer first with `winget install Hashicorp.Packer`. |
-| Linux, or Git Bash on Windows | `server/vm/build-ova.sh` |
-
-Add the RAM in MB as an argument to change the default of 1024, for example `server/vm/build-ova.sh 2048`. The result is `server/vm/output/TheEmptySchoolServer.ova`. The build excludes `scripts/staff.gd`, so the server image holds no real names.
-
-**2. Carry it to school.** Copy three things to a USB drive: `TheEmptySchoolServer.ova`, the prebuilt `build/windows/TheEmptySchool.exe` (a standalone file that runs on Windows 10 and 11 without installing Godot) and, as a fallback, the VirtualBox installer. Never build at school.
-
-**3. Import it on the teacher's PC.**
-
-1. Install VirtualBox if it is missing.
-2. Open VirtualBox and choose File, Import Appliance.
-3. Select `TheEmptySchoolServer.ova` and choose Import.
-4. Open the VM settings, then Network, then Adapter 1. Set Attached to `Bridged Adapter` and select the PC's active network adapter. A wired connection is best.
-
-Use a bridged adapter. The VM then has its own address on the school network and needs no port forwarding. The default NAT mode hides the rooms from the other PCs.
-
-**4. Start it.** Select the VM and choose Start. The rooms start by themselves after about 20 to 30 seconds. The console shows the address and one line per room:
-
-```text
-  The Empty School server
-  Address: 192.168.1.50
-  4 rooms, up to 10 players each.
-
-  Room 1: 192.168.1.50:7777   code 4535
-  Room 2: 192.168.1.50:7778   code 0699
-  Room 3: 192.168.1.50:7779   code 3742
-  Room 4: 192.168.1.50:7780   code 4146
-```
-
-Leave the VM running. You can minimize its window. No login is needed. The codes are random and change each time the rooms start.
-
-**5. Join the rooms.**
-
-1. Start `TheEmptySchool.exe` on each student PC.
-2. Choose Join Co-op.
-3. Type the address and port of the room, for example `192.168.1.50:7777`. Use the address first: the VM runs the rooms in Docker's own network, and the code lookup by broadcast was not confirmed to cross it. If the four digit code finds the room on your network, you can use it too.
-4. Give each group its own room: group 1 in room 1, group 2 in room 2, and so on.
-5. In the lobby, any player starts a mode. See [Multiplayer modes](#multiplayer-modes).
-
-All PCs must be on the same network as the VM. A guest or isolated Wi-Fi often blocks traffic between devices.
-
-**6. Manage the VM.** Log in at the VM console as `neumann` with the password `neumann`. Change the password if the VM stays on a shared network. SSH is off in the image.
-
-| Task | Command |
-|---|---|
-| Change rooms, first port or players per room | Edit `/etc/neumann/rooms.conf` (`ROOMS`, `FIRST_PORT`, `MAX_PLAYERS`), then run `sudo systemctl restart neumann-rooms` |
-| Show the new address and codes after a network change | `sudo systemctl restart neumann-rooms` |
-| Read a room log | `sudo docker logs -f neumann-room-1` |
-| Turn on SSH (off by default) | `sudo systemctl enable --now ssh` |
-
-**Known limits.** The in-game Host Co-op still accepts 4 joining players. Only the VM and the dedicated server reach 10 per room. Social Deduction caps at 5 players. The resource figures come from one simulated run. Re-check them on the teacher's low-spec PC.
-
-**Weak student PCs.** In Settings, Graphics: preset Low, real-time lamps off (the biggest gain), render scale 60 to 75 percent, VSync on or an FPS limit of 30 or 60.
+For complete step-by-step instructions, USB preparation, student PC graphics optimizations for low-spec machines, and network configuration, see the dedicated guide:
+👉 **[School Server VM & Student Setup Guide](docs/teacher-vm-setup.md)**
 
 ### Ports
 
-- UDP 7777 for the game (change it with `--port`). The VM uses 7777 to 7780, one port per room.
-- UDP 7778 for room code lookup on the local network. In the VM this port is also the second room's game port.
-- Forward the game port on the router for players on other networks. TCP is not used.
+- **UDP 7777** (default game port; change with `--port`). The multi-room VM and multi-room scripts use **7777 to 7780** (one port per room).
+- **UDP 7778**: Local room code discovery via broadcast (in the 4-room VM, this also serves as Room 2's game port).
+- If hosting for players over the Internet, forward the game UDP port(s) on your router. TCP is not used. Direct connections are used throughout; there is no central relay server.
 
 ### Co-op troubleshooting
 
 | Problem | Fix |
 |---|---|
-| The VM console says "No network address yet" | The adapter is not bridged or has no network. Set Adapter 1 to Bridged Adapter, then run `sudo systemctl restart neumann-rooms`. |
-| Players cannot reach the VM | Check that the student PC and the VM share a network. Test the address from the PC. Allow VirtualBox and UDP 7777 to 7780 in the Windows firewall on the host. |
-| "No room 1234 found on this network" | The code lookup uses broadcast, which Wi-Fi isolation, VLANs and Docker bridges block. Join with the address and port instead. |
-| The address shown by the VM is wrong after a move | The address comes from DHCP. Restart the rooms with `sudo systemctl restart neumann-rooms`. |
-| VirtualBox says VT-x or AMD-V is disabled | Turn on virtualization in the BIOS of the teacher's PC. Hyper-V can conflict on Windows 10. |
-| A room is full | Join another room, or raise `MAX_PLAYERS` in `rooms.conf` and restart the rooms. |
-| Hosting on Android fails with `Could not open UDP port 7777 (error 20)` | The APK lacks the INTERNET permission. Rebuild with `tools/build.sh` or `tools/build.bat`, which add it, and reinstall. |
-| Docker on macOS or Windows shows no codes | Docker there does not pass LAN broadcasts. Join with the address. |
-| The game is slow on a school PC | Use Settings, Graphics: preset Low, real-time lamps off, render scale 60 to 75 percent, FPS limit 30 or 60. |
+| The VM console says "No network address yet" | Adapter is not set to Bridged or has no link. Change Adapter 1 to Bridged Adapter and run `sudo systemctl restart neumann-rooms`. |
+| Players cannot reach the VM / host | Verify host and client share the same subnet. Allow UDP ports 7777–7780 in the host OS firewall (e.g. Windows Defender Firewall). |
+| "No room 1234 found on this network" | Room code lookup uses UDP broadcast, which Wi-Fi client isolation, VLANs, and Docker bridges block. Join directly with `IP:PORT` instead. |
+| The address shown by the VM changed | The VM address was renewed via DHCP. Run `sudo systemctl restart neumann-rooms` on the VM console to refresh the banner. |
+| VirtualBox says VT-x or AMD-V is disabled | Enable hardware virtualization in the teacher's PC BIOS/UEFI. Disable conflicting Hyper-V features if needed. |
+| A room is full | Join another room (ports 7778–7780), or increase `MAX_PLAYERS` in `/etc/neumann/rooms.conf` and restart the service. |
+| Hosting on Android fails with error 20 | The APK lacks `INTERNET` permission. Rebuild with `tools/build.sh` or `tools/build.bat`, which add the permission. |
+| Docker on macOS / Windows shows no room codes | Docker Desktop on macOS/Windows does not bridge LAN broadcasts. Join directly using the IP address and port. |
+| Game is slow / stuttering on school PCs | In **Settings** → **Graphics**: set Preset to **Low**, turn **Real-time lamps** to **Off**, and set render scale to 60–75%. |
+
+For further troubleshooting, consult the [School Server VM Guide](docs/teacher-vm-setup.md#5-troubleshooting--faq) and the [Arch Linux Hosting Guide](docs/arch-linux-hosting.md#5-network-firewall--school-wi-fi-configuration).
 
 Limits of all modes: connections are direct and there is no relay service. Players on different networks need a reachable host, either a forwarded port or a server with a public address. Android players join with the code or the address like everyone else.
 
