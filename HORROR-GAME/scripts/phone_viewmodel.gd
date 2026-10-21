@@ -4,6 +4,7 @@ extends Node3D
 
 const MapScript := preload("res://scripts/phone_map.gd")
 const SoundBank := preload("res://scripts/sound_bank.gd")
+const GraphicsSettings := preload("res://scripts/graphics.gd")
 
 const LOWERED_POSITION := Vector3(-0.14, -0.62, -0.33)
 const LOWERED_ROTATION := Vector3(-70.0, 8.0, 0.0)
@@ -74,6 +75,7 @@ func _ready() -> void:
 	_glow.light_energy = 0.0
 	_glow.omni_range = 1.2
 	_glow.position = Vector3(0.0, 0.0, -0.14)
+	GraphicsSettings.tag_extra(_glow)
 	add_child(_glow)
 
 	_click = AudioStreamPlayer.new()

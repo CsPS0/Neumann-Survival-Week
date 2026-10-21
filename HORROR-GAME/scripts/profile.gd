@@ -3,9 +3,12 @@ extends Node
 
 const Achievements := preload("res://scripts/achievements.gd")
 const Endings := preload("res://scripts/endings.gd")
-const DEFAULTS := {"volume": 0.8, "sensitivity": 0.0025, "invert_y": false, "fov": 75.0, "brightness": 1.0, "fullscreen": false, "easy_map": false, "scare_flash": true, "quality": 2}
+const GraphicsSettings := preload("res://scripts/graphics.gd")
+const DEFAULTS := {"volume": 0.8, "sensitivity": 0.0025, "invert_y": false, "fov": 75.0, "brightness": 1.0, "fullscreen": false, "easy_map": false, "scare_flash": true, "quality": 2,
+		"render_scale": 1.0, "dynamic_lighting": true, "shadows": 2, "view_distance": 250.0, "effects": true, "aa": 0, "vsync": true, "fps_cap": 0}
 ## Slider ranges, kept in step with settings_ui.gd. Hand-edited values are clamped into them.
-const RANGES := {"volume": [0.0, 1.0], "sensitivity": [0.001, 0.006], "fov": [60.0, 100.0], "brightness": [0.6, 1.6], "quality": [0, 2]}
+const RANGES := {"volume": [0.0, 1.0], "sensitivity": [0.001, 0.006], "fov": [60.0, 100.0], "brightness": [0.6, 1.6], "quality": [0, 2],
+		"render_scale": [0.5, 1.0], "shadows": [0, 2], "view_distance": [40.0, 250.0], "aa": [0, 2], "fps_cap": [0, 240]}
 
 var path := "user://profile.cfg"
 var settings := DEFAULTS.duplicate()
@@ -17,9 +20,9 @@ func _ready() -> void:
 	add_to_group("profile")
 
 
-## Graphics quality when the player has not chosen one: low on phones and headsets, high elsewhere.
+## Graphics preset when the player has not chosen one: low on phones, headsets and weak graphics chips, high on discrete cards.
 static func default_quality() -> int:
-	return 0 if OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("web") else 2
+	return GraphicsSettings.detect_quality()
 
 
 func get_setting(key: String) -> Variant:
@@ -64,11 +67,14 @@ func load_from_disk() -> void:
 	unlocked.clear()
 	endings_seen.clear()
 	settings["quality"] = default_quality()
+	settings.merge(GraphicsSettings.preset_values(int(settings["quality"])), true)
 	var file := ConfigFile.new()
 	if file.load(path) != OK:
 		return
+	# Profiles saved before the single graphics settings existed get the values of their saved preset.
+	var preset := GraphicsSettings.preset_values(int(_clean("quality", file.get_value("settings", "quality", settings["quality"]))))
 	for key: String in DEFAULTS:
-		settings[key] = _clean(key, file.get_value("settings", key, settings[key]))
+		settings[key] = _clean(key, file.get_value("settings", key, preset.get(key, settings[key])))
 	var ids: Variant = file.get_value("progress", "unlocked", [])
 	if ids is Array:
 		for id: Variant in ids:

@@ -6,6 +6,7 @@ signal post_added(day: int)
 
 const Finds := preload("res://scripts/finds.gd")
 const FloorData := preload("res://scripts/floor_data.gd")
+const GraphicsSettings := preload("res://scripts/graphics.gd")
 
 var campaign: Node
 var main: Node
@@ -94,6 +95,7 @@ func _render_photo(day: int, pos: Vector3, towards: Vector3) -> void:
 	var flash := OmniLight3D.new()   # The phone's flash: the rooms are dark at 06:00.
 	flash.light_energy = 1.5
 	flash.omni_range = 4.0
+	GraphicsSettings.tag_extra(flash)
 	camera.add_child(flash)
 	main.add_child(viewport)
 	camera.global_position = pos + towards * 2.0 + Vector3(0.0, 0.8, 0.0)
