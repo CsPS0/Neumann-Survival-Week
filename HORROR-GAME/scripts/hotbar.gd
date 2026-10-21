@@ -4,6 +4,8 @@ extends HBoxContainer
 
 const ItemSlot := preload("res://scripts/item_slot.gd")
 const SLOT := 60.0
+const GAP := 4.0
+const WIDTH := SLOT * 4.0 + GAP * 3.0   ## The bars above the hotbar match this.
 
 var _items: RefCounted
 var _hand: PanelContainer
@@ -16,7 +18,7 @@ var _last_hand := ""
 
 func setup(items: RefCounted, name_label_parent: Node) -> void:
 	_items = items
-	add_theme_constant_override("separation", 4)
+	add_theme_constant_override("separation", int(GAP))
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hand = _slot("")
 	_pockets = [_slot("L"), _slot("R")]
@@ -28,7 +30,7 @@ func setup(items: RefCounted, name_label_parent: Node) -> void:
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label_parent.add_child(_name_label)
 	_name_label.custom_minimum_size = Vector2(400.0, 0.0)
-	_name_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, int(SLOT) + 40)
+	_name_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, int(SLOT) + 52)
 	refresh()
 
 

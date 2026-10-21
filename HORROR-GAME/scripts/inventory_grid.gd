@@ -12,6 +12,7 @@ var _pockets: Array[PanelContainer] = []
 var _bag_slots: Array[PanelContainer] = []
 var _bag_title := Label.new()
 var _speed := Label.new()
+var _keys := Label.new()
 
 
 func setup(items: RefCounted) -> void:
@@ -46,6 +47,11 @@ func setup(items: RefCounted) -> void:
 	for i in _items.BAG_SLOTS:
 		_bag_slots.append(_slot(grid, ""))
 	box.add_child(grid)
+	_keys.add_theme_font_size_override("font_size", 14)
+	_keys.add_theme_color_override("font_color", Color(0.95, 0.82, 0.45))
+	_keys.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_keys.custom_minimum_size = Vector2(BAG_COLUMNS * (SLOT + 6.0), 0.0)
+	box.add_child(_keys)
 	_speed.add_theme_font_size_override("font_size", 14)
 	box.add_child(_speed)
 	var hint := Label.new()
@@ -85,6 +91,14 @@ func refresh() -> void:
 		var id: String = bag[i] if i < bag.size() else ""
 		_bag_slots[i].set_item(id, _items.label_of(id) if id != "" else "")
 		_bag_slots[i].modulate.a = 1.0 if _items.bag_worn else 0.45
+	var keys: Array[String] = []
+	for place: int in _items.slots:
+		if not _items.is_reachable(place):
+			continue
+		for id: String in _items.slots[place]:
+			if _items.is_key(id):
+				keys.append(_items.label_of(id))
+	_keys.text = "Keys: %s" % (", ".join(keys) if not keys.is_empty() else "none")
 	if _items.bag_worn:
 		_bag_title.text = "Bag (%d/%d, %.1f kg)" % [bag.size(), _items.BAG_SLOTS, _items.bag_weight()]
 		_speed.text = "Walking speed: %d%%" % roundi(_items.speed_multiplier() * 100.0)

@@ -7,6 +7,13 @@ var _profile: Node
 var _controls := {}   ## setting key -> its control, so a preset can move them all.
 var _val_labels := {} ## setting key -> its value Label.
 var _preset: OptionButton
+const KEY_LIST := [
+	["W A S D", "Move"], ["Shift", "Sprint"], ["Mouse", "Look"], ["E", "Interact"], ["F", "Flashlight"],
+	["T", "Flash burst"], ["Q", "Phone"], ["H", "Phone: one or two hands"], ["Tab", "Inventory, or next phone app"],
+	["B", "Drop or pick up the bag"], ["X", "Switch hand"], ["V", "Stow or take out the held item"],
+	["Space", "Hold breath in a locker"], ["G", "Name the entity (day 4 and 5)"], ["Esc", "Pause"],
+]
+
 var _tabs: TabContainer
 var _page: VBoxContainer   ## The column of the tab being built.
 var _on_change: Callable
@@ -37,11 +44,21 @@ func setup(profile: Node, on_change: Callable) -> void:
 	_slider("Mouse sensitivity", "sensitivity", 0.001, 0.006, 0.0002, func(v: float) -> String: return "%.4f" % v)
 	_check("Invert Y axis", "invert_y")
 
+	_category("KEYS")
+	for row: Array in KEY_LIST:
+		_key_row(row[0], row[1])
+
 	_open_tab("Gameplay")
 	_category("ASSISTS", "", false)
 	_check("Easy map (show player position)", "easy_map")
 	_category("COMFORT")
 	_check("Scare flashes (screen blackouts & stings)", "scare_flash")
+
+	var reset := Button.new()
+	reset.name = "reset_defaults"
+	reset.text = "Reset all settings to defaults"
+	reset.pressed.connect(_reset_defaults)
+	add_child(reset)
 
 
 ## Starts a tab: a scrolling column. The rows added next go into it.
@@ -120,18 +137,49 @@ func _choose_preset(index: int) -> void:
 	var values := GraphicsSettings.preset_values(index)
 	for key: String in values:
 		_profile.set_setting(key, values[key])
-		var control: Control = _controls[key]
-		if control is Range:
-			(control as Range).set_value_no_signal(float(values[key]))
-			if _val_labels.has(key):
-				var fmt: Callable = _val_labels[key]["fmt"]
-				_val_labels[key]["label"].text = fmt.call(float(values[key]))
-		elif control is CheckBox:
-			(control as CheckBox).set_pressed_no_signal(bool(values[key]))
-		elif control is OptionButton:
-			(control as OptionButton).select(int(values[key]))
+		_show_value(key, values[key])
 	_profile.save()
 	_on_change.call()
+
+
+## Moves the control of `key` to `value` without firing its signal.
+func _show_value(key: String, value: Variant) -> void:
+	var control: Control = _controls.get(key)
+	if control is Range:
+		(control as Range).set_value_no_signal(float(value))
+		if _val_labels.has(key):
+			var fmt: Callable = _val_labels[key]["fmt"]
+			_val_labels[key]["label"].text = fmt.call(float(value))
+	elif control is CheckBox:
+		(control as CheckBox).set_pressed_no_signal(bool(value))
+	elif control is OptionButton:
+		(control as OptionButton).select(int(value))
+
+
+## Every setting back to the first-start values: the preset for this PC, then the plain defaults.
+func _reset_defaults() -> void:
+	var values: Dictionary = _profile.DEFAULTS.duplicate()
+	values["quality"] = _profile.default_quality()
+	values.merge(GraphicsSettings.preset_values(int(values["quality"])), true)
+	for key: String in values:
+		_profile.set_setting(key, values[key])
+		_show_value(key, _profile.get_setting(key))
+	_sync_preset()
+	_profile.save()
+	_on_change.call()
+
+
+func _key_row(key_name: String, action: String) -> void:
+	var row := HBoxContainer.new()
+	var key_label := Label.new()
+	key_label.text = key_name
+	key_label.custom_minimum_size = Vector2(120.0, 0.0)
+	key_label.add_theme_color_override("font_color", Color(0.8, 0.85, 0.9))
+	row.add_child(key_label)
+	var action_label := Label.new()
+	action_label.text = action
+	row.add_child(action_label)
+	_page.add_child(row)
 
 
 func _sync_preset() -> void:
