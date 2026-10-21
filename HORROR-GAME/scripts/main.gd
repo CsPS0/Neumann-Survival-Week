@@ -797,7 +797,14 @@ func _open_porter_menu(_by: Node) -> void:
 
 
 func _open_key_board(_by: Node) -> void:
-	_open_porta("porta_board", "Key board", "Rows of hooks. One of them is labelled 14.", _key_options())
+	var body := "Rows of hooks. One of them is labelled 14."
+	if porta.is_board_locked():
+		body += "\nLocked for today. Mr. Bakó will not open it again until tomorrow."
+	elif porta.asleep or (porta.away and not _porter_sees_player()):
+		body += "\nNobody is watching the desk. Taking a key now goes unseen."
+	else:
+		body += "\nMr. Bakó is at his desk. Taking a key now locks the board for the day."
+	_open_porta("porta_board", "Key board", body, _key_options())
 
 
 func _key_options() -> Array:
