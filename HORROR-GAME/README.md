@@ -14,7 +14,7 @@ Contents:
 - [The school](#the-school) and [the five-day campaign](#the-five-day-campaign)
 - [Characters](#characters) and [endings](#endings)
 - [Extras and graphics settings](#extras)
-- [Co-op](#co-op) with [the school server VM](#the-school-server-vm-ova) and [troubleshooting](#co-op-troubleshooting)
+- [Co-op](#co-op) with [hosting on Arch Linux](#hosting-on-arch-linux), [the school server VM](#the-school-server-vm-ova) and [troubleshooting](#co-op-troubleshooting)
 - [Multiplayer modes](#multiplayer-modes)
 - [Code layout](#code-layout) and [releases](#releases)
 - [Developing and testing](#developing-and-testing)
@@ -273,6 +273,59 @@ A headless server needs no window and does not play. Players join it like any ho
 The scripts use `godot` from the PATH. Set `GODOT` to the binary path otherwise, for example `/Applications/Godot.app/Contents/MacOS/Godot` on macOS. Options: `--port`, `--max-players`, `--public-host`, `--code`. Docker reads `NEUMANN_PORT`, `NEUMANN_MAX_PLAYERS`, `NEUMANN_PUBLIC_HOST` and `NEUMANN_CODE`. A fixed code (`--code 4821`) is never changed.
 
 The server prints its address and room code at start. Pass `--public-host` with the address players use to reach it, so the code leads players to the right address: `127.0.0.1` for the same computer, the LAN address for a local network, the public IP for the internet.
+
+### Hosting on Arch Linux
+
+Hosting directly from an Arch Linux laptop or desktop is the lightest and lowest-latency way to run the dedicated server (no VM hypervisor overhead, ~40 MB RAM per room, near-zero CPU idle).
+
+**Option 1: Native Godot (recommended)**
+
+1. Install Godot:
+   ```bash
+   sudo pacman -S godot
+   ```
+   *(Or place the official `Godot_v4.7.x_linux.x86_64` binary in your PATH).*
+2. Start one room from the `HORROR-GAME/` folder:
+   ```bash
+   chmod +x server/run-server.sh
+   ./server/run-server.sh --port 7777 --max-players 10
+   ```
+3. Run 4 rooms concurrently in the background (ports 7777 to 7780):
+   ```bash
+   for port in 7777 7778 7779 7780; do
+       ./server/run-server.sh --port "$port" --max-players 10 &
+   done
+   ```
+   To stop all rooms: `killall godot`.
+
+**Option 2: Docker / Docker Compose**
+
+```bash
+sudo pacman -S docker docker-compose
+sudo systemctl enable --now docker
+docker compose -f server/docker-compose.yml up --build
+```
+
+**Option 3: VirtualBox Appliance (.ova) on Arch**
+
+```bash
+sudo pacman -S virtualbox virtualbox-host-modules-arch
+sudo modprobe vboxdrv
+```
+Import `TheEmptySchoolServer.ova` in VirtualBox, set Adapter 1 to Bridged Adapter on your active Wi-Fi or Ethernet card, and boot it.
+
+**Network and school Wi-Fi checklist on Arch**
+
+- **Firewall (UDP 7777 to 7780):**
+  - With `ufw`: `sudo ufw allow 7777:7780/udp`
+  - With `firewalld`: `sudo firewall-cmd --add-port=7777-7780/udp --permanent && sudo firewall-cmd --reload`
+  - Without a firewall (Arch default): incoming UDP is already accepted.
+- **Find your LAN IP:** `ip -br a` or `hostname -I`.
+- **School Wi-Fi client isolation workaround:** If the school Wi-Fi blocks direct connections between student PCs and your laptop, create an ad-hoc Wi-Fi hotspot directly on Arch:
+  ```bash
+  nmcli device wifi hotspot ssid "NeumannGame" password "survival123"
+  ```
+  Have students join the hotspot to play with zero router filtering and minimal latency.
 
 ### The school server VM (.ova)
 
