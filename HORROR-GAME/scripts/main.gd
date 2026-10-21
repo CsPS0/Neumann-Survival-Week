@@ -6,6 +6,8 @@ const DoorScript := preload("res://scripts/door.gd")
 const FloorData := preload("res://scripts/floor_data.gd")
 const SoundBank := preload("res://scripts/sound_bank.gd")
 const GraphicsSettings := preload("res://scripts/graphics.gd")
+const Hotbar := preload("res://scripts/hotbar.gd")
+const InventoryGrid := preload("res://scripts/inventory_grid.gd")
 const Textures := preload("res://scripts/textures.gd")
 const PickupScript := preload("res://scripts/pickup.gd")
 const InteractableScript := preload("res://scripts/interactable.gd")
@@ -138,8 +140,8 @@ var _stone_material := _make_material(Color(0.4, 0.38, 0.36), 0.95)
 
 var _hud_layer := CanvasLayer.new()
 var _hud := Label.new()
-var _inventory_panel := PanelContainer.new()   ## Tab: hand, pockets and bag, one per line.
-var _inventory_label := Label.new()
+var _hotbar := Hotbar.new()   ## Hand, pockets and bag at the bottom of the screen.
+var _inventory_panel := InventoryGrid.new()   ## Tab: equipped slots and the bag grid.
 var _stamina_bg := ColorRect.new()
 var _stamina_bar: ColorRect
 var _stamina_tween: Tween
@@ -2134,12 +2136,14 @@ func _build_hud() -> void:
 	_hud.add_theme_color_override("font_shadow_color", Color.BLACK)
 	layer.add_child(_hud)
 
-	_inventory_panel.position = Vector2(16.0, 150.0)
-	_inventory_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_inventory_label.add_theme_font_size_override("font_size", 20)
-	_inventory_panel.add_child(_inventory_label)
+	_hotbar.setup(player.items, layer)
+	layer.add_child(_hotbar)
+	_hotbar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 12)
+
+	_inventory_panel.setup(player.items)
 	_inventory_panel.visible = false
 	layer.add_child(_inventory_panel)
+	_inventory_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
 
 	_stamina_bg.position = Vector2(16.0, 112.0)
 	_stamina_bg.size = Vector2(160.0, 6.0)
@@ -2194,11 +2198,13 @@ func _show_inventory_panel(open: bool) -> void:
 
 
 func _update_hud() -> void:
+	_hotbar.visible = not match_world.active
 	if match_world.active:
 		_hud.text = match_world.hud_text()
 		return
+	_hotbar.refresh()
 	if _inventory_panel.visible:
-		_inventory_label.text = player.items.detail()
+		_inventory_panel.refresh()
 	var held := "empty hands"
 	if player.phone.raised:
 		held = "phone (two hands)" if player.phone_two_hands else "phone (one hand)"
@@ -2208,10 +2214,10 @@ func _update_hud() -> void:
 	var status := "Day %d  |  %s  |  %s  |  Battery %d%%  |  In hand: %s" % [
 		campaign.day, FLOOR_NAMES[_floor_index], daynight.time_text(), roundi(_battery * 100.0), held]
 	if _touch_mode():   # The buttons are labelled, so the key lines would only take room.
-		_hud.text = "%s\n%s" % [status, player.items.summary()]
+		_hud.text = status
 		return
-	_hud.text = "%s\n[F] light   [Q] phone (H: one or two hands)   [E] interact   [Shift] sprint%s   [Esc] pause\n%s\n[Tab] inventory   [B] drop or pick up the bag   [X] switch hand   [V] stow or take out" % [
-		status, "   [G] name the entity" if campaign.day > campaign.LAST_SCHOOL_DAY else "", player.items.summary()]
+	_hud.text = "%s\n[F] light   [Q] phone (H: one or two hands)   [E] interact   [Shift] sprint%s   [Esc] pause\n[Tab] inventory   [B] drop or pick up the bag   [X] switch hand   [V] stow or take out" % [
+		status, "   [G] name the entity" if campaign.day > campaign.LAST_SCHOOL_DAY else ""]
 
 
 func _show_message(text: String, seconds := -1.0) -> void:

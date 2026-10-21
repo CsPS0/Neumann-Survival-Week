@@ -7,6 +7,8 @@ var _profile: Node
 var _controls := {}   ## setting key -> its control, so a preset can move them all.
 var _val_labels := {} ## setting key -> its value Label.
 var _preset: OptionButton
+var _tabs: TabContainer
+var _page: VBoxContainer   ## The column of the tab being built.
 var _on_change: Callable
 var _dragging := false
 
@@ -14,31 +16,57 @@ var _dragging := false
 func setup(profile: Node, on_change: Callable) -> void:
 	_profile = profile
 	_on_change = on_change
-	add_theme_constant_override("separation", 10)
+	_tabs = TabContainer.new()
+	_tabs.name = "tabs"
+	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(_tabs)
 
-	_category("AUDIO & DISPLAY")
-	_slider("Master volume", "volume", 0.0, 1.0, 0.05, func(v: float) -> String: return "%d%%" % int(round(v * 100.0)))
+	_open_tab("Graphics")
+	_category("DISPLAY", "", false)
+	_check("Fullscreen", "fullscreen")
 	_slider("Brightness", "brightness", 0.6, 1.6, 0.05, func(v: float) -> String: return "%.2fx" % v)
 	_slider("Field of view", "fov", 60.0, 100.0, 1.0, func(v: float) -> String: return "%d°" % int(round(v)))
-	_check("Fullscreen", "fullscreen")
+	_graphics_rows()
 
-	_category("CONTROLS")
+	_open_tab("Audio")
+	_category("VOLUME", "", false)
+	_slider("Master volume", "volume", 0.0, 1.0, 0.05, func(v: float) -> String: return "%d%%" % int(round(v * 100.0)))
+
+	_open_tab("Controls")
+	_category("MOUSE AND LOOK", "", false)
 	_slider("Mouse sensitivity", "sensitivity", 0.001, 0.006, 0.0002, func(v: float) -> String: return "%.4f" % v)
 	_check("Invert Y axis", "invert_y")
 
-	_category("GAMEPLAY & ACCESSIBILITY")
+	_open_tab("Gameplay")
+	_category("ASSISTS", "", false)
 	_check("Easy map (show player position)", "easy_map")
+	_category("COMFORT")
 	_check("Scare flashes (screen blackouts & stings)", "scare_flash")
 
-	_graphics_rows()
+
+## Starts a tab: a scrolling column. The rows added next go into it.
+func _open_tab(title: String) -> void:
+	var scroll := ScrollContainer.new()
+	scroll.name = title
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var margin := MarginContainer.new()
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 10)
+	_page = VBoxContainer.new()
+	_page.add_theme_constant_override("separation", 10)
+	margin.add_child(_page)
+	scroll.add_child(margin)
+	_tabs.add_child(scroll)
 
 
-func _category(title: String, subtitle := "") -> void:
+func _category(title: String, subtitle := "", divider := true) -> void:
 	var cat_box := VBoxContainer.new()
 	cat_box.add_theme_constant_override("separation", 2)
-	var sep := HSeparator.new()
-	sep.add_theme_constant_override("separation", 12)
-	cat_box.add_child(sep)
+	if divider:
+		var sep := HSeparator.new()
+		sep.add_theme_constant_override("separation", 12)
+		cat_box.add_child(sep)
 
 	var label := Label.new()
 	label.text = title
@@ -53,12 +81,12 @@ func _category(title: String, subtitle := "") -> void:
 		sub.add_theme_color_override("font_color", Color(0.7, 0.72, 0.78))
 		cat_box.add_child(sub)
 
-	add_child(cat_box)
+	_page.add_child(cat_box)
 
 
 ## Graphics: a preset on top, then every setting it sets. Changing one of them switches the preset to Custom.
 func _graphics_rows() -> void:
-	_category("GRAPHICS & PERFORMANCE", "Lower preset, turn off lamps and reduce render scale on older school PCs.")
+	_category("PERFORMANCE", "Lower preset, turn off lamps and reduce render scale on older school PCs.")
 
 	var row := HBoxContainer.new()
 	var name_label := Label.new()
@@ -72,7 +100,7 @@ func _graphics_rows() -> void:
 	_preset.add_item("Custom")
 	_preset.item_selected.connect(_choose_preset)
 	row.add_child(_preset)
-	add_child(row)
+	_page.add_child(row)
 
 	_slider("Render scale", "render_scale", 0.5, 1.0, 0.05, func(v: float) -> String: return "%d%%" % int(round(v * 100.0)))
 	_check("Real-time lamps (off uses flat ambient light, much faster)", "dynamic_lighting")
@@ -129,7 +157,7 @@ func _option(label: String, key: String, choices: Array) -> void:
 	button.item_selected.connect(func(index: int) -> void: _store(key, index))
 	row.add_child(button)
 	_controls[key] = button
-	add_child(row)
+	_page.add_child(row)
 
 
 func _slider(label: String, key: String, low: float, high: float, step: float, formatter: Callable = Callable()) -> void:
@@ -175,7 +203,7 @@ func _slider(label: String, key: String, low: float, high: float, step: float, f
 		row.add_child(val_label)
 
 	_controls[key] = slider
-	add_child(row)
+	_page.add_child(row)
 
 
 func _check(label: String, key: String) -> void:
@@ -185,7 +213,7 @@ func _check(label: String, key: String) -> void:
 	box.button_pressed = bool(_profile.get_setting(key))
 	box.toggled.connect(func(on: bool) -> void: _store(key, on))
 	_controls[key] = box
-	add_child(box)
+	_page.add_child(box)
 
 
 func _store(key: String, value: Variant, save := true) -> void:
