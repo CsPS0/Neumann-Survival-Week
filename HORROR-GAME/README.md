@@ -165,6 +165,7 @@ Co-op uses Godot's ENet multiplayer on one UDP port. The default is 7777, for up
 | Any | `godot --headless --path . res://scenes/dedicated_server.tscn -- --port 7777` |
 | Docker | `docker compose -f server/docker-compose.yml up --build` |
 | Docker (plain) | `docker build -f server/Dockerfile -t empty-school-server .` then `docker run --rm -p 7777:7777/udp -e NEUMANN_PUBLIC_HOST=203.0.113.5 empty-school-server` |
+| Virtual machine | Import an .ova on a Windows PC with VirtualBox. It runs several rooms of up to 10 players. See [server/vm/GUIDE.md](server/vm/GUIDE.md). |
 
 The scripts use `godot` from the PATH. Set `GODOT` to the binary path otherwise, for example `/Applications/Godot.app/Contents/MacOS/Godot` on macOS. Options: `--port`, `--max-players`, `--public-host`, `--code`. Docker reads `NEUMANN_PORT`, `NEUMANN_MAX_PLAYERS`, `NEUMANN_PUBLIC_HOST` and `NEUMANN_CODE`.
 

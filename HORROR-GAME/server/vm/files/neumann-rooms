@@ -1,0 +1,48 @@
+#!/bin/sh
+# Starts one game server container per room and shows the VM address on the console login screen.
+set -eu
+. /etc/neumann/rooms.conf
+
+issue_file=/etc/issue.d/10-neumann.issue
+
+find_ip() {
+	hostname -I 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true
+}
+
+ip=""
+for _ in $(seq 1 90); do
+	ip="$(find_ip)"
+	[ -n "$ip" ] && break
+	sleep 1
+done
+
+docker ps -aq --filter 'name=^neumann-room-' | xargs -r docker rm -f >/dev/null
+
+if [ -z "$ip" ]; then
+	printf '\n  The Empty School server\n  No network address yet. Check the VM network adapter (it must be Bridged).\n\n' > "$issue_file"
+	systemctl --no-block restart getty@tty1
+	exit 1
+fi
+
+last=$((FIRST_PORT + ROOMS - 1))
+for i in $(seq 1 "$ROOMS"); do
+	port=$((FIRST_PORT + i - 1))
+	docker run -d --name "neumann-room-$i" --restart unless-stopped \
+		-p "$port:$port/udp" \
+		-e "NEUMANN_PORT=$port" -e "NEUMANN_MAX_PLAYERS=$MAX_PLAYERS" -e "NEUMANN_PUBLIC_HOST=$ip" \
+		empty-school-server >/dev/null
+done
+
+sleep 8
+{
+	printf '\n  The Empty School server\n'
+	printf '  Address: %s\n' "$ip"
+	printf '  %s rooms, up to %s players each.\n\n' "$ROOMS" "$MAX_PLAYERS"
+	for i in $(seq 1 "$ROOMS"); do
+		port=$((FIRST_PORT + i - 1))
+		code="$(docker logs "neumann-room-$i" 2>&1 | sed -n 's/^Room code: //p' | head -n 1)"
+		printf '  Room %s: %s:%s   code %s\n' "$i" "$ip" "$port" "${code:-unknown}"
+	done
+	printf '\n  Players join with the address and port, or with the room code.\n\n'
+} > "$issue_file"
+systemctl --no-block restart getty@tty1

@@ -1,0 +1,15 @@
+[Unit]
+Description=The Empty School game rooms
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/neumann-rooms
+ExecStop=/bin/sh -c 'docker ps -aq --filter name=^neumann-room- | xargs -r docker rm -f'
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target
