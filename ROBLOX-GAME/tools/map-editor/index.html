@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>School Map Editor</title>
+<style>
+	:root {
+		--bg: #15161a; --panel: #1e2026; --line: #34373f; --text: #e8e6e1; --muted: #9a9ca4; --accent: #e0b44a;
+		--danger: #d0584c; --ok: #6cbf7a;
+	}
+	* { box-sizing: border-box; }
+	html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; }
+	body { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; }
+	header { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 10px; background: var(--panel);
+		border-bottom: 1px solid var(--line); }
+	header .sep { width: 1px; height: 24px; background: var(--line); margin: 0 4px; }
+	button, select, input { font: inherit; color: var(--text); background: #2a2d35; border: 1px solid var(--line);
+		border-radius: 5px; padding: 4px 9px; }
+	button { cursor: pointer; }
+	button:hover { border-color: var(--accent); }
+	button.on { background: var(--accent); color: #1a1a1a; border-color: var(--accent); }
+	button.danger { border-color: var(--danger); }
+	input[type=number] { width: 78px; }
+	input[type=range] { padding: 0; }
+	main { display: grid; grid-template-columns: 1fr 340px; min-height: 0; }
+	#stage { position: relative; overflow: hidden; background: #0f1013; cursor: crosshair; }
+	#stage.select { cursor: default; }
+	svg { width: 100%; height: 100%; display: block; user-select: none; }
+	aside { overflow-y: auto; background: var(--panel); border-left: 1px solid var(--line); padding: 10px; }
+	aside h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 6px; }
+	aside h2:first-child { margin-top: 0; }
+	.row { display: flex; gap: 6px; align-items: center; margin: 5px 0; flex-wrap: wrap; }
+	.row label { min-width: 74px; color: var(--muted); }
+	.row input[type=text], .row select, .row textarea { flex: 1; min-width: 0; }
+	textarea { font: inherit; color: var(--text); background: #2a2d35; border: 1px solid var(--line); border-radius: 5px;
+		padding: 4px 8px; resize: vertical; }
+	.door { display: grid; grid-template-columns: 52px 78px 1fr 26px; gap: 4px; margin: 4px 0; }
+	.list { max-height: 220px; overflow-y: auto; border: 1px solid var(--line); border-radius: 5px; }
+	.list div { padding: 3px 8px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+	.list div:hover, .list div.sel { background: #2f323b; }
+	.list small { color: var(--muted); }
+	.checks div { padding: 2px 0; }
+	.checks .warn { color: var(--accent); }
+	.checks .good { color: var(--ok); }
+	footer { padding: 4px 10px; background: var(--panel); border-top: 1px solid var(--line); color: var(--muted);
+		font-size: 12px; display: flex; gap: 18px; flex-wrap: wrap; }
+	.help { color: var(--muted); font-size: 12.5px; }
+	.help b { color: var(--text); }
+	.legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--muted); }
+	.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 4px;
+		background: var(--c); vertical-align: -1px; border-radius: 2px; }
+	@media (max-width: 800px) { main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; } }
+</style>
+</head>
+<body>
+<header>
+	<span id="floors"></span>
+	<span class="sep"></span>
+	<button id="tool-select" class="on" title="V">Select / move</button>
+	<button id="tool-room" title="R">Draw room</button>
+	<button id="tool-door" title="D">Place door</button>
+	<button id="tool-solid" title="S">Draw courtyard / solid</button>
+	<span class="sep"></span>
+	<button id="undo" title="Ctrl+Z">Undo</button>
+	<button id="redo" title="Ctrl+Y">Redo</button>
+	<button id="fit" title="F">Fit view</button>
+	<label class="row" style="margin:0"><input type="checkbox" id="snap" checked> snap 0.1 m</label>
+	<span class="sep"></span>
+	<button id="export">Save map file…</button>
+	<button id="import">Open map file…</button>
+	<input type="file" id="import-file" accept=".json,application/json" hidden>
+	<button id="reset-floor" class="danger">Reset this floor</button>
+</header>
+<main>
+	<div id="stage" class="select"><svg id="svg"></svg></div>
+	<aside>
+		<h2>Selected</h2>
+		<div id="props"><div class="help">Click a room to edit it. Drag inside it to move, drag its edges or corners to
+			resize. <b>Draw room</b>: drag a rectangle. <b>Place door</b>: click on a room's wall. Delete key removes the
+			selection. Mouse wheel zooms, right or middle drag pans.</div></div>
+		<h2>Rooms on this floor</h2>
+		<input type="text" id="filter" placeholder="Filter by name…" style="width:100%;margin-bottom:5px">
+		<div class="list" id="room-list"></div>
+		<h2>Checks</h2>
+		<div class="checks" id="checks"></div>
+		<h2>Real floor plan underneath</h2>
+		<div id="bg"></div>
+		<h2>Room types</h2>
+		<div class="legend" id="legend"></div>
+	</aside>
+</main>
+<footer><span id="cursor">x –, y –</span><span id="status">Changes are kept in this browser until you save a map file.</span></footer>
+
+<!-- Room names used by the school's own map app (NeuMapp), offered as suggestions for "Real name". -->
+<datalist id="real-names">
+	<option>Aula</option><option>Bejárat</option><option>Főbejárat</option><option>Porta</option><option>Büfé</option>
+	<option>Ebédlő</option><option>Konyha</option><option>Tanári konyha</option><option>Udvar</option>
+	<option>Tornaterem</option><option>Tornaterem 1</option><option>Tornaterem 2</option><option>Konditerem</option>
+	<option>Sport szertár</option><option>Fiú öltöző</option><option>Lány öltöző</option><option>Öltözők</option>
+	<option>Férfi testnevelői tanári</option><option>Női testnevelői tanári</option>
+	<option>Tanári</option><option>Tárgyaló</option><option>Igazgatói iroda</option><option>Igazgató helyettesi</option>
+	<option>Iskolatitkár</option><option>Gazdasági iroda</option><option>Fejlesztő</option><option>Orvosi szoba</option>
+	<option>Könyvtár</option><option>Stúdió</option><option>Cisco labor</option><option>Karbantartók</option>
+	<option>Raktár</option><option>WC</option>
+</datalist>
+<script src="map-data.js"></script>
+<script>
+"use strict";
+// School map editor: fix room shapes, names and types on top of the floor-plan photos, then save a map file
+// (school-map.json) and give it to Claude, who turns it into src/shared/FloorData.luau and Rooms.luau.
+// Units are plan metres (the game builds them x1.25). Floors: 0 ground, 1, 2.
+
+const TYPES = {
+	classroom: { name: "Classroom", color: "#2a4a8a" },
+	it: { name: "IT room (PCs)", color: "#1f6b6f" },
+	lab: { name: "Lab", color: "#6b4a1f" },
+	office: { name: "Office / staff room", color: "#5a3b6e" },
+	medical: { name: "Medical room", color: "#7a3a46" },
+	library: { name: "Library", color: "#3e5a2a" },
+	wc: { name: "Toilet", color: "#3a4256" },
+	gym: { name: "Gym", color: "#7a4214" },
+	changing: { name: "Changing room (gym)", color: "#8a5a2e" },
+	entrance: { name: "Entrance / Porta", color: "#77681a" },
+	dining: { name: "Dining hall", color: "#6a5a3a" },
+	kitchen: { name: "Kitchen", color: "#5c5c3a" },
+	storage: { name: "Storage", color: "#3c3c40" },
+	stairs: { name: "Stairs", color: "#4a4a4a" },
+	corridor: { name: "Corridor / hall", color: "#2b2d33" },
+	closed: { name: "Closed (not in the game)", color: "#1c1c20" },
+};
+const PHOTOS = {
+	"": "(none)",
+	"first-floor.jpg": "Ground floor plan",
+	"seconf-floor.jpg": "1st floor plan",
+	"third-floor.jpg": "2nd floor plan",
+};
+const PHOTO_DIR = "../../../HORROR-GAME/docs/floor-plans/";
+const DEFAULT_PHOTO = ["first-floor.jpg", "seconf-floor.jpg", "third-floor.jpg"];
+// The photo lined up with the game's rooms (least-squares fit of matching rooms, separately per axis): top-left
+// corner in plan metres and plan metres per photo pixel. The upper plans fit within 0.5 m; the ground floor within
+// 2-3 m, because the game's ground floor was redrawn by hand.
+const ALIGN = [
+	{ x: -1.71, y: -2.968, sx: 0.09983, sy: 0.07153 },
+	{ x: -8.605, y: -0.269, sx: 0.05353, sy: 0.04694 },
+	{ x: -8.605, y: -0.269, sx: 0.05353, sy: 0.04694 },
+];
+const BG_VERSION = 2;
+function defaultBg(i) {
+	return { v: BG_VERSION, photo: DEFAULT_PHOTO[i], rotate: 0, ...ALIGN[i], opacity: 0.45 };
+}
+const STORE = "school-map-editor-v1";
+const DOOR_W = 0.9;
+
+const original = JSON.parse(JSON.stringify(window.SCHOOL_MAP));
+let map = load() || fresh();
+let floor = 0;
+let tool = "select";
+let selected = null; // { kind: "room" | "solid", index }
+let history = [], future = [];
+let view = { x: -2, y: -2, w: 110, h: 50 };
+let drag = null;
+
+function fresh() {
+	const m = JSON.parse(JSON.stringify(original));
+	m.floors.forEach((f, i) => {
+		f.bg = defaultBg(i);
+		f.rooms.forEach(r => { if (r.notes === undefined) r.notes = ""; });
+	});
+	return m;
+}
+function load() {
+	try {
+		const s = localStorage.getItem(STORE);
+		const m = s ? JSON.parse(s) : null;
+		// Older saves had the photos turned and unaligned: give them the lined-up photo, keep the rooms.
+		if (m) m.floors.forEach((f, i) => { if (!f.bg || f.bg.v !== BG_VERSION) f.bg = defaultBg(i); });
+		return m;
+	} catch (e) { return null; }
+}
+function save() {
+	try { localStorage.setItem(STORE, JSON.stringify(map)); } catch (e) { /* private window: keep going */ }
+}
+function change(fn) {
+	history.push(JSON.stringify(map));
+	if (history.length > 200) history.shift();
+	future = [];
+	fn();
+	save();
+	render();
+}
+function undo() {
+	if (!history.length) return;
+	future.push(JSON.stringify(map));
+	map = JSON.parse(history.pop());
+	selected = null;
+	save(); render();
+}
+function redo() {
+	if (!future.length) return;
+	history.push(JSON.stringify(map));
+	map = JSON.parse(future.pop());
+	selected = null;
+	save(); render();
+}
+
+const F = () => {
+	const f = map.floors[floor];
+	if (!f.bg || f.bg.v !== BG_VERSION) f.bg = defaultBg(floor);
+	return f;
+};
+const snap = v => document.getElementById("snap").checked ? Math.round(v * 10) / 10 : Math.round(v * 100) / 100;
+const norm = r => {
+	const x0 = Math.min(r.x0, r.x1), x1 = Math.max(r.x0, r.x1), y0 = Math.min(r.y0, r.y1), y1 = Math.max(r.y0, r.y1);
+	r.x0 = x0; r.x1 = x1; r.y0 = y0; r.y1 = y1;
+};
+
+// Doors: tokens "<side><position>", N/S/E/W = door with a panel, lowercase = opening; position = plan x (N/S) or
+// plan y (W/E); no position = middle of the wall.
+function parseDoors(s) {
+	return (s || "").split(/\s+/).filter(Boolean).map(t => ({
+		side: t[0].toUpperCase(), panel: t[0] === t[0].toUpperCase(),
+		pos: t.length > 1 ? parseFloat(t.slice(1)) : null,
+	}));
+}
+function formatDoors(list) {
+	return list.map(d => (d.panel ? d.side : d.side.toLowerCase()) + (d.pos === null || isNaN(d.pos) ? "" : d.pos))
+		.join(" ");
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+const svg = document.getElementById("svg");
+const NS = "http://www.w3.org/2000/svg";
+function el(name, attrs, parent) {
+	const e = document.createElementNS(NS, name);
+	for (const k in attrs) e.setAttribute(k, attrs[k]);
+	(parent || svg).appendChild(e);
+	return e;
+}
+
+function render() {
+	const f = F();
+	svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`);
+	svg.innerHTML = "";
+	// Photo underneath.
+	const bg = f.bg || {};
+	if (bg.photo) {
+		const img = el("image", { href: PHOTO_DIR + bg.photo, opacity: bg.opacity, preserveAspectRatio: "none" });
+		const info = photoSize[bg.photo];
+		if (info) {
+			const w = info.w * bg.sx, h = info.h * bg.sy;
+			img.setAttribute("width", w); img.setAttribute("height", h);
+			// Placed by its top-left corner; a turn spins it around its centre.
+			img.setAttribute("x", bg.x); img.setAttribute("y", bg.y);
+			if (bg.rotate) img.setAttribute("transform", `rotate(${bg.rotate} ${bg.x + w / 2} ${bg.y + h / 2})`);
+		}
+	}
+	// Grid.
+	const g = el("g", { stroke: "#ffffff", "stroke-opacity": 0.05, "stroke-width": 0.04 });
+	for (let x = Math.floor(view.x); x <= view.x + view.w; x++)
+		el("line", { x1: x, y1: view.y, x2: x, y2: view.y + view.h, "stroke-opacity": x % 5 ? 0.04 : 0.1 }, g);
+	for (let y = Math.floor(view.y); y <= view.y + view.h; y++)
+		el("line", { x1: view.x, y1: y, x2: view.x + view.w, y2: y, "stroke-opacity": y % 5 ? 0.04 : 0.1 }, g);
+	// Floor outline.
+	el("rect", { x: f.rect.x0, y: f.rect.y0, width: f.rect.x1 - f.rect.x0, height: f.rect.y1 - f.rect.y0,
+		fill: "none", stroke: "#e8e6e1", "stroke-width": 0.12, "stroke-dasharray": "0.6 0.3" });
+	// Solids (courtyards, terraces).
+	f.solids.forEach((b, i) => {
+		const sel = selected && selected.kind === "solid" && selected.index === i;
+		el("rect", { x: b.x0, y: b.y0, width: b.x1 - b.x0, height: b.y1 - b.y0, fill: "#0a0a0c", "fill-opacity": 0.75,
+			stroke: sel ? "#e0b44a" : "#555", "stroke-width": sel ? 0.18 : 0.08, "data-kind": "solid", "data-index": i });
+	});
+	(f.endWalls || []).forEach(b => el("line", { x1: b.x0, y1: b.y0, x2: b.x1, y2: b.y1, stroke: "#bbb", "stroke-width": 0.15 }));
+	// Rooms.
+	f.rooms.forEach((r, i) => {
+		const t = TYPES[r.type] || TYPES.closed;
+		const sel = selected && selected.kind === "room" && selected.index === i;
+		el("rect", { x: r.x0, y: r.y0, width: r.x1 - r.x0, height: r.y1 - r.y0, fill: t.color, "fill-opacity": 0.72,
+			stroke: sel ? "#e0b44a" : "#c9c6bd", "stroke-width": sel ? 0.2 : 0.07, "data-kind": "room", "data-index": i });
+		const w = r.x1 - r.x0, h = r.y1 - r.y0;
+		const size = Math.max(0.45, Math.min(1.1, w / 6, h / 2.4));
+		if (r.label || r.realName) {
+			el("text", { x: r.x0 + w / 2, y: r.y0 + h / 2 - (r.realName && r.realName !== r.label ? size * 0.35 : -size * 0.35),
+				"font-size": size, fill: "#fff", "text-anchor": "middle", "pointer-events": "none",
+				"font-weight": 600 }).textContent = r.label || "";
+			if (r.realName && r.realName !== r.label)
+				el("text", { x: r.x0 + w / 2, y: r.y0 + h / 2 + size * 0.85, "font-size": size * 0.7, fill: "#e8e2c8",
+					"text-anchor": "middle", "pointer-events": "none" }).textContent = r.realName;
+		}
+		parseDoors(r.doors).forEach(d => {
+			const mid = (d.side === "N" || d.side === "S") ? (d.pos ?? (r.x0 + r.x1) / 2) : (d.pos ?? (r.y0 + r.y1) / 2);
+			let x1, y1, x2, y2;
+			if (d.side === "N" || d.side === "S") {
+				const y = d.side === "N" ? r.y0 : r.y1;
+				x1 = mid - DOOR_W / 2; x2 = mid + DOOR_W / 2; y1 = y2 = y;
+			} else {
+				const x = d.side === "W" ? r.x0 : r.x1;
+				y1 = mid - DOOR_W / 2; y2 = mid + DOOR_W / 2; x1 = x2 = x;
+			}
+			el("line", { x1, y1, x2, y2, stroke: d.panel ? "#f0a040" : "#7fd0ff", "stroke-width": 0.32,
+				"stroke-linecap": "round", "pointer-events": "none" });
+		});
+	});
+	// Handles on the selection.
+	const s = selection();
+	if (s && tool === "select") {
+		handles(s).forEach(h => el("rect", { x: h.x - 0.25, y: h.y - 0.25, width: 0.5, height: 0.5, fill: "#e0b44a",
+			"data-handle": h.id }));
+	}
+	renderSide();
+}
+
+const photoSize = {};
+Object.keys(PHOTOS).filter(Boolean).forEach(name => {
+	const img = new Image();
+	img.onload = () => { photoSize[name] = { w: img.naturalWidth, h: img.naturalHeight }; render(); };
+	img.onerror = () => { document.getElementById("status").textContent = "Floor-plan photos not found next to the game folder."; };
+	img.src = PHOTO_DIR + name;
+});
+
+function selection() {
+	if (!selected) return null;
+	const list = selected.kind === "room" ? F().rooms : F().solids;
+	return list[selected.index] || null;
+}
+function handles(r) {
+	const mx = (r.x0 + r.x1) / 2, my = (r.y0 + r.y1) / 2;
+	return [
+		{ id: "nw", x: r.x0, y: r.y0 }, { id: "n", x: mx, y: r.y0 }, { id: "ne", x: r.x1, y: r.y0 },
+		{ id: "w", x: r.x0, y: my }, { id: "e", x: r.x1, y: my },
+		{ id: "sw", x: r.x0, y: r.y1 }, { id: "s", x: mx, y: r.y1 }, { id: "se", x: r.x1, y: r.y1 },
+	];
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Side panel.
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+function renderSide() {
+	const props = document.getElementById("props");
+	const s = selection();
+	if (!s) {
+		props.innerHTML = `<div class="help">Click a room to edit it. Drag inside it to move, drag its edges or corners to
+			resize. <b>Draw room</b>: drag a rectangle. <b>Place door</b>: click on a room's wall (a second click on the
+			same door changes it to an opening, a third removes it). <b>Delete</b> removes the selection, <b>Ctrl+D</b>
+			copies it. Mouse wheel zooms, right or middle drag pans.</div>`;
+	} else if (selected.kind === "solid") {
+		props.innerHTML = `<div class="help">Courtyard / roof terrace: a solid block with no door. Drag to move or
+			resize.</div>
+			<div class="row"><label>Size</label>${(s.x1 - s.x0).toFixed(1)} × ${(s.y1 - s.y0).toFixed(1)} m</div>
+			<div class="row"><button class="danger" id="del">Delete</button></div>`;
+		document.getElementById("del").onclick = () => removeSelected();
+	} else {
+		const opts = Object.entries(TYPES).map(([k, t]) => `<option value="${k}" ${k === s.type ? "selected" : ""}>${t.name}</option>`).join("");
+		const doors = parseDoors(s.doors);
+		props.innerHTML = `
+			<div class="row"><label>Game code</label><input type="text" id="p-label" value="${esc(s.label)}"
+				placeholder="e.g. 14, GT2 (on the door sign)"></div>
+			<div class="row"><label>Real name</label><input type="text" id="p-real" list="real-names" value="${esc(s.realName || "")}"
+				placeholder="e.g. Kémia labor"></div>
+			<div class="row"><label>What it is</label><select id="p-type">${opts}</select></div>
+			<div class="row"><label>Notes</label><textarea id="p-notes" rows="2"
+				placeholder="Anything else: furniture, who uses it…">${esc(s.notes || "")}</textarea></div>
+			<div class="row"><label>Size</label>${(s.x1 - s.x0).toFixed(1)} × ${(s.y1 - s.y0).toFixed(1)} m
+				(x ${s.x0}–${s.x1}, y ${s.y0}–${s.y1})</div>
+			<h2>Doors</h2>
+			<div id="doors">${doors.map((d, i) => `<div class="door">
+				<select data-d="${i}" data-f="side">${["N", "S", "W", "E"].map(x => `<option ${x === d.side ? "selected" : ""}>${x}</option>`).join("")}</select>
+				<select data-d="${i}" data-f="panel"><option value="1" ${d.panel ? "selected" : ""}>door</option>
+					<option value="0" ${d.panel ? "" : "selected"}>opening</option></select>
+				<input type="number" step="0.1" data-d="${i}" data-f="pos" value="${d.pos ?? ""}" placeholder="middle">
+				<button data-d="${i}" data-f="del" title="Remove">×</button></div>`).join("")}</div>
+			<div class="row"><button id="add-door">Add door</button><button id="dup">Copy room</button>
+				<button class="danger" id="del">Delete room</button></div>`;
+		const set = (k, v) => change(() => { s[k] = v; });
+		document.getElementById("p-label").onchange = e => set("label", e.target.value.trim());
+		document.getElementById("p-real").onchange = e => set("realName", e.target.value.trim());
+		document.getElementById("p-type").onchange = e => set("type", e.target.value);
+		document.getElementById("p-notes").onchange = e => set("notes", e.target.value);
+		document.getElementById("del").onclick = () => removeSelected();
+		document.getElementById("dup").onclick = () => duplicate();
+		document.getElementById("add-door").onclick = () => change(() => {
+			const list = parseDoors(s.doors);
+			list.push({ side: "S", panel: true, pos: null });
+			s.doors = formatDoors(list);
+		});
+		props.querySelectorAll("[data-d]").forEach(input => {
+			const i = +input.dataset.d, field = input.dataset.f;
+			const handler = () => change(() => {
+				const list = parseDoors(s.doors);
+				if (field === "del") list.splice(i, 1);
+				else if (field === "side") list[i].side = input.value;
+				else if (field === "panel") list[i].panel = input.value === "1";
+				else if (field === "pos") list[i].pos = input.value === "" ? null : snap(parseFloat(input.value));
+				s.doors = formatDoors(list);
+			});
+			if (field === "del") input.onclick = handler; else input.onchange = handler;
+		});
+	}
+	// Room list.
+	const filter = document.getElementById("filter").value.toLowerCase();
+	const list = document.getElementById("room-list");
+	list.innerHTML = "";
+	F().rooms.forEach((r, i) => {
+		const text = `${r.label || "(no code)"} ${r.realName && r.realName !== r.label ? "– " + r.realName : ""}`;
+		if (filter && !text.toLowerCase().includes(filter) && !(TYPES[r.type] || {}).name?.toLowerCase().includes(filter)) return;
+		const div = document.createElement("div");
+		if (selected && selected.kind === "room" && selected.index === i) div.className = "sel";
+		div.innerHTML = `<span>${esc(text)}</span><small>${esc((TYPES[r.type] || TYPES.closed).name)}</small>`;
+		div.onclick = () => { selected = { kind: "room", index: i }; focusOn(r); render(); };
+		list.appendChild(div);
+	});
+	renderChecks();
+	renderBg();
+}
+
+function renderChecks() {
+	const f = F(), out = [];
+	const rooms = f.rooms;
+	const labels = {};
+	rooms.forEach((r, i) => {
+		if (r.x1 - r.x0 < 0.5 || r.y1 - r.y0 < 0.5) out.push(`Room ${r.label || i} is very small.`);
+		if (r.x0 < f.rect.x0 - 0.01 || r.y0 < f.rect.y0 - 0.01 || r.x1 > f.rect.x1 + 0.01 || r.y1 > f.rect.y1 + 0.01)
+			out.push(`Room ${r.label || "#" + i} goes past the old outline (fine: the game grows to fit).`);
+		if (r.label && r.type !== "wc") {
+			if (labels[r.label] !== undefined) out.push(`Code "${r.label}" is used twice on this floor.`);
+			labels[r.label] = i;
+		}
+		if (r.type !== "corridor" && r.type !== "closed" && !parseDoors(r.doors).length)
+			out.push(`Room ${r.label || "#" + i} has no door.`);
+		parseDoors(r.doors).forEach(d => {
+			if (d.pos === null) return;
+			const ns = d.side === "N" || d.side === "S";
+			const lo = ns ? r.x0 : r.y0, hi = ns ? r.x1 : r.y1;
+			if (d.pos < lo + 0.3 || d.pos > hi - 0.3) out.push(`Room ${r.label || "#" + i}: a ${d.side} door is off its wall.`);
+		});
+		for (let j = i + 1; j < rooms.length; j++) {
+			const o = rooms[j];
+			const w = Math.min(r.x1, o.x1) - Math.max(r.x0, o.x0), h = Math.min(r.y1, o.y1) - Math.max(r.y0, o.y0);
+			if (w > 0.05 && h > 0.05) out.push(`Rooms ${r.label || "#" + i} and ${o.label || "#" + j} overlap.`);
+		}
+	});
+	document.getElementById("checks").innerHTML = out.length
+		? out.slice(0, 40).map(t => `<div class="warn">${esc(t)}</div>`).join("") + (out.length > 40 ? `<div>…and ${out.length - 40} more</div>` : "")
+		: `<div class="good">No problems found on this floor.</div>`;
+}
+
+function renderBg() {
+	const bg = F().bg;
+	const box = document.getElementById("bg");
+	const opts = Object.entries(PHOTOS).map(([k, n]) => `<option value="${k}" ${k === bg.photo ? "selected" : ""}>${n}</option>`).join("");
+	box.innerHTML = `
+		<div class="row"><label>Photo</label><select id="bg-photo">${opts}</select></div>
+		<div class="row"><label>Turn</label><select id="bg-rot">${[0, 90, 180, 270].map(a => `<option ${a === bg.rotate ? "selected" : ""}>${a}</option>`).join("")}</select>°</div>
+		<div class="row"><label>Width</label><input type="range" id="bg-sx" min="0.02" max="0.2" step="0.0002" value="${bg.sx}" style="flex:1"></div>
+		<div class="row"><label>Height</label><input type="range" id="bg-sy" min="0.02" max="0.2" step="0.0002" value="${bg.sy}" style="flex:1"></div>
+		<div class="row"><label>Move x</label><input type="number" step="0.1" id="bg-x" value="${bg.x}">
+			<label style="min-width:0">y</label><input type="number" step="0.1" id="bg-y" value="${bg.y}"></div>
+		<div class="row"><button id="bg-fit" title="Back to the lined-up position">Line up again</button></div>
+		<div class="row"><label>See-through</label><input type="range" id="bg-op" min="0" max="1" step="0.05" value="${bg.opacity}" style="flex:1"></div>
+		<div class="help">The plan is already lined up with the game's rooms. It is only a guide: where a room does not
+			sit on the plan underneath, the game is wrong there; drag the room onto the plan.</div>`;
+	const upd = (k, v) => { bg[k] = v; save(); render(); };
+	document.getElementById("bg-photo").onchange = e => upd("photo", e.target.value);
+	document.getElementById("bg-rot").onchange = e => upd("rotate", +e.target.value);
+	document.getElementById("bg-sx").oninput = e => upd("sx", +e.target.value);
+	document.getElementById("bg-sy").oninput = e => upd("sy", +e.target.value);
+	document.getElementById("bg-fit").onclick = () => { F().bg = { ...defaultBg(floor), photo: F().bg.photo }; save(); render(); };
+	document.getElementById("bg-x").onchange = e => upd("x", +e.target.value);
+	document.getElementById("bg-y").onchange = e => upd("y", +e.target.value);
+	document.getElementById("bg-op").oninput = e => upd("opacity", +e.target.value);
+}
+
+function removeSelected() {
+	if (!selected) return;
+	const kind = selected.kind, index = selected.index;
+	change(() => { (kind === "room" ? F().rooms : F().solids).splice(index, 1); });
+	selected = null;
+	render();
+}
+function duplicate() {
+	const s = selection();
+	if (!s || selected.kind !== "room") return;
+	change(() => {
+		const copy = JSON.parse(JSON.stringify(s));
+		copy.x0 += 1; copy.x1 += 1; copy.y0 += 1; copy.y1 += 1;
+		copy.doors = formatDoors(parseDoors(copy.doors).map(d => ({ ...d, pos: d.pos === null ? null : d.pos + 1 })));
+		F().rooms.push(copy);
+		selected = { kind: "room", index: F().rooms.length - 1 };
+	});
+}
+function focusOn(r) {
+	const cx = (r.x0 + r.x1) / 2, cy = (r.y0 + r.y1) / 2;
+	view.x = cx - view.w / 2; view.y = cy - view.h / 2;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Mouse.
+function toPlan(evt) {
+	const pt = svg.createSVGPoint();
+	pt.x = evt.clientX; pt.y = evt.clientY;
+	const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+	return { x: p.x, y: p.y };
+}
+function hitRoom(p) {
+	const rooms = F().rooms;
+	for (let i = rooms.length - 1; i >= 0; i--) {
+		const r = rooms[i];
+		if (p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1) return i;
+	}
+	return -1;
+}
+function hitSolid(p) {
+	const list = F().solids;
+	for (let i = list.length - 1; i >= 0; i--) {
+		const b = list[i];
+		if (p.x >= b.x0 && p.x <= b.x1 && p.y >= b.y0 && p.y <= b.y1) return i;
+	}
+	return -1;
+}
+// The wall of a room nearest to p (within 0.6 m): { index, side, pos }.
+function nearestWall(p) {
+	let best = null;
+	F().rooms.forEach((r, i) => {
+		const sides = [
+			{ side: "N", d: Math.abs(p.y - r.y0), ok: p.x > r.x0 && p.x < r.x1, pos: p.x },
+			{ side: "S", d: Math.abs(p.y - r.y1), ok: p.x > r.x0 && p.x < r.x1, pos: p.x },
+			{ side: "W", d: Math.abs(p.x - r.x0), ok: p.y > r.y0 && p.y < r.y1, pos: p.y },
+			{ side: "E", d: Math.abs(p.x - r.x1), ok: p.y > r.y0 && p.y < r.y1, pos: p.y },
+		];
+		// On a wall shared by two rooms, the room you clicked inside wins.
+		const inside = p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1;
+		sides.forEach(s => {
+			const score = s.d - (inside ? 0.5 : 0);
+			if (s.ok && s.d < 0.6 && (!best || score < best.score)) best = { index: i, side: s.side, pos: snap(s.pos), score };
+		});
+	});
+	return best;
+}
+
+svg.addEventListener("contextmenu", e => e.preventDefault());
+svg.addEventListener("mousedown", e => {
+	const p = toPlan(e);
+	if (e.button === 1 || e.button === 2) {
+		drag = { mode: "pan", start: { x: e.clientX, y: e.clientY }, view: { ...view } };
+		return;
+	}
+	if (tool === "door") {
+		const w = nearestWall(p);
+		if (!w) return;
+		change(() => {
+			const r = F().rooms[w.index];
+			const list = parseDoors(r.doors);
+			const same = list.findIndex(d => d.side === w.side && d.pos !== null && Math.abs(d.pos - w.pos) < DOOR_W);
+			if (same < 0) list.push({ side: w.side, panel: true, pos: w.pos });
+			else if (list[same].panel) list[same].panel = false;
+			else list.splice(same, 1);
+			r.doors = formatDoors(list);
+			selected = { kind: "room", index: w.index };
+		});
+		return;
+	}
+	if (tool === "room" || tool === "solid") {
+		const start = { x: snap(p.x), y: snap(p.y) };
+		history.push(JSON.stringify(map)); future = [];
+		const item = tool === "room"
+			? { label: "", realName: "", type: "classroom", notes: "", x0: start.x, y0: start.y, x1: start.x, y1: start.y, doors: "" }
+			: { x0: start.x, y0: start.y, x1: start.x, y1: start.y };
+		const list = tool === "room" ? F().rooms : F().solids;
+		list.push(item);
+		selected = { kind: tool === "room" ? "room" : "solid", index: list.length - 1 };
+		drag = { mode: "create", start, item };
+		return;
+	}
+	// Select tool: handle, then room or solid body.
+	const handle = e.target.getAttribute && e.target.getAttribute("data-handle");
+	if (handle) {
+		history.push(JSON.stringify(map)); future = [];
+		drag = { mode: "resize", handle, item: selection() };
+		return;
+	}
+	const ri = hitRoom(p);
+	const si = ri < 0 ? hitSolid(p) : -1;
+	if (ri >= 0 || si >= 0) {
+		selected = ri >= 0 ? { kind: "room", index: ri } : { kind: "solid", index: si };
+		history.push(JSON.stringify(map)); future = [];
+		drag = { mode: "move", start: p, item: selection(), orig: JSON.parse(JSON.stringify(selection())), moved: false };
+	} else {
+		selected = null;
+	}
+	render();
+});
+window.addEventListener("mousemove", e => {
+	if (e.target && svg.contains(e.target) || drag) {
+		const p = toPlan(e);
+		document.getElementById("cursor").textContent = `x ${p.x.toFixed(1)}, y ${p.y.toFixed(1)} m`;
+	}
+	if (!drag) return;
+	const p = toPlan(e);
+	if (drag.mode === "pan") {
+		const k = view.w / svg.clientWidth;
+		view.x = drag.view.x - (e.clientX - drag.start.x) * k;
+		view.y = drag.view.y - (e.clientY - drag.start.y) * k;
+		render();
+	} else if (drag.mode === "create") {
+		drag.item.x1 = snap(p.x); drag.item.y1 = snap(p.y);
+		render();
+	} else if (drag.mode === "resize") {
+		const it = drag.item, h = drag.handle;
+		if (h.includes("w")) it.x0 = snap(p.x);
+		if (h.includes("e")) it.x1 = snap(p.x);
+		if (h.includes("n")) it.y0 = snap(p.y);
+		if (h.includes("s")) it.y1 = snap(p.y);
+		render();
+	} else if (drag.mode === "move") {
+		const dx = snap(p.x - drag.start.x), dy = snap(p.y - drag.start.y);
+		const it = drag.item, o = drag.orig;
+		if (dx || dy) drag.moved = true;
+		it.x0 = o.x0 + dx; it.x1 = o.x1 + dx; it.y0 = o.y0 + dy; it.y1 = o.y1 + dy;
+		if (it.doors !== undefined) {
+			it.doors = formatDoors(parseDoors(o.doors).map(d => ({ ...d,
+				pos: d.pos === null ? null : Math.round((d.pos + ((d.side === "N" || d.side === "S") ? dx : dy)) * 100) / 100 })));
+		}
+		render();
+	}
+});
+window.addEventListener("mouseup", () => {
+	if (!drag) return;
+	if (drag.mode === "create") {
+		norm(drag.item);
+		if (drag.item.x1 - drag.item.x0 < 0.3 || drag.item.y1 - drag.item.y0 < 0.3) {
+			// A click, not a rectangle: drop it.
+			const list = selected.kind === "room" ? F().rooms : F().solids;
+			list.splice(selected.index, 1);
+			selected = null;
+			history.pop();
+		}
+	} else if (drag.mode === "resize") {
+		norm(drag.item);
+	} else if (drag.mode === "move" && !drag.moved) {
+		history.pop();
+	}
+	drag = null;
+	save(); render();
+});
+svg.addEventListener("wheel", e => {
+	e.preventDefault();
+	const p = toPlan(e);
+	const k = e.deltaY > 0 ? 1.15 : 1 / 1.15;
+	view.x = p.x - (p.x - view.x) * k; view.y = p.y - (p.y - view.y) * k;
+	view.w *= k; view.h *= k;
+	render();
+}, { passive: false });
+
+function fit() {
+	const r = F().rect;
+	const aspect = svg.clientWidth / Math.max(1, svg.clientHeight);
+	let w = r.x1 - r.x0 + 4, h = r.y1 - r.y0 + 4;
+	if (w / h > aspect) h = w / aspect; else w = h * aspect;
+	view = { x: (r.x0 + r.x1) / 2 - w / 2, y: (r.y0 + r.y1) / 2 - h / 2, w, h };
+	render();
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Toolbar and keys.
+function setTool(t) {
+	tool = t;
+	["select", "room", "door", "solid"].forEach(x => document.getElementById("tool-" + x).classList.toggle("on", x === t));
+	document.getElementById("stage").className = t === "select" ? "select" : "";
+	render();
+}
+["select", "room", "door", "solid"].forEach(t => document.getElementById("tool-" + t).onclick = () => setTool(t));
+document.getElementById("undo").onclick = undo;
+document.getElementById("redo").onclick = redo;
+document.getElementById("fit").onclick = fit;
+document.getElementById("filter").oninput = () => renderSide();
+document.getElementById("reset-floor").onclick = () => {
+	if (!confirm("Put this floor back as it is in the game now? Your changes on this floor are lost.")) return;
+	change(() => {
+		const bg = F().bg;
+		map.floors[floor] = JSON.parse(JSON.stringify(original.floors[floor]));
+		map.floors[floor].bg = bg;
+		map.floors[floor].rooms.forEach(r => { if (r.notes === undefined) r.notes = ""; });
+	});
+	selected = null;
+};
+document.getElementById("export").onclick = () => {
+	const out = { ...map, savedAt: new Date().toISOString(), units: "plan metres (the game builds them x1.25)" };
+	const blob = new Blob([JSON.stringify(out, null, 1)], { type: "application/json" });
+	const a = document.createElement("a");
+	a.href = URL.createObjectURL(blob);
+	a.download = "school-map.json";
+	a.click();
+	setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+	document.getElementById("status").textContent = "Saved school-map.json to your downloads. Put it in ROBLOX-GAME/tools/map-editor/ and tell Claude.";
+};
+document.getElementById("import").onclick = () => document.getElementById("import-file").click();
+document.getElementById("import-file").onchange = async e => {
+	const file = e.target.files[0];
+	if (!file) return;
+	try {
+		const data = JSON.parse(await file.text());
+		if (!data.floors || data.floors.length !== map.floors.length) throw new Error("not a school map file");
+		change(() => { map = data; delete map.savedAt; delete map.units; });
+		selected = null;
+		document.getElementById("status").textContent = `Opened ${file.name}.`;
+	} catch (err) {
+		alert("Could not open that file: " + err.message);
+	}
+	e.target.value = "";
+};
+window.addEventListener("keydown", e => {
+	if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+	if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
+	else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); }
+	else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") { e.preventDefault(); duplicate(); }
+	else if (e.key === "Delete" || e.key === "Backspace") removeSelected();
+	else if (e.key === "Escape") { selected = null; setTool("select"); }
+	else if (e.key === "v") setTool("select");
+	else if (e.key === "r") setTool("room");
+	else if (e.key === "d") setTool("door");
+	else if (e.key === "s") setTool("solid");
+	else if (e.key === "f") fit();
+	else if (selected && e.key.startsWith("Arrow")) {
+		// Nudge the selection 0.1 m (Shift: 1 m).
+		e.preventDefault();
+		const step = e.shiftKey ? 1 : 0.1, s = selection();
+		const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+		const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+		change(() => {
+			s.x0 = snap(s.x0 + dx); s.x1 = snap(s.x1 + dx); s.y0 = snap(s.y0 + dy); s.y1 = snap(s.y1 + dy);
+			if (s.doors !== undefined) s.doors = formatDoors(parseDoors(s.doors).map(d => ({ ...d,
+				pos: d.pos === null ? null : snap(d.pos + ((d.side === "N" || d.side === "S") ? dx : dy)) })));
+		});
+	}
+});
+
+function renderFloors() {
+	const box = document.getElementById("floors");
+	box.innerHTML = "";
+	map.floors.forEach((f, i) => {
+		const b = document.createElement("button");
+		b.textContent = f.name.charAt(0).toUpperCase() + f.name.slice(1);
+		if (i === floor) b.className = "on";
+		b.onclick = () => { floor = i; selected = null; renderFloors(); fit(); };
+		box.appendChild(b);
+	});
+}
+document.getElementById("legend").innerHTML = Object.values(TYPES).map(t => `<span style="--c:${t.color}">${t.name}</span>`).join("");
+renderFloors();
+requestAnimationFrame(fit);
+window.addEventListener("resize", fit);
+</script>
+</body>
+</html>

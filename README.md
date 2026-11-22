@@ -22,8 +22,9 @@ A school project from the Neumann János school. The repository holds two separa
 
 | Part | Folder | Stack | Status | Documentation |
 |---|---|---|---|---|
-| The Empty School, a first-person 3D horror game | [`HORROR-GAME/`](HORROR-GAME) | Godot 4.7, GDScript | Playable demo, the main focus | [HORROR-GAME/README.md](HORROR-GAME/README.md) |
-| IKT: Survival Week, a console RPG | [`RPG-GAME/`](RPG-GAME) | C# on .NET 10 | Unfinished prototype, Windows only | [RPG-GAME/README.md](RPG-GAME/README.md) |
+| The Empty School, a first-person 3D horror game | [`HORROR-GAME/`](HORROR-GAME) | Godot 4.7, GDScript | Final version, playable demo, no further development | [HORROR-GAME/README.md](HORROR-GAME/README.md) |
+| IKT: Survival Week, a console RPG | [`RPG-GAME/`](RPG-GAME) | C# on .NET 10 | Final version, unfinished prototype, Windows only, no further development | [RPG-GAME/README.md](RPG-GAME/README.md) |
+| The Empty School on Roblox, the multiplayer modes | [`ROBLOX-GAME/`](ROBLOX-GAME) | Roblox, Luau | In development | [ROBLOX-GAME/README.md](ROBLOX-GAME/README.md) |
 | Project website | [`docs/`](docs) | Static HTML, CSS, JS | English and Hungarian text | This file, section Website |
 
 ## How the project works

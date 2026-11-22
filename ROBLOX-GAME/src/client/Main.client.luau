@@ -1,0 +1,38 @@
+-- Client entry: wires up the client modules once the server has created the remotes.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local remotes = ReplicatedStorage:WaitForChild("Remotes") :: Folder
+
+require(script.Parent.MouseLock).init() -- before any panel registers
+local State = require(script.Parent.State)
+State.init(remotes)
+require(script.Parent.PromptFilter).init()
+require(script.Parent.MovementController).init()
+require(script.Parent.CharacterAnimation).init()
+require(script.Parent.Controls).init(remotes)
+require(script.Parent.Footsteps).init()
+require(script.Parent.CameraController).init()
+require(script.Parent.LookSync).init(remotes)
+require(script.Parent.Hud).init(remotes)
+require(script.Parent.Spectator).init()
+require(script.Parent.Effects).init(remotes)
+require(script.Parent.Ambience).init()
+require(script.Parent.MeetingUi).init(remotes)
+require(script.Parent.StoryHud).init(remotes)
+require(script.Parent.QuizUi).init(remotes)
+require(script.Parent.VoteUi).init(remotes)
+require(script.Parent.StoryDialogs).init(remotes)
+local BagUi = require(script.Parent.BagUi)
+BagUi.init(remotes)
+local Viewmodel = require(script.Parent.Viewmodel)
+Viewmodel.init(remotes)
+require(script.Parent.Route).init()
+require(script.Parent.Phone).init(remotes)
+BagUi.changed:Connect(function()
+	local hand = BagUi.inv and BagUi.inv.hand
+	Viewmodel.setHeld(hand and hand.id)
+end)
+require(script.Parent.AchievementUi).init(remotes)
+require(script.Parent.AdminUi).init(remotes)
+require(script.Parent.SchoolGamesUi).init(remotes)
+require(script.Parent.MainMenu).init(remotes)

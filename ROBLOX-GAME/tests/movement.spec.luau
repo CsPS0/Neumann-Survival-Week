@@ -1,0 +1,32 @@
+local Movement = require("../src/shared/Movement")
+
+local P = { walk = 3, sprint = 5.5, crouch = 1.6, accel = 12, slideBoost = 1.3, slideTime = 0.8, slideMin = 4.8 }
+
+return function(t)
+	t.test("target speed per stance", function()
+		t.eq(Movement.targetSpeed("walk", P), 3)
+		t.eq(Movement.targetSpeed("sprint", P), 5.5)
+		t.eq(Movement.targetSpeed("crouch", P), 1.6)
+	end)
+	t.test("approach is limited by acceleration", function()
+		t.near(Movement.approach(3, 5.5, 12, 0.1), 4.2, 1e-9)
+		t.near(Movement.approach(5.5, 3, 12, 0.1), 4.3, 1e-9)
+		t.eq(Movement.approach(3, 3.05, 12, 0.1), 3.05)
+	end)
+	t.test("slide only from a real sprint", function()
+		t.eq(Movement.canSlide(5.2, P), true)
+		t.eq(Movement.canSlide(4.0, P), false)
+	end)
+	t.test("slide speed decays from a boost to crouch speed", function()
+		t.near(Movement.slideSpeed(5.5, 0, P), 5.5 * 1.3, 1e-9)
+		t.near(Movement.slideSpeed(5.5, 0.8, P), 1.6, 1e-9)
+		t.near(Movement.slideSpeed(5.5, 2, P), 1.6, 1e-9)
+		local mid = Movement.slideSpeed(5.5, 0.4, P)
+		t.truthy(mid < 5.5 * 1.3 and mid > 1.6)
+	end)
+	t.test("landing dip grows with fall speed and is capped", function()
+		t.eq(Movement.landingDip(-5), 0) -- small hops do nothing
+		t.truthy(Movement.landingDip(-30) > Movement.landingDip(-20))
+		t.eq(Movement.landingDip(-500), Movement.landingDip(-80))
+	end)
+end

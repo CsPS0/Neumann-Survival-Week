@@ -1,0 +1,6 @@
+build/
+sourcemap.json
+types/
+*.rbxl
+*.rbxlx
+*.lock

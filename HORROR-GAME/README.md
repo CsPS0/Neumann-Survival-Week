@@ -4,7 +4,7 @@ A first-person 3D horror game set in the Neumann school, built with Godot 4.7.
 
 Five days at the Neumann school. Something in the building is not what it seems. Attend your lessons, watch the teachers, and find out who it is before it finds you.
 
-Status: playable demo. Rooms marked "Not available in the demo." stay closed.
+> **Status: final version, playable demo.** This is the last version of the Godot game. It will not be updated or developed further. Rooms marked "Not available in the demo." stay closed.
 
 Contents:
 

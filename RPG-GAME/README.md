@@ -1,6 +1,6 @@
 # IKT: Survival Week (RPG-GAME)
 
-> **Status: unfinished prototype.** Development stopped at an early stage. The game starts and a few scenes are playable, but the planned quests, scoring and day system were never built.
+> **Status: final version, unfinished prototype.** This is the last version of the console game. It will not be updated or developed further. Development stopped at an early stage. The game starts and a few scenes are playable, but the planned quests, scoring and day system were never built.
 
 The original plan: you are a new student at the Neumann school and you have to survive the week. You meet NPCs, get quests and make choices that change the outcome. The game draws everything with ASCII art in the console.
 
