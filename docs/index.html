@@ -3,68 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neumann Survival Week</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>The Empty School · Neumann Survival Week</title>
+    <meta name="description" content="The Empty School: a first-person school horror game on Roblox. Story day, Hide and Seek, Social Deduction and free roam, solo or with friends.">
+    <meta name="color-scheme" content="dark">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="CSS/style.css">
-    <style>
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .animate-fadeIn {
-            animation: fadeIn 1s ease-in-out;
-        }
-        code {
-            background: #374151;
-            padding: 0 0.3em;
-            border-radius: 0.25rem;
-        }
-    </style>
 </head>
-<body class="bg-gray-900 text-white font-sans">
+<body>
+    <a class="skip" href="#play" data-translate="skip">Skip to the game</a>
 
-    <!-- Navigation Bar -->
-    <nav class="bg-gray-800 p-4 sticky top-0 z-10">
-        <div class="container mx-auto flex flex-wrap justify-between items-center">
-            <a href="#" class="text-2xl font-bold">Neumann Survival Week</a>
-            <!-- Hamburger Menu Button (visible on small screens) -->
-            <button id="hamburger-button" class="md:hidden text-white focus:outline-none" aria-label="Menu">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                </svg>
-            </button>
-            <!-- Navigation Links (hidden on small screens, visible on medium and larger) -->
-            <div id="navigation-links" class="hidden md:flex flex-col md:flex-row items-center w-full md:w-auto">
-                <a href="#horror" class="mx-2 hover:text-gray-400 py-2 md:py-0" data-translate="nav_horror">The Empty School</a>
-                <a href="#console" class="mx-2 hover:text-gray-400 py-2 md:py-0" data-translate="nav_console">Console Game</a>
-                <a href="#documentation" class="mx-2 hover:text-gray-400 py-2 md:py-0" data-translate="nav_docs">Documentation</a>
-                <a href="#team" class="mx-2 hover:text-gray-400 py-2 md:py-0" data-translate="nav_team">Team</a>
-                <div class="ml-0 md:ml-4 mt-2 md:mt-0">
-                    <select id="language-selector" class="bg-gray-700 text-white rounded p-2">
-                        <option value="en">English</option>
-                        <option value="hu">Magyar</option>
-                    </select>
-                </div>
+    <header class="bar">
+        <div class="wrap bar-row">
+            <a class="brand" href="#top">Neumann Survival Week</a>
+            <nav class="bar-nav" aria-label="Sections">
+                <a href="#modes" data-translate="nav_modes">Modes</a>
+                <a href="#controls" data-translate="nav_controls">Controls</a>
+                <a href="#alpha" data-translate="nav_alpha">Alpha notes</a>
+                <a href="#older" data-translate="nav_older">Older versions</a>
+            </nav>
+            <div class="lang" role="group" aria-label="Language">
+                <button type="button" data-lang="en" aria-pressed="true">EN</button>
+                <button type="button" data-lang="hu" aria-pressed="false">HU</button>
             </div>
         </div>
-    </nav>
+    </header>
 
-    <!-- Hero Section -->
-    <header class="bg-gray-800 text-center py-20 px-4">
-        <h1 class="text-5xl font-bold mb-4" data-translate="title">Neumann Survival Week</h1>
-        <p class="text-xl mb-8 max-w-3xl mx-auto" data-translate="subtitle">A school survival game in two versions: a Godot 3D horror game and an unfinished C# console prototype.</p>
-        <div class="flex flex-wrap justify-center gap-4 mb-8">
-            <a href="#horror" class="bg-red-700 hover:bg-red-600 px-6 py-3 rounded-lg font-bold" data-translate="hero_horror">The Empty School</a>
-            <a href="#console" class="bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg font-bold" data-translate="hero_console">Console prototype</a>
-        </div>
-        <div class="overflow-x-auto">
-        <pre class="text-white text-xs inline-block text-left">
-┌─────────────────────────────────────────────────────┐
+    <main id="top">
+        <!-- The game -->
+        <section class="hero wrap" id="play">
+            <p class="eyebrow">
+                <span class="tag tag-live" data-translate="status_live">On Roblox</span>
+                <span class="mono" id="version">Alpha preview 0.1 (2026-11-22)</span>
+            </p>
+            <h1>The Empty School</h1>
+            <p class="lead" data-translate="lead">A first-person horror game in the Neumann school after dark. Sit your lessons, find out which teacher is not themselves, and get out before 06:00. Alone or with friends.</p>
+
+            <div class="actions">
+                <a class="btn btn-play" href="https://www.roblox.com/games/95062738452308/The-Empty-School" rel="noopener">
+                    <span data-translate="cta_play">Play on Roblox</span>
+                    <span class="btn-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="btn btn-quiet" href="#modes" data-translate="cta_modes">What can I play?</a>
+            </div>
+
+            <ul class="facts">
+                <li><span class="fact-k" data-translate="fact_price_k">Price</span><span data-translate="fact_price">Free</span></li>
+                <li><span class="fact-k" data-translate="fact_devices_k">Devices</span><span data-translate="fact_devices">PC, phone, tablet</span></li>
+                <li><span class="fact-k" data-translate="fact_players_k">Players</span><span data-translate="fact_players">1 or more on a server</span></li>
+                <li><span class="fact-k" data-translate="fact_age_k">Age</span><span data-translate="fact_age">16+ for now</span></li>
+            </ul>
+
+            <div class="facade" aria-hidden="true">
+<pre>┌─────────────────────────────────────────────────────┐
 │ ┌─────┐ ┌─────┐ ┌─────┬─────┬─────┐ ┌─────┐ ┌─────┐ │
 │ │     │ │     │ │     │     │     │ │     │ │     │ │
 │ └─────┘ └─────┘ └─────┴─────┴─────┘ └─────┘ └─────┘ │
 ┌───────────────────┤ ┌─────┐ ┌─────┐ ┌─────┬─────┬─────┐ ┌─────┐ ┌─────┐ ├───────────────────┐
-│                   │ │     │ │     │ │     │     │     │ │     │ │     │ │                   │
+│                   │ │     │ │  <b>░</b>  │ │     │     │     │ │     │ │     │ │                   │
 │ ┌─────┐ ┌─────┐   │ └─────┘ └─────┘ └─────┴─────┴─────┘ └─────┘ └─────┘ │  ┌─────┐ ┌─────┐  │
 │ │     │ │     │   │  ┌───────────────────────────────────────────────┐  │  │     │ │     │  │
 │ │     │ │     │   │  │NEUMANN JÁNOS SZÁMITÁSTECHNIKAI SZAKKÖZÉPISKOLA│  │  │     │ │     │  │
@@ -74,161 +71,129 @@
 │ └─────┘ └─────┘   │└─────┘ └─────┘ │   ║   ║   ║   ║   │ └─────┘ └─────┘│  └─────┘ └─────┘  │
 │                   │              _/┴───╨───╨───╨───╨───┴\_              │                   │
 │                   │            _/─────────────────────────\_            │                   │
-│                   │           /─────────────────────────────\           │                   │
-        </pre>
-        </div>
-    </header>
-
-    <main class="container mx-auto p-8">
-
-        <!-- The Empty School (Godot 3D horror game) -->
-        <section id="horror" class="my-16 animate-fadeIn">
-            <h2 class="text-4xl font-bold text-center mb-4" data-translate="horror_title">The Empty School</h2>
-            <p class="text-center mb-2">
-                <span class="bg-green-700 px-3 py-1 rounded-full text-sm font-bold" data-translate="horror_status">Playable demo</span>
-                <span class="text-gray-400 ml-2" data-translate="horror_engine">First-person 3D horror, Godot 4.7</span>
-            </p>
-            <p class="text-lg text-center max-w-3xl mx-auto mb-10" data-translate="horror_intro">Five days at the Neumann school. Something in the building is not what it seems. Attend your lessons, watch the teachers, and find out who it is before it finds you.</p>
-
-            <div class="grid md:grid-cols-3 gap-8 mb-12">
-                <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-xl font-bold mb-2 text-red-400" data-translate="horror_f1_title">The whole school</h3>
-                    <p data-translate="horror_f1_text">Three floors built in code from the floor plans: corridors, stairwells, classrooms, computer rooms, the Aula and the Porta.</p>
-                </div>
-                <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-xl font-bold mb-2 text-red-400" data-translate="horror_f2_title">Five-day campaign</h3>
-                    <p data-translate="horror_f2_text">Three school days with bells, 7 lessons a day and quizzes, then two hunt days. Skip 6 lessons and you are expelled.</p>
-                </div>
-                <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-xl font-bold mb-2 text-red-400" data-translate="horror_f3_title">Lessons and quizzes</h3>
-                    <p data-translate="horror_f3_text">Seven subjects, each with its own room, teacher and questions. Get to the right room on time and answer 3 questions.</p>
-                </div>
-                <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-xl font-bold mb-2 text-red-400" data-translate="horror_f4_title">Find the entity</h3>
-                    <p data-translate="horror_f4_text">One of eight invented teachers is the entity. Collect clues, listen to what the teachers say, and name the right one on day 4.</p>
-                </div>
-                <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-xl font-bold mb-2 text-red-400" data-translate="horror_f5_title">Exorcism quest</h3>
-                    <p data-translate="horror_f5_text">Salt, holy water and a silver bell: four chained tasks across the school end in a ritual at the Aula altar.</p>
-                </div>
-                <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-xl font-bold mb-2 text-red-400" data-translate="horror_f6_title">The roaming demon</h3>
-                    <p data-translate="horror_f6_text">It wakes at night, patrols every floor, hears you sprint and chases on sight. Hide in a locker and hold your breath.</p>
-                </div>
+│                   │           /─────────────────────────────\           │                   │</pre>
             </div>
-
-            <h3 class="text-2xl font-bold text-center mb-4" data-translate="horror_people_title">Who you meet</h3>
-            <p class="text-lg text-center max-w-3xl mx-auto mb-12" data-translate="horror_people_text">Teachers with daily routines, the after-hours caretaker, his dog Csoki, the porter at the Porta desk and a crowd of students. All names in the game are invented.</p>
-
-            <h3 class="text-2xl font-bold text-center mb-4" data-translate="horror_endings_title">Eight endings</h3>
-            <div class="max-w-3xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-12">
-                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">1.</span> <span data-translate="ending_1">Caught</span></div>
-                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">2.</span> <span data-translate="ending_2">Banished</span></div>
-                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">3.</span> <span data-translate="ending_3">Expelled</span></div>
-                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">4.</span> <span data-translate="ending_4">Top student</span></div>
-                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">5.</span> <span data-translate="ending_5">Ran away</span></div>
-                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">6.</span> <span data-translate="ending_6">Pact</span></div>
-                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">7.</span> <span data-translate="ending_7">Overtime</span></div>
-                <div class="bg-gray-800 p-4 rounded-lg"><span class="text-red-400 font-bold">8.</span> <span data-translate="ending_8">Wrong person</span></div>
-            </div>
-
-            <h3 class="text-2xl font-bold text-center mb-4" data-translate="horror_controls_title">Controls</h3>
-            <div class="max-w-3xl mx-auto grid grid-cols-2 gap-4 mb-12">
-                <div><kbd class="bg-gray-700 p-2 rounded">W, A, S, D</kbd></div><div data-translate="hc_move">Move</div>
-                <div><kbd class="bg-gray-700 p-2 rounded">Shift</kbd></div><div data-translate="hc_sprint">Sprint (limited stamina)</div>
-                <div><kbd class="bg-gray-700 p-2 rounded">Mouse</kbd></div><div data-translate="hc_look">Look around</div>
-                <div><kbd class="bg-gray-700 p-2 rounded">F</kbd></div><div data-translate="hc_flashlight">Flashlight (battery-limited)</div>
-                <div><kbd class="bg-gray-700 p-2 rounded">Q</kbd></div><div data-translate="hc_phone">Phone: map, tasks, clues, finds, neu_mecha (Tab: next page)</div>
-                <div><kbd class="bg-gray-700 p-2 rounded">E</kbd></div><div data-translate="hc_interact">Interact: doors, items, teachers, lockers</div>
-                <div><kbd class="bg-gray-700 p-2 rounded">Space</kbd></div><div data-translate="hc_breath">Hold breath while hiding</div>
-                <div><kbd class="bg-gray-700 p-2 rounded">G</kbd></div><div data-translate="hc_accuse">Name the entity (from day 4)</div>
-                <div><kbd class="bg-gray-700 p-2 rounded">Esc</kbd></div><div data-translate="hc_pause">Pause menu</div>
-            </div>
-
-            <h3 class="text-2xl font-bold text-center mb-4" data-translate="horror_run_title">How to run</h3>
-            <ol class="list-decimal list-inside max-w-3xl mx-auto mb-6">
-                    <li data-translate="horror_run_1">Install Godot 4.7 (standard build).</li>
-                    <li data-translate="horror_run_2">Clone the repository.</li>
-                    <li data-translate="horror_run_3">In the Godot Project Manager, import <code>HORROR-GAME/project.godot</code>.</li>
-                    <li data-translate="horror_run_4">Press F5 to run the game.</li>
-            </ol>
-            <p class="text-gray-400 text-center max-w-3xl mx-auto" data-translate="horror_experimental">Experimental and untested on real hardware: touch controls for Android, local co-op for up to 4 players and VR through OpenXR.</p>
         </section>
 
-        <!-- IKT: Survival Week (C# console game) -->
-        <section id="console" class="my-16 animate-fadeIn">
-            <h2 class="text-4xl font-bold text-center mb-4" data-translate="console_title">IKT: Survival Week (console game)</h2>
-            <p class="text-center mb-2">
-                <span class="bg-yellow-700 px-3 py-1 rounded-full text-sm font-bold" data-translate="console_status">Unfinished prototype</span>
-                <span class="text-gray-400 ml-2" data-translate="console_engine">ASCII art RPG, C# and .NET 10</span>
-            </p>
-            <p class="text-lg text-center max-w-3xl mx-auto mb-10" data-translate="console_intro">The first version of the project. Development stopped at an early stage: the game starts and a few scenes are playable, but the planned quests, scoring and day system were never built.</p>
+        <!-- Modes -->
+        <section class="wrap block" id="modes">
+            <h2 data-translate="modes_title">Four ways to play</h2>
+            <p class="block-intro" data-translate="modes_intro">Everyone on a server plays the same round. Pick the mode in the menu (the <kbd>`</kbd> key).</p>
+            <div class="modes">
+                <article class="mode">
+                    <header>
+                        <h3 data-translate="m_story">Story day</h3>
+                        <span class="mono who" data-translate="m_story_who">1+ players</span>
+                    </header>
+                    <p data-translate="m_story_text">One school day from 06:30. Write tests at your desk, collect clues in the breaks. After the Lab 14 explosion twenty minutes go missing and the school changes. Ten endings.</p>
+                </article>
+                <article class="mode">
+                    <header>
+                        <h3 data-translate="m_hide">Hide and Seek</h3>
+                        <span class="mono who" data-translate="m_hide_who">1+ players</span>
+                    </header>
+                    <p data-translate="m_hide_text">25 seconds to hide, four minutes to survive. The entity is the computer or one of you. Caught? Mash <kbd>X</kbd>, or a friend hits it from behind.</p>
+                </article>
+                <article class="mode">
+                    <header>
+                        <h3 data-translate="m_deduction">Social Deduction</h3>
+                        <span class="mono who" data-translate="m_deduction_who">3+ players</span>
+                    </header>
+                    <p data-translate="m_deduction_text">One of you is the entity and nobody knows who. Call a meeting with <kbd>G</kbd>, compare where everyone was, and vote someone out.</p>
+                </article>
+                <article class="mode">
+                    <header>
+                        <h3 data-translate="m_roam">Free roam</h3>
+                        <span class="mono who" data-translate="m_roam_who">1+ players</span>
+                    </header>
+                    <p data-translate="m_roam_text">No entity, no clock. Walk the three floors, play ping pong in the Aula, shoot hoops in the gym, walk Csoki the dog.</p>
+                </article>
+            </div>
+        </section>
 
-            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
-                <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-xl font-bold mb-2 text-green-400" data-translate="console_works_title">What works</h3>
-                    <ul class="list-disc list-inside">
-                    <li data-translate="console_works_1">Main menu, settings and an ASCII logo</li>
-                    <li data-translate="console_works_2">Intro dialog</li>
-                    <li data-translate="console_works_3">Three scenes: Outside, Aula and Classroom</li>
-                    <li data-translate="console_works_4">Five NPC conversations with A, B, C choices</li>
-                    <li data-translate="console_works_5">A locked door that opens with a key</li>
-                    <li data-translate="console_works_6">Inventory and statistics screens</li>
-                    </ul>
+        <!-- Controls -->
+        <section class="wrap block" id="controls">
+            <h2 data-translate="controls_title">Default keys</h2>
+            <p class="block-intro" data-translate="controls_intro">Everything sits under the left hand. Change any key in Menu, Settings, Controls.</p>
+            <dl class="keys">
+                <div><dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></dt><dd data-translate="k_move">Move (mouse: look)</dd></div>
+                <div><dt><kbd>E</kbd></dt><dd data-translate="k_use">Doors, lockers, people, items</dd></div>
+                <div><dt><kbd>Shift</kbd></dt><dd data-translate="k_sprint">Sprint</dd></div>
+                <div><dt><kbd>C</kbd></dt><dd data-translate="k_crouch">Crouch, slide while running</dd></div>
+                <div><dt><kbd>F</kbd> <kbd>T</kbd></dt><dd data-translate="k_light">Phone light, flash burst (stuns the entity)</dd></div>
+                <div><dt><kbd>Q</kbd></dt><dd data-translate="k_phone">Phone: map, notes, clues, timetable</dd></div>
+                <div><dt><kbd>Tab</kbd> <kbd>B</kbd></dt><dd data-translate="k_bag">Open the bag, drop it for a friend</dd></div>
+                <div><dt><kbd>X</kbd></dt><dd data-translate="k_fight">Fight back: mash it when grabbed</dd></div>
+                <div><dt><kbd>G</kbd></dt><dd data-translate="k_meeting">Call a meeting (Social Deduction)</dd></div>
+                <div><dt><kbd>`</kbd></dt><dd data-translate="k_menu">Menu, settings, lobbies</dd></div>
+            </dl>
+        </section>
+
+        <!-- Alpha notes -->
+        <section class="wrap block" id="alpha">
+            <h2 data-translate="alpha_title">Alpha notes</h2>
+            <div class="alpha">
+                <div>
+                    <h3 data-translate="alpha_friends_title">Playing with friends</h3>
+                    <p data-translate="alpha_friends_text">Join the same server and you are in the same round. For a closed group, open Menu, Friends and lobbies, make a private lobby and share its five-letter code.</p>
                 </div>
-                <div class="bg-gray-800 p-6 rounded-lg">
-                    <h3 class="text-xl font-bold mb-2 text-yellow-400" data-translate="console_missing_title">Not finished</h3>
-                    <ul class="list-disc list-inside">
-                    <li data-translate="console_missing_1">Windows only: the input code crashes on Linux and macOS</li>
-                    <li data-translate="console_missing_2">The day picker ignores the chosen day</li>
-                    <li data-translate="console_missing_3">Dialog choices have no effect: no quests, no scoring</li>
-                    <li data-translate="console_missing_4">Statistics never change</li>
-                    <li data-translate="console_missing_5">No random events, boss fights or sound effects</li>
+                <div>
+                    <h3 data-translate="alpha_known_title">Known issues</h3>
+                    <ul>
+                        <li data-translate="alpha_known_1">Private lobby codes and invites have not been tried in the live game yet.</li>
+                        <li data-translate="alpha_known_2">Players under 16 cannot join until the content questionnaire is done.</li>
+                        <li data-translate="alpha_known_3">A Hide and Seek or Social Deduction round repeats until someone presses Back to lobby.</li>
                     </ul>
                 </div>
             </div>
-
-            <h3 class="text-2xl font-bold text-center mb-4" data-translate="console_run_title">How to run</h3>
-            <p class="text-lg text-center max-w-3xl mx-auto" data-translate="console_run_text">Windows and the .NET 10 SDK are required. Run <code>dotnet run</code> in <code>RPG-GAME/RPG-GAME</code>, or start <code>RPG-GAME/run.bat</code>.</p>
+            <p class="report"><span data-translate="alpha_report">Found a bug?</span> <a href="https://github.com/CsPS0/Neumann-Survival-Week/issues/new" rel="noopener" data-translate="alpha_report_link">Open an issue on GitHub</a></p>
         </section>
 
-        <!-- Documentation Section -->
-        <section id="documentation" class="my-16 animate-fadeIn">
-            <h2 class="text-4xl font-bold text-center mb-8" data-translate="documentation_title">Documentation</h2>
-            <p class="text-lg text-center max-w-3xl mx-auto mb-4" data-translate="documentation_text">Code documentation for both games is on GitHub.</p>
-            <div class="flex flex-wrap justify-center gap-6">
-                <a href="https://github.com/CsPS0/Neumann-Survival-Week/blob/main/README.md" class="text-blue-400 hover:underline" data-translate="doc_main">Project README</a>
-                <a href="https://github.com/CsPS0/Neumann-Survival-Week/blob/main/HORROR-GAME/README.md" class="text-blue-400 hover:underline" data-translate="doc_horror">The Empty School documentation</a>
-            </div>
-        </section>
+        <!-- Older versions -->
+        <section class="wrap block" id="older">
+            <h2 data-translate="older_title">Older versions</h2>
+            <p class="notice" data-translate="older_notice">These are no longer developed or supported. Everything they had now lives in the Roblox game, so play that one.</p>
 
-        <!-- Team Section -->
-        <section id="team" class="my-16 animate-fadeIn">
-            <h2 class="text-4xl font-bold text-center mb-8" data-translate="team_title">The Team</h2>
-            <div class="flex flex-wrap justify-center gap-8">
-                <div class="text-center">
-                    <p class="text-xl font-bold">Fehér Marcell</p>
+            <details class="old">
+                <summary>
+                    <span class="old-name">The Empty School, Godot 4.7</span>
+                    <span class="tag tag-dead" data-translate="tag_deprecated">Deprecated</span>
+                </summary>
+                <div class="old-body">
+                    <p data-translate="godot_text">The first 3D version: a five-day campaign, a roaming demon, local co-op and experimental VR. It still runs, but it gets no fixes.</p>
+                    <p data-translate="godot_run">Run it: install Godot 4.7, import <code>HORROR-GAME/project.godot</code>, press F5.</p>
                 </div>
-                <div class="text-center">
-                    <p class="text-xl font-bold">Polyák Dávid</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-xl font-bold">Solti Csongor Péter</p>
-                </div>
-            </div>
-        </section>
+            </details>
 
-        <!-- Documents Section -->
-        <section id="documents" class="my-16 animate-fadeIn">
-            <h2 class="text-4xl font-bold text-center mb-8" data-translate="documents_title">Documents</h2>
-            <div class="text-center">
-                <a href="https://github.com/CsPS0/Neumann-Survival-Week/blob/main/LICENSE" class="text-blue-400 hover:underline" data-translate="documents_license">License</a>
-            </div>
+            <details class="old">
+                <summary>
+                    <span class="old-name">IKT: Survival Week, C# console</span>
+                    <span class="tag tag-dead" data-translate="tag_unfinished">Deprecated, unfinished</span>
+                </summary>
+                <div class="old-body">
+                    <p data-translate="console_text">Where the project began: an ASCII art RPG with three scenes and a few conversations. Quests, scoring and the day system were never built, and it only runs on Windows.</p>
+                    <p data-translate="console_run">Run it: install the .NET 10 SDK, then <code>dotnet run</code> in <code>RPG-GAME/RPG-GAME</code>.</p>
+                </div>
+            </details>
         </section>
     </main>
 
-    <footer class="bg-gray-800 text-center py-4">
-        <p>&copy; 2025-2026 Neumann Survival Week</p>
+    <footer class="foot">
+        <div class="wrap foot-row">
+            <div>
+                <p class="foot-k" data-translate="team_title">Made by</p>
+                <p>Fehér Marcell · Polyák Dávid · Solti Csongor Péter</p>
+            </div>
+            <div>
+                <p class="foot-k" data-translate="links_title">Links</p>
+                <p class="foot-links">
+                    <a href="https://github.com/CsPS0/Neumann-Survival-Week" rel="noopener">GitHub</a>
+                    <a href="https://github.com/CsPS0/Neumann-Survival-Week/blob/main/ROBLOX-GAME/README.md" rel="noopener" data-translate="link_docs">Game docs</a>
+                    <a href="https://github.com/CsPS0/Neumann-Survival-Week/blob/main/LICENSE" rel="noopener" data-translate="link_license">License</a>
+                </p>
+            </div>
+        </div>
+        <p class="wrap foot-small">© 2025–2026 Neumann Survival Week · <span data-translate="names_note">Teacher names in the game are invented.</span></p>
     </footer>
 
     <script src="JS/translations.js"></script>
