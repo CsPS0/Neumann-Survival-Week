@@ -6,6 +6,9 @@ local Config = {}
 
 Config.STUDS_PER_METRE = 3
 
+-- The release shown in the menu (and in bug reports from friends).
+Config.VERSION = "Alpha preview 0.1 (2026-11-22)"
+
 function Config.studs(metres: number): number
 	return metres * Config.STUDS_PER_METRE
 end

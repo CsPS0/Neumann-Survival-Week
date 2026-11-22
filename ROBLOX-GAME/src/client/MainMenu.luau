@@ -13,6 +13,7 @@ local SocialService = game:GetService("SocialService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local Config = require(ReplicatedStorage.Shared.Config)
 local Keybinds = require(ReplicatedStorage.Shared.Keybinds)
 local Settings = require(ReplicatedStorage.Shared.Settings)
 local ClientSettings = require(script.Parent.ClientSettings)
@@ -158,7 +159,7 @@ function MainMenu.init(remotes: Folder)
 	colList.Parent = column
 	local title = label(column, "THE EMPTY SCHOOL", 38, 1, GOLD, Enum.Font.GothamBlack)
 	title.TextStrokeTransparency = 0.6
-	label(column, "Neumann Survival Week", 16, 2, MUTED)
+	label(column, `Neumann Survival Week · {Config.VERSION}`, 16, 2, MUTED)
 	local where = label(column, "", 13, 3, MUTED)
 	local message = label(column, "", 14, 4, Color3.fromRGB(255, 226, 170))
 	local spacer = Instance.new("Frame")
@@ -440,8 +441,9 @@ function MainMenu.init(remotes: Folder)
 			"",
 			"Hide and Seek: hide in lockers, flash the entity, free a caught friend: hit the entity from behind or "
 				.. "pull them free (it hurts). Too slow and the entity starts eating them.",
-			"The story: go to your lessons, sit at a desk for the test, find clues, borrow keys from the porter, name "
-				.. "the entity.",
+			"The story: go to your lessons, sit at a desk for the test, find clues, borrow keys from the porter. After "
+				.. "the explosion, go home or hide from the guard. At night the doors are webbed: mash X when it grabs "
+				.. "you, finish the quest and name the entity at the altar before 06:00.",
 			"Using the phone while walking makes you dizzy. Keep it up too long and you fall over.",
 		}, "\n")
 	end

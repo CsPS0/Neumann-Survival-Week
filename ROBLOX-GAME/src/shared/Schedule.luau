@@ -1,6 +1,7 @@
 --!strict
--- The campaign day in game minutes after midnight (campaign.gd): arrive, lessons and breaks, the explosion after the
--- last lesson, the afternoon, the accusation at dusk and the night until 05:00 the next morning.
+-- The campaign day in game minutes after midnight (campaign.gd, docs/2026-11-22-campaign-story-design.md): arrive,
+-- lessons and breaks, the explosion after the last lesson and the 20 minute time slip, the afternoon (everyone is
+-- sent home, the guard searches), and the night from 18:00 until 06:00 the next morning.
 
 local Schedule = {}
 
@@ -10,8 +11,9 @@ Schedule.LESSON = 45
 Schedule.BREAK = 10
 Schedule.GRACE = 2
 Schedule.AFTERNOON = 780 -- 13:00, after the explosion
-Schedule.DUSK = 1080 -- 18:00, the accusation
-Schedule.END = 1740 -- 05:00 next day
+Schedule.SLIP = 20 -- the minutes nobody remembers after the explosion
+Schedule.DUSK = 1080 -- 18:00, nightfall
+Schedule.END = 1800 -- 06:00 next day
 
 -- Game minutes per real second (before the difficulty scale).
 local PACE = {
@@ -20,7 +22,6 @@ local PACE = {
 	lesson = 0.8,
 	["break"] = 0.12,
 	afternoon = 1.2,
-	accusation = 0,
 	night = 0.75,
 	over = 0,
 }
@@ -56,18 +57,12 @@ function Schedule.lessonAt(m: number, count: number): number?
 	return nil
 end
 
-function Schedule.phaseAt(m: number, count: number, exploded: boolean, accused: boolean): string
+function Schedule.phaseAt(m: number, count: number, exploded: boolean): string
 	if m >= Schedule.END then
 		return "over"
 	end
-	if accused then
-		return "night"
-	end
-	if m >= Schedule.DUSK then
-		return "accusation"
-	end
 	if exploded then
-		return "afternoon"
+		return if m >= Schedule.DUSK then "night" else "afternoon"
 	end
 	if m < Schedule.FIRST_BELL then
 		return "arrive"

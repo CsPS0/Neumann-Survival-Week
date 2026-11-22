@@ -31,6 +31,9 @@ local function defaultDescription(): HumanoidDescription
 	return d
 end
 
+-- The look every player gets (the test players use it too: TestBots).
+Characters.SKIN, Characters.JACKET, Characters.TROUSERS = SKIN, JACKET, TROUSERS
+
 -- Yields while the character loads. Returns nil (never errors) when the player left or loading failed.
 function Characters.spawn(player: Player, at: CFrame): Model?
 	if not player.Parent then

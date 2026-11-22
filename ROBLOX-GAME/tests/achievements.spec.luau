@@ -19,13 +19,13 @@ return function(t)
 		t.eq((Achievements.add(have, "nonsense")), false)
 	end)
 
-	t.test("all nine endings bring the completionist", function()
+	t.test("all ten endings bring the completionist", function()
 		local have = {}
-		for i = 1, 8 do
+		for i = 1, 9 do
 			local _, extra = Achievements.add(have, `ending_{i}`)
 			t.eq(extra, nil)
 		end
-		local new, extra = Achievements.add(have, "ending_9")
+		local new, extra = Achievements.add(have, "ending_10")
 		t.eq(new, true)
 		t.eq(extra, "completionist")
 		t.eq(have.completionist, true)

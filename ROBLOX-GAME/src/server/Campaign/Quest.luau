@@ -35,6 +35,7 @@ export type Run = {
 	porterTopic: ((topic: (Player) -> boolean) -> ())?, -- one prompt on the porter (Keys.addTopic)
 	changed: () -> (),
 	onRitualStart: (altar: Vector3) -> (),
+	beforeRitual: ((start: () -> ()) -> ())?, -- the team names the entity first (CampaignMode)
 	onRitualDone: () -> (),
 	onDeal: () -> (),
 	sound: (name: string, at: Vector3?) -> (),
@@ -343,7 +344,15 @@ function Quest:useAltar(player: Player)
 		end
 		return
 	end
-	self:startRitual()
+	if run.beforeRitual then
+		run.beforeRitual(function()
+			if not self.ritualActive and not self.ritualDone then
+				self:startRitual()
+			end
+		end)
+	else
+		self:startRitual()
+	end
 end
 
 function Quest:startRitual()

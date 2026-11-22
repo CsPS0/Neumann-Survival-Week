@@ -129,6 +129,13 @@ function StoryDialogs.init(remotes: Folder)
 		end)
 		card.Visible = true
 	end)
+	-- A new round closes a card nobody closed.
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	ReplicatedStorage:GetAttributeChangedSignal("Phase"):Connect(function()
+		if card.Visible and ReplicatedStorage:GetAttribute("Phase") == "starting" then
+			card.Visible = false
+		end
+	end)
 end
 
 return StoryDialogs

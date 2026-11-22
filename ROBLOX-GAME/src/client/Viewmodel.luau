@@ -36,6 +36,8 @@ local leftArm: Model
 local rightArm: Model
 local held: Part
 local phoneState = "down" -- "down" | "one" | "two"
+local struggling = false -- the entity holds you: both hands push at it (StruggleUi)
+local shoveKick = 0 -- set by each press, eased out in the render step
 local heldId: string? = nil
 
 local function part(parent: Instance, name: string, size: Vector3, color: Color3, material: Enum.Material?): Part
@@ -92,6 +94,15 @@ function Viewmodel.setPhone(state: string)
 	phoneState = state
 end
 
+-- Both hands up and pushing at the entity while it holds you; each press of the defend key is a shove.
+function Viewmodel.setStruggle(on: boolean)
+	struggling = on
+end
+
+function Viewmodel.shove()
+	shoveKick = 1
+end
+
 function Viewmodel.setHeld(id: string?)
 	heldId = id
 	if id then
@@ -108,7 +119,7 @@ local function visible(): boolean
 	local state = player:GetAttribute("State")
 	return humanoid ~= nil and workspace.CurrentCamera.CameraSubject == humanoid
 		and workspace.CurrentCamera.CameraType == Enum.CameraType.Custom -- not while looking at a test paper
-		and (state == "alive" or state == "lobby") and not player:GetAttribute("Hidden")
+		and (state == "alive" or state == "lobby" or struggling) and not player:GetAttribute("Hidden")
 		and player.CameraMode == Enum.CameraMode.LockFirstPerson
 end
 
@@ -204,6 +215,24 @@ function Viewmodel.init(_remotes: Folder)
 		push.target = if hit then math.clamp(2.2 - hit.Distance, 0, 0.9) else 0
 
 		local r, l, k, t, p = raise:update(dt), low:update(dt), kick:update(dt), tap:update(dt), push:update(dt)
+		if struggling then
+			-- Both hands against the entity, shaking with effort; a shove on every press.
+			shoveKick = math.max(0, shoveKick - dt * 6)
+			local s = shoveKick * shoveKick
+			local shake = CFrame.new(math.noise(os.clock() * 9) * 0.03, math.noise(os.clock() * 9, 3) * 0.03, 0)
+			local view = cf * shake
+			leftArm:PivotTo(view * CFrame.new(-0.36, -0.32 + s * 0.05, -1.0 - s * 0.35)
+				* CFrame.Angles(math.rad(28 + s * 20), math.rad(-14), math.rad(10)))
+			rightArm:PivotTo(view * CFrame.new(0.36, -0.32 + s * 0.05, -1.0 - s * 0.35)
+				* CFrame.Angles(math.rad(28 + s * 20), math.rad(14), math.rad(-10)))
+			setShown(leftArm, player:GetAttribute("LostArm") ~= true)
+			setShown(rightArm, true)
+			setShown(phone, false)
+			setShown(screen, false)
+			setShown(lens, false)
+			held.LocalTransparencyModifier = 1
+			return
+		end
 		local base = cf * CFrame.new(sx + bobX, sy + bobY - l, p) * CFrame.Angles(sy * 0.6, sx * 0.6, 0)
 		local sprintTilt = CFrame.Angles(0, 0, if MovementController.sprinting then math.rad(10) else 0)
 

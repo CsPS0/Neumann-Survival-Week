@@ -1,6 +1,9 @@
--- The story campaign as one team day (docs/2026-11-20-campaign-design.md): arrive, lessons with quizzes, clues and
--- teachers in the breaks, Lab 14 explodes after the last lesson, the afternoon investigation, the accusation vote at
--- dusk, then the night hunt with the exorcism quest. One clock, one culprit and one shared ending for the server.
+-- The story campaign as one team day (docs/2026-11-20-campaign-design.md, docs/2026-11-22-campaign-story-design.md):
+-- arrive, lessons with quizzes, clues and teachers in the breaks, Lab 14 explodes after the last lesson and 20
+-- minutes vanish (you wake in the Aula; webs, fog, everyone coughing), everyone is sent home while the guard
+-- searches the school (go home, or hide), then the night: the doors seal with web, the entity eats the guard in the
+-- Aula and hunts; a catch is a grab you can fight off. The team names the entity at the altar before the ritual;
+-- 06:00 without an answer is the bad ending. One clock, one culprit and one shared ending for the server.
 -- The difficulty (Difficulty.luau) sets how long and how demanding the run is.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,6 +25,11 @@ local Torch = require(script.Parent.Parent.Torch)
 local Caretaker = require(script.Parent.Caretaker)
 local Clues = require(script.Parent.Clues)
 local Glimpses = require(script.Parent.Glimpses)
+local GuardScene = require(script.Parent.GuardScene)
+local Home = require(script.Parent.Home)
+local Webs = require(script.Parent.Webs)
+local Grab = require(script.Parent.Parent.Grab)
+local Maim = require(script.Parent.Parent.Maim)
 local Inventories = require(script.Parent.Inventories)
 local Lessons = require(script.Parent.Lessons)
 local Npc = require(script.Parent.Npc)
@@ -37,16 +45,16 @@ local S = Config.studs
 local TICK = 0.1
 local ACCUSE_SECONDS = 60
 local CHOICE_SECONDS = 45
-local REVIVE_WINDOW = 30
+local HOLD = 25 -- seconds the entity holds a caught player before it eats them (Grab.luau)
 local REVIVE_HOLD = 3
-local SOLO_PENALTY = 20 -- game minutes lost when a solo Easy player is caught
-local ENTITY_HEAD_START = 10 -- seconds between nightfall and the entity waking
+local SOLO_PENALTY = 20 -- game minutes lost when a solo Easy player is eaten
+local SICK_TALK = 30 -- seconds the sick teachers stay in the Aula after the slip before they leave
 local DEAL_COOLDOWN = 60 -- seconds after a refused deal before the altar offers it again
 local POWER_BANKS = 3 -- per run, in empty rooms
 
 local CampaignMode = {}
 
-local WAY_NAMES = { caught = "caught", expelled = "expelled", ranaway = "ran away" }
+local WAY_NAMES = { caught = "caught", expelled = "expelled", ranaway = "ran away", home = "went home" }
 
 local ctx = nil
 local run = nil
@@ -55,14 +63,14 @@ local function remote(name: string): RemoteEvent
 	return ctx.remotes:FindFirstChild(name) :: RemoteEvent
 end
 
--- Players still in the run and alive (not downed, not out).
+-- Players still in the run, alive and in the school (not downed, not out, not at home).
 local function alive(): { Player }
 	local list = {}
 	if not run then
 		return list
 	end
 	for p in run.students do
-		if p.Parent and p:GetAttribute("State") == "alive" then
+		if p.Parent and p:GetAttribute("State") == "alive" and not p:GetAttribute("AtHome") then
 			table.insert(list, p)
 		end
 	end
@@ -154,11 +162,16 @@ local function markOut(player: Player, way: string, message: string?)
 	run.out[player] = way
 	run.outIds[player.UserId] = true -- rejoining does not make you a student again
 	run.lastWay = way
-	run.downedAt[player] = nil
+	local grab = run.grabs[player]
+	run.grabs[player] = nil
+	if grab then
+		grab:stop()
+	end
 	for _, prompt in run.revivePrompts[player] or {} do
 		prompt:Destroy()
 	end
 	run.revivePrompts[player] = nil
+	player:SetAttribute("AtHome", nil)
 	Lockers.release(player)
 	Inventories.spill(player, ctx.school.spawn.Position - Vector3.new(0, 3, 0)) -- nothing needed is lost
 	if player.Parent then
@@ -200,6 +213,176 @@ local function onSkip(player: Player)
 	changed()
 end
 
+local function storyScene(kind: string, data: any?, player: Player?)
+	local r = remote("StoryScene")
+	if player then
+		r:FireClient(player, kind, data)
+	else
+		r:FireAllClients(kind, data)
+	end
+end
+
+-- The guard catches you, you leave by the front door, or the bed at home: --------------------------------------
+
+local function homeRoom()
+	if not run.home then
+		local myRun = run
+		run.home = Home.build({
+			folder = run.folder,
+			onGoBack = function(player)
+				if run ~= myRun or run.over or not player:GetAttribute("AtHome") then
+					return
+				end
+				player:SetAttribute("AtHome", nil)
+				storyScene("back", nil, player)
+				task.wait(0.8)
+				local far = ctx.school.farPoint
+				Characters.place(player, CFrame.new(far + Vector3.new(0, 3, 0)))
+				ctx.banner(if run.phase == "night"
+					then "You climb in through a broken window. The school is dark, and the webs are everywhere."
+					else "You climb in through a broken window at the far end. Keep away from the guard.", 7, player)
+				changed()
+			end,
+			onSleep = function(player)
+				if run ~= myRun or run.over or not player:GetAttribute("AtHome") then
+					return
+				end
+				ctx.banner(`{player.DisplayName} stayed home.`, 5)
+				markOut(player, "home", "You go to sleep in your own bed. Watch the others.")
+			end,
+		})
+	end
+	return run.home
+end
+
+local function sendHome(player: Player, message: string)
+	if not run or run.over or player:GetAttribute("AtHome") or player:GetAttribute("State") ~= "alive" then
+		return
+	end
+	Lockers.release(player)
+	player:SetAttribute("AtHome", true)
+	storyScene("home", nil, player)
+	local room = homeRoom()
+	task.wait(0.8)
+	if run and player.Parent and player:GetAttribute("AtHome") then
+		Characters.place(player, room.spawn)
+		ctx.banner(message, 7, player)
+	end
+	Votes.recheck()
+	changed()
+end
+
+-- The explosion and the time slip ---------------------------------------------------------------------------------
+
+local function sickCough()
+	-- The sick cough now and then while they are around (not the possessed teacher).
+	local myRun = run
+	task.spawn(function()
+		while run == myRun and not run.over and run.teachers and run.sick do
+			local list = {}
+			for id, model in run.teachers.models do
+				if id ~= run.culprit and model.Parent then
+					table.insert(list, model)
+				end
+			end
+			if #list == 0 then
+				break
+			end
+			local model = list[math.random(#list)]
+			local root = model:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if root then
+				sound("cough", root.Position)
+			end
+			task.wait(1.5 + math.random() * 2.5)
+		end
+	end)
+end
+
+local function startGuard()
+	if run.caretaker then
+		return
+	end
+	local myRun = run
+	local easy = run.level.caretaker == "off"
+	local guard = Caretaker.new({
+		folder = run.folder,
+		patrol = ctx.school.patrol,
+		alive = alive,
+		speed = if easy then 2.0 else 2.6,
+		sight = if easy then 8 else 12,
+		name = "Guard",
+		jacket = Color3.fromRGB(34, 44, 70),
+		trousers = Color3.fromRGB(28, 30, 40),
+		torch = true,
+		onCatch = function(player)
+			ctx.banner(`The guard caught {player.DisplayName} and walked them out.`, 5)
+			task.spawn(sendHome, player, "\"School is closed, go home!\" The guard walks you out. You are home.")
+		end,
+	}, ctx.school.patrol[1] + Vector3.new(0, 3, 0))
+	if run ~= myRun then
+		guard:destroy() -- the run ended while the guard was built
+		return
+	end
+	run.caretaker = guard
+end
+
+local function slip()
+	-- Twenty minutes nobody remembers: everyone wakes on the Aula floor.
+	storyScene("slip", { minutes = Schedule.SLIP })
+	local myRun = run
+	task.wait(1.4)
+	if run ~= myRun or run.over then
+		return
+	end
+	run.minutes += Schedule.SLIP
+	ReplicatedStorage:SetAttribute("CampaignDread", 0.55)
+	local i = 0
+	for _, p in alive() do
+		i += 1
+		Lockers.release(p)
+		local at = ctx.spawnAt(i)
+		Characters.place(p, at)
+		local humanoid = Characters.humanoid(p)
+		local root = Characters.root(p)
+		if humanoid and root then
+			humanoid.PlatformStand = true -- lying on the floor
+			root.CFrame = at * CFrame.new(0, -2, 0) * CFrame.Angles(math.rad(-80), 0, 0)
+		end
+	end
+	run.webs:grow(18)
+	if run.teachers then
+		run.sick = true
+		run.teachers:gather(ctx.school.spawn.Position + ctx.school.spawn.LookVector * S(4))
+		sickCough()
+	end
+	task.wait(3.2)
+	if run ~= myRun or run.over then
+		return
+	end
+	for _, p in alive() do
+		local humanoid = Characters.humanoid(p)
+		if humanoid then
+			humanoid.PlatformStand = false
+		end
+	end
+	ctx.banner(`You wake up on the Aula floor. It is {Schedule.format(run.minutes)}. Twenty minutes are gone.`, 7)
+	task.wait(6)
+	if run ~= myRun or run.over then
+		return
+	end
+	remote("Sound"):FireAllClients("bell")
+	ctx.banner("\"Everyone home, now! The school is closing.\" Leave by the front door, or hide until dark.", 9)
+	run.frontDoor.ActionText = "Go home"
+	startGuard()
+	task.delay(SICK_TALK * ctx.timeScale, function()
+		if run == myRun and not run.over and run.teachers then
+			run.sick = false
+			run.teachers:dismiss(ctx.school.spawn.Position)
+		end
+	end)
+	changed()
+end
+
 local function explode()
 	run.exploded = true
 	run.minutes = math.max(run.minutes, Schedule.AFTERNOON)
@@ -211,29 +394,7 @@ local function explode()
 	local labPos = Pickups.spot(CampaignData.STORY.lab.floor, CampaignData.STORY.lab.room)
 	sound("sting", labPos)
 	remote("Sound"):FireAllClients("bell")
-	ctx.banner("BOOM! Lab 14 exploded. Lessons are over; the teachers leave the building.", 8)
-	if run.teachers then
-		run.teachers:dismiss(ctx.school.spawn.Position)
-	end
-	run.clueSpawner:wave(3)
-	if run.level.caretaker ~= "off" then
-		local myRun = run
-		local caretaker = Caretaker.new({
-			folder = run.folder,
-			patrol = ctx.school.patrol,
-			alive = alive,
-			speed = 2.6,
-			onCatch = function(player)
-				ctx.banner(`The caretaker caught {player.DisplayName}: expelled.`, 6)
-				markOut(player, "expelled", "The caretaker caught you: expelled. Watch the others.")
-			end,
-		}, ctx.school.patrol[1] + Vector3.new(0, 3, 0))
-		if run ~= myRun then
-			caretaker:destroy() -- the run ended while the caretaker was built
-			return
-		end
-		run.caretaker = caretaker
-	end
+	ctx.banner("BOOM! Lab 14 exploded!", 4)
 	run.glimpses = Glimpses.new({
 		folder = run.folder,
 		alive = alive,
@@ -245,6 +406,7 @@ local function explode()
 		sound = sound,
 	})
 	changed()
+	task.spawn(slip)
 end
 
 local function tickLessons()
@@ -304,48 +466,58 @@ end
 
 -- Night -----------------------------------------------------------------------------------------------------------
 
-local function revive(player: Player, by: Player)
-	if player:GetAttribute("State") ~= "downed" or by:GetAttribute("State") ~= "alive" then
-		return
-	end
-	run.downedAt[player] = nil
+local function clearPrompts(player: Player)
 	for _, prompt in run.revivePrompts[player] or {} do
 		prompt:Destroy()
 	end
 	run.revivePrompts[player] = nil
+end
+
+-- A teammate pulls a held player free (hold E, -25 health for the one pulled).
+local function pullFree(player: Player, by: Player)
+	if player:GetAttribute("State") ~= "downed" or by:GetAttribute("State") ~= "alive" then
+		return
+	end
+	local grab = run.grabs[player]
+	run.grabs[player] = nil
+	if grab then
+		grab:free(by)
+	end
+	clearPrompts(player)
+	local humanoid = Characters.humanoid(player)
+	if humanoid then
+		humanoid.Health = math.max(0, humanoid.Health - 25)
+		if humanoid.Health <= 0 then
+			markOut(player, "caught", "You did not make it. Watch the others.")
+			return
+		end
+	end
 	Characters.setSpeed(player, nil)
 	player:SetAttribute("State", "alive")
-	ctx.banner(`{by.DisplayName} got you up!`, 3, player)
+	ctx.banner(`{by.DisplayName} pulled you free! (-25 health)`, 3, player)
 	changed()
 end
 
+-- The entity has you: mash the defend key to throw it off (Grab.luau). Too slow and it eats you.
 local function caught(player: Player)
-	if not run or run.over or player:GetAttribute("State") ~= "alive" or Lockers.isHidden(player) then
+	if not run or run.over or player:GetAttribute("State") ~= "alive" or Lockers.isHidden(player)
+		or player:GetAttribute("AtHome") or run.grabs[player] or not run.entityModel then
 		return
 	end
 	local root = Characters.root(player)
 	sound("sting", root and root.Position)
-	if not run.level.revive then
-		ctx.banner(`The entity took {player.DisplayName}.`, 5)
-		markOut(player, "caught", "The entity caught you. You are out; watch the others.")
-		return
-	end
-	if #alive() <= 1 then
-		-- Nobody left to revive you (solo, or the others are down): wake up at the entrance and lose some time.
-		run.minutes = math.min(run.minutes + SOLO_PENALTY, Schedule.END - 1)
-		Characters.place(player, ctx.spawnAt(1))
-		ctx.banner("Everything went black... You wake up at the entrance. Time has passed.", 6, player)
-		changed()
-		return
-	end
 	player:SetAttribute("State", "downed")
 	Characters.setSpeed(player, 0)
 	Torch.off(player)
-	ctx.banner(`The entity caught you! A teammate can get you up in {REVIVE_WINDOW} seconds.`, 6, player)
+	local hold = HOLD * ctx.timeScale
+	if run.ai then
+		run.ai:stun(hold + 1) -- it stays and eats
+	end
+	ctx.banner("It has you! Mash the key on screen to fight it off. A teammate can pull you free.", 5, player)
 	if root then
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "Revive"
-		prompt.ActionText = "Revive"
+		prompt.ActionText = "Pull free (-25 health)"
 		prompt.ObjectText = player.DisplayName
 		prompt.HoldDuration = REVIVE_HOLD
 		prompt.RequiresLineOfSight = false
@@ -355,20 +527,78 @@ local function caught(player: Player)
 		prompt.Triggered:Connect(function(by)
 			local a, b = Characters.root(by), Characters.root(player)
 			if a and b and (a.Position - b.Position).Magnitude < S(3) + 3 then
-				revive(player, by)
+				pullFree(player, by)
 			end
 		end)
 		prompt.Parent = root
 		run.revivePrompts[player] = { prompt }
 	end
-	local stamp = os.clock()
-	run.downedAt[player] = stamp
 	local myRun = run
-	task.delay(REVIVE_WINDOW * ctx.timeScale, function()
-		if run == myRun and run.downedAt[player] == stamp and player:GetAttribute("State") == "downed" then
-			markOut(player, "caught", "Nobody came. The entity took you; watch the others.")
+	local function release(seconds: number)
+		if run == myRun and run.ai then
+			run.ai:stun(seconds)
 		end
-	end)
+	end
+	local grab = Grab.start({
+		victim = player,
+		entity = run.entityModel,
+		hold = hold,
+		remotes = ctx.remotes,
+		onMaim = function(part)
+			if player:GetAttribute(part) then
+				return
+			end
+			player:SetAttribute(part, true)
+			if player.Character then
+				Maim.apply(player.Character, part)
+			end
+			local r = Characters.root(player)
+			sound("scream", r and r.Position)
+		end,
+		onEaten = function()
+			if run ~= myRun or run.over then
+				return
+			end
+			run.grabs[player] = nil
+			clearPrompts(player)
+			release(1.5)
+			if run.level.revive and #alive() == 0 then
+				-- Easy, alone: everything goes black and you wake at the entrance, time lost.
+				local r = Characters.root(player)
+				if r then
+					r.Anchored = false
+				end
+				run.minutes = math.min(run.minutes + SOLO_PENALTY, Schedule.END - 1)
+				Characters.place(player, ctx.spawnAt(1))
+				Characters.setSpeed(player, nil)
+				player:SetAttribute("State", "alive")
+				ctx.banner("Everything went black... You wake up at the entrance. Time has passed.", 6, player)
+				changed()
+				return
+			end
+			ctx.banner(`The entity ate {player.DisplayName}.`, 5)
+			markOut(player, "caught", "Too slow. The entity ate you. Watch the others.")
+		end,
+		onFree = function(by)
+			if run ~= myRun or run.over then
+				return
+			end
+			run.grabs[player] = nil
+			release(3) -- time to run
+			if by == nil and player:GetAttribute("State") == "downed" then
+				clearPrompts(player)
+				Characters.setSpeed(player, nil)
+				player:SetAttribute("State", "alive")
+				ctx.banner(`{player.DisplayName} fought the entity off!`, 4)
+				changed()
+			end
+		end,
+	})
+	if not grab then
+		markOut(player, "caught", "The entity caught you. You are out; watch the others.")
+		return
+	end
+	run.grabs[player] = grab
 	changed()
 	checkAllOut()
 end
@@ -420,8 +650,14 @@ local function onRitualDone()
 		run.entityModel = nil
 	end
 	run.ai = nil
+	for p, grab in run.grabs do
+		grab:free(nil)
+		run.grabs[p] = nil
+	end
+	run.webs:unseal()
+	ReplicatedStorage:SetAttribute("CampaignDread", 0.3)
 	sound("bell")
-	ctx.banner("The bell rings once. The whispers stop.", 6)
+	ctx.banner("The bell rings once. The whispers stop, and the webs over the doors fall away.", 6)
 	local myRun = run
 	run.quest:showHost(CampaignData.TEACHERS[run.culprit])
 	if run == myRun and not run.over then -- building the body yields
@@ -448,16 +684,64 @@ local function onDeal()
 		end, true) -- more than half of the living must say yes
 end
 
-startNight = function()
-	run.accused = true
-	setPhase("night")
-	if run.caretaker and run.level.caretaker ~= "night" then
-		run.caretaker:destroy()
-		run.caretaker = nil
-	elseif run.caretaker then
-		run.caretaker:setPaused(false)
+-- At the altar, before the ritual: the team names the entity (the vote that used to be at dusk).
+local function nameAtAltar(start: () -> ())
+	if run.named then
+		start()
+		return
 	end
-	ctx.banner("Correct. Night falls and the doors lock behind you. Banish it before 05:00!", 8)
+	if run.voting or Votes.isOpen() then
+		return
+	end
+	run.voting = true
+	local names = {}
+	for i, id in CampaignData.SUSPECTS do
+		names[i] = CampaignData.TEACHERS[id]
+	end
+	ctx.banner("Everything is on the altar. Who is the entity? Name it together.", 6)
+	Votes.ask("Who is the entity?", names, ACCUSE_SECONDS * ctx.timeScale, alive, function(pick)
+		if not run or run.over then
+			return
+		end
+		run.voting = false
+		if not pick then
+			ctx.banner("Nobody voted. Use the altar again.", 4)
+			return
+		end
+		if CampaignData.SUSPECTS[pick] == run.culprit then
+			run.named = true
+			for _, p in alive() do
+				AchievementService.award(p, "right_suspect")
+			end
+			ctx.banner(`{names[pick]}. The altar burns cold: you named it.`, 5)
+			start()
+		else
+			finishRun(8)
+		end
+	end)
+end
+
+startNight = function()
+	run.night = true
+	setPhase("night")
+	if run.caretaker then
+		run.caretaker:destroy() -- the guard has other plans tonight
+		run.caretaker = nil
+	end
+	ReplicatedStorage:SetAttribute("CampaignDread", 1)
+	run.webs:grow(24)
+	-- The front door is sealed with web.
+	run.webs:seal(run.frontDoor.Parent.CFrame * CFrame.new(0, 0, -0.3), Vector2.new(S(1.5), S(2.3)))
+	run.frontDoor.ActionText = "Tear the web"
+	run.clueSpawner:wave(3)
+	ctx.banner("18:00. The lights die. Webs seal the doors. Banish it before 06:00!", 8)
+	for p in run.students do
+		if p.Parent and p:GetAttribute("AtHome") then
+			ctx.banner("Your phone buzzes. Neugram: \"The school door is covered in webs?? The guard is not answering.\"",
+				10, p)
+			Votes.recheck()
+		end
+	end
 	run.quest = Quest.new({
 		level = run.level,
 		folder = run.folder,
@@ -470,6 +754,7 @@ startNight = function()
 		porterTopic = Keys.addTopic,
 		changed = changed,
 		sound = sound,
+		beforeRitual = nameAtAltar,
 		onRitualStart = function(altar: Vector3)
 			if run.ai then
 				run.ai.state = "investigate"
@@ -492,46 +777,45 @@ startNight = function()
 		onCatch = caught,
 		params = { chaseSpeed = run.level.chaseSpeed, sight = run.level.sight, hintInterval = run.level.hintInterval },
 	})
-	run.ai:placeAt(ctx.school.farPoint)
+	-- Out of sight (held still far below the school) until it comes for the guard.
+	run.ai:placeAt(Vector3.new(0, -300, 0))
+	local entityRoot = model:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if entityRoot then
+		entityRoot.Anchored = true
+	end
+	-- The guard by the altar in the Aula, then the scream, then the scene (GuardScene.luau).
+	local spawn = ctx.school.spawn
 	local myRun = run
-	task.delay(ENTITY_HEAD_START * ctx.timeScale, function()
-		if run == myRun and run.ai and not run.over then
-			run.ai:start()
-			sound("sting")
-			ctx.banner("Something is awake in the building.", 5)
-		end
-	end)
-	changed()
-end
-
-local function startAccusation()
-	if run.voting then
-		return
-	end
-	run.voting = true
-	local names = {}
-	for i, id in CampaignData.SUSPECTS do
-		names[i] = CampaignData.TEACHERS[id]
-	end
-	ctx.banner("Dusk. Who is the entity? Vote together.", 6)
-	Votes.ask("Who is the entity?", names, ACCUSE_SECONDS * ctx.timeScale, alive, function(pick)
-		if not run or run.over then
-			return
-		end
-		run.voting = false
-		if not pick then
-			ctx.banner("Nobody voted. Vote again.", 4)
-			return -- the tick re-opens the vote
-		end
-		if CampaignData.SUSPECTS[pick] == run.culprit then
-			for _, p in alive() do
-				AchievementService.award(p, "right_suspect")
+	run.guardScene = GuardScene.start({
+		folder = run.folder,
+		at = spawn.Position - Vector3.new(0, 3, 0) + spawn.LookVector * S(4) + spawn.RightVector * S(3),
+		entity = model,
+		alive = alive,
+		sound = sound,
+		banner = ctx.banner,
+		timeScale = ctx.timeScale,
+		onScream = function()
+			if run == myRun then
+				run.scene = "scream"
+				changed()
 			end
-			startNight()
-		else
-			finishRun(8)
-		end
-	end)
+		end,
+		onDone = function(target)
+			if run ~= myRun or run.over or not run.ai then
+				return
+			end
+			run.scene = nil
+			run.ai:start()
+			local r = target and Characters.root(target)
+			if r then
+				run.ai.state = "investigate"
+				run.ai:setGoal(r.Position)
+			end
+			ctx.banner("It turns towards you.", 4)
+			changed()
+		end,
+	})
+	changed()
 end
 
 -- State for the phone and the HUD ---------------------------------------------------------------------------------
@@ -540,12 +824,12 @@ local function guidePosition(): Vector3?
 	if run.level.guidance ~= "exact" then
 		return nil
 	end
+	if run.phase == "night" and run.scene == "scream" and run.guardScene then
+		return ctx.school.spawn.Position
+	end
 	if run.phase == "night" and run.quest then
 		local _, pos = run.quest:stepPlace(CampaignRules.questStep(run.quest.state))
 		return pos
-	end
-	if run.phase == "accusation" then
-		return nil
 	end
 	local info = lessonInfo(run.lessonIndex)
 	if info and not run.exploded and (run.phase == "grace" or run.minutes >= Schedule.lessonStart(run.lessonIndex) - 12) then
@@ -568,9 +852,10 @@ local function snapshot(player: Player)
 		clueRoom = run.clueSpawner:nextRoom(),
 		cluesFound = #run.clues,
 		cluesNeeded = run.level.clues,
-		accused = run.accused,
 		questStep = step,
 		questRoom = questRoom,
+		scene = run.scene,
+		home = player:GetAttribute("AtHome") == true,
 	}, run.level.guidance)
 	local timetable = {}
 	for i, subject in run.subjects do
@@ -596,7 +881,7 @@ local function snapshot(player: Player)
 		skips = run.skips[player.UserId] or 0,
 		skipLimit = if run.level.skipLimit == math.huge then 0 else run.level.skipLimit,
 		out = out,
-		guide = guidePosition(),
+		guide = if player:GetAttribute("AtHome") then nil else guidePosition(),
 	}
 end
 
@@ -622,7 +907,7 @@ local function tick(dt: number)
 		return
 	end
 	local count = #run.subjects
-	local phase = Schedule.phaseAt(run.minutes, count, run.exploded, run.accused)
+	local phase = Schedule.phaseAt(run.minutes, count, run.exploded)
 	-- The pace comes from the phase. Test scripts can hold the clock with the ServerStorage attribute CampaignFreeze.
 	if not run.adopted then
 		-- Players who joined while the run was starting were made spectators: they play too.
@@ -646,20 +931,12 @@ local function tick(dt: number)
 	if not run or run.over then
 		return
 	end
-	phase = Schedule.phaseAt(run.minutes, count, run.exploded, run.accused)
-	if phase == "accusation" then
-		run.minutes = Schedule.DUSK
-		if run.caretaker and run.level.caretaker == "afternoon" then
-			run.caretaker:destroy()
-			run.caretaker = nil
-		elseif run.caretaker then
-			run.caretaker:setPaused(true) -- nobody gets expelled while the vote covers the screen
-		end
-		setPhase("accusation")
-		startAccusation()
+	phase = Schedule.phaseAt(run.minutes, count, run.exploded)
+	if phase == "night" and not run.night then
+		startNight()
 	elseif phase == "over" then
 		run.minutes = Schedule.END
-		ctx.banner("05:00. The night is over without an answer.", 6)
+		ctx.banner("06:00. The morning staff unlock the doors and find you.", 6)
 		finishRun(7)
 		return
 	else
@@ -695,7 +972,11 @@ function CampaignMode.start(c)
 		minutes = Schedule.OPEN,
 		phase = "",
 		exploded = false,
-		accused = false,
+		night = false, -- 18:00 has come
+		named = false, -- the team named the entity at the altar
+		scene = nil :: string?, -- "scream" while the guard's scene waits for a witness
+		sick = false, -- the teachers cough (after the slip)
+		grabs = {} :: { [Player]: any }, -- the entity holding a player (Grab.luau)
 		voting = false,
 		over = false,
 		breaks = 0,
@@ -709,7 +990,6 @@ function CampaignMode.start(c)
 		ritualDone = false,
 		adopted = false,
 		dealBlockedUntil = 0,
-		downedAt = {} :: { [Player]: number },
 		revivePrompts = {} :: { [Player]: { Instance } },
 		lastWay = "ranaway",
 		quizRight = 0,
@@ -750,6 +1030,9 @@ function CampaignMode.start(c)
 		dialogue = remote("Dialogue"),
 		isAlive = function(p)
 			return p:GetAttribute("State") == "alive"
+		end,
+		sick = function()
+			return run ~= nil and run.sick
 		end,
 	})
 	if run ~= myRun then
@@ -834,19 +1117,39 @@ function CampaignMode.start(c)
 		end
 	end
 
-	-- Leaving through the front door: out for the rest of the run.
+	-- The front door: by day you can run away (out); after the slip it takes you home; at night it is sealed.
 	local spawn = c.school.spawn
 	local doorAt = spawn.Position - spawn.LookVector * S(1.6) - Vector3.new(0, 3, 0)
 	local exitPart = Pickups.part(folder, "FrontDoor", doorAt, Vector3.new(1.2, 2.1, 0.15), Color3.fromRGB(90, 70, 50),
 		Enum.Material.Wood)
 	exitPart.CanCollide = false
 	exitPart.Transparency = 0.3
-	Pickups.prompt(exitPart, "Leave the school (you are out)", "Front door", 2, function(player)
-		if run and not run.over then
+	exitPart.CFrame = CFrame.lookAt(exitPart.Position, exitPart.Position - spawn.LookVector)
+	run.frontDoor = Pickups.prompt(exitPart, "Leave the school (you are out)", "Front door", 2, function(player)
+		if not run or run.over or player:GetAttribute("AtHome") then
+			return
+		end
+		if run.night then
+			if not run.ritualDone then
+				ctx.banner("The web will not tear. Something wants you to stay.", 4, player)
+			end
+		elseif run.exploded then
+			ctx.banner(`{player.DisplayName} went home.`, 4)
+			sendHome(player, "You walk home through the empty streets. Your room, your bed. The school feels far away.")
+		else
 			ctx.banner(`{player.DisplayName} left the school.`, 5)
 			markOut(player, "ranaway", "You walked out of the school. Watch the others.")
 		end
 	end)
+	-- Webs grow from the corridors and rooms after the slip (Webs.luau).
+	local webPoints = table.clone(c.school.patrol)
+	for _, place in CampaignData.CLUE_ROOMS do
+		local at = Pickups.spot(place.floor, place.room)
+		if at then
+			table.insert(webPoints, at)
+		end
+	end
+	run.webs = Webs.new({ folder = folder, points = webPoints })
 
 	local keypad = remote("KeypadEnter")
 	table.insert(run.connections, keypad.OnServerEvent:Connect(function(player, code)
@@ -861,7 +1164,12 @@ function CampaignMode.start(c)
 	Torch.onFlash = onFlash
 
 	local subject = lessonInfo(0) :: any
-	ctx.banner(`{level.label} story. First lesson at 07:30: {subject.subject} in room {subject.room}. Press P for the phone.`, 10)
+	storyScene("intro", { difficulty = level.label })
+	task.delay(5, function()
+		if run == myRun and not run.over then
+			ctx.banner(`First lesson at 07:30: {subject.subject} in room {subject.room}. Press P for the phone.`, 10)
+		end
+	end)
 	task.spawn(function()
 		local last = os.clock()
 		while run == myRun and not myRun.over do
@@ -883,7 +1191,7 @@ function CampaignMode.playerJoined(player: Player)
 	if not run or run.over then
 		return
 	end
-	if not run.accused and run.phase ~= "accusation" and not run.outIds[player.UserId] then
+	if not run.night and not run.outIds[player.UserId] then
 		ctx.addPlayer(player)
 		local index = #Players:GetPlayers()
 		spawnStudent(player)
@@ -912,7 +1220,11 @@ function CampaignMode.playerLeft(player: Player)
 		Inventories.spill(player, ctx.school.spawn.Position - Vector3.new(0, 3, 0))
 	end
 	run.students[player] = nil
-	run.downedAt[player] = nil
+	local grab = run.grabs[player]
+	run.grabs[player] = nil
+	if grab then
+		grab:stop()
+	end
 	Votes.recheck()
 	changed()
 	if #standing() == 0 and not run.over then
@@ -935,7 +1247,7 @@ function CampaignMode.playerDied(player: Player)
 	if not run or run.over then
 		return
 	end
-	if run.accused then
+	if run.night then
 		local state = player:GetAttribute("State")
 		if state == "alive" or state == "downed" then
 			markOut(player, "caught", "You died in the dark. Watch the others.")
@@ -960,6 +1272,17 @@ function CampaignMode.stop()
 	end
 	old.over = true
 	Votes.cancel()
+	for _, grab in old.grabs do
+		grab:stop()
+	end
+	if old.guardScene then
+		old.guardScene:stop()
+	end
+	for p in old.students do
+		if p.Parent then
+			p:SetAttribute("AtHome", nil)
+		end
+	end
 	for _, connection in old.connections do
 		connection:Disconnect()
 	end
@@ -998,6 +1321,7 @@ function CampaignMode.stop()
 	ReplicatedStorage:SetAttribute("CampaignLessonRoom", nil)
 	ReplicatedStorage:SetAttribute("CampaignExploded", nil)
 	ReplicatedStorage:SetAttribute("CampaignDifficulty", nil)
+	ReplicatedStorage:SetAttribute("CampaignDread", nil)
 	ServerStorage:SetAttribute("CampaignCulprit", nil)
 	remote("CampaignState"):FireAllClients(nil)
 	ctx = nil

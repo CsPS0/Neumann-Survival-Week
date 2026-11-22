@@ -40,13 +40,18 @@ end
 
 -- states: survivor -> "alive" | "downed" | "out". The entity wins when nobody is up (also when everyone left);
 -- the survivors win when time runs out with someone not out.
+-- A held ("downed") survivor can still fight the entity off, so they keep the round going; when time runs out,
+-- only survivors still up count.
 function Rules.hideSeekResult(states: { [any]: string }, timeUp: boolean): ("survivors" | "entity")?
+	local held = false
 	for _, state in states do
 		if state == "alive" then
 			return if timeUp then "survivors" else nil
+		elseif state == "downed" then
+			held = true
 		end
 	end
-	return "entity"
+	return if held and not timeUp then nil else "entity"
 end
 
 function Rules.deductionResult(livingEntities: number, livingCrew: number, timeUp: boolean): ("crew" | "entity")?

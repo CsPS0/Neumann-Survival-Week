@@ -88,6 +88,13 @@ local function act(player: Player, op: any, args: any)
 		local off = not ReplicatedStorage:GetAttribute("CrowdOff")
 		ReplicatedStorage:SetAttribute("CrowdOff", off)
 		ctx.banner(if off then "Admin: the school empties." else "Admin: the people are back.", 3)
+	elseif op == "attackMe" then
+		require(script.Parent.TestBots).attackMe(player, workspace)
+	elseif op == "demo" then
+		local r = Characters.root(player)
+		if r and not require(script.Parent.TestBots).run(r.CFrame, workspace) then
+			ctx.banner("The attack demo is already running.", 3, player)
+		end
 	elseif op == "end" then
 		ctx.finish("Free roam ended.")
 	end

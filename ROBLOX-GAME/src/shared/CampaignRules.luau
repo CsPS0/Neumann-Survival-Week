@@ -27,6 +27,8 @@ function CampaignRules.allOutEnding(lastWay: string): number
 		return 1
 	elseif lastWay == "expelled" then
 		return 3
+	elseif lastWay == "home" then
+		return 10
 	end
 	return 5
 end
@@ -102,9 +104,10 @@ export type ObjectiveState = {
 	clueRoom: string?,
 	cluesFound: number,
 	cluesNeeded: number,
-	accused: boolean,
 	questStep: string?,
 	questRoom: string?,
+	scene: string?, -- "scream": the night has begun and nobody has seen the guard's scene yet
+	home: boolean?, -- this player went home
 }
 
 local QUEST_TASK = {
@@ -115,13 +118,17 @@ local QUEST_TASK = {
 	notes = "Find the notes with the safe code.",
 	safe = "Open the old safe with the code.",
 	altar = "Place the salt, the holy water and the bell on the altar in the Aula.",
-	ritual = "Start the ritual at the altar and survive it.",
+	ritual = "Name the entity at the altar, then survive the ritual.",
 }
 
 -- The HUD and phone objective. "exact" names rooms, "task" names the task only, "vague" gives one line a phase.
 function CampaignRules.objective(s: ObjectiveState, guidance: string): string
 	local vague = guidance == "vague"
 	local exact = guidance == "exact"
+	if s.home then
+		return if s.phase == "night" then "The school is covered in webs. Go back, or go to sleep and forget it."
+			else "You are at home. Go back to the school, or go to sleep."
+	end
 	if s.phase == "arrive" or s.phase == "break" or s.phase == "grace" or s.phase == "lesson" then
 		if s.phase == "lesson" then
 			return "Lesson time: be in the room, or you skip it."
@@ -141,18 +148,19 @@ function CampaignRules.objective(s: ObjectiveState, guidance: string): string
 		return line
 	elseif s.phase == "afternoon" then
 		if vague then
-			return "Find out who it is."
+			return "Go home, or hide until dark."
 		end
-		local line = `The school emptied. Clues found: {s.cluesFound}/{s.cluesNeeded}. At 18:00, name the entity together.`
+		local line = `Everyone was sent home. Leave by the front door, or hide from the guard until dark. Clues: {s.cluesFound}/{s.cluesNeeded}.`
 		if exact and s.clueRoom and s.cluesFound < s.cluesNeeded then
 			line ..= ` Next clue: room {s.clueRoom}.`
 		end
 		return line
-	elseif s.phase == "accusation" then
-		return "Name the entity: vote together."
 	elseif s.phase == "night" then
+		if s.scene == "scream" then
+			return if vague then "Something screamed." else "A scream from the Aula. Go and see."
+		end
 		if vague then
-			return "Banish it before morning."
+			return "Banish it before 06:00."
 		end
 		local task = QUEST_TASK[s.questStep or ""] or "Survive the night."
 		if exact and s.questRoom then

@@ -52,7 +52,7 @@ function AdminRules.check(op: any, args: any): any
 			return nil
 		end
 		return { room = args.room, floor = floor }
-	elseif op == "lights" or op == "csoki" or op == "people" or op == "end" then
+	elseif op == "lights" or op == "csoki" or op == "people" or op == "end" or op == "demo" or op == "attackMe" then
 		return {}
 	end
 	return nil

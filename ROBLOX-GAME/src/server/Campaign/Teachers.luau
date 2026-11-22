@@ -19,6 +19,7 @@ export type Run = {
 	breaks: () -> number,
 	dialogue: RemoteEvent,
 	isAlive: (Player) -> boolean,
+	sick: (() -> boolean)?, -- after the time slip: every teacher but the possessed one is ill
 }
 
 function Teachers.new(parent: Instance, run: Run)
@@ -53,6 +54,13 @@ function Teachers.new(parent: Instance, run: Run)
 end
 
 function Teachers:lines(id: string): { string }
+	if self.run.sick and self.run.sick() then
+		-- The one who is never ill is a clue.
+		if id == self.run.culprit then
+			return { CampaignData.WELL }
+		end
+		return { CampaignData.SICK[math.random(#CampaignData.SICK)] }
+	end
 	local lines = { CampaignData.CHAT[id] }
 	local breaks = self.run.breaks()
 	if id == self.run.culprit and breaks >= 1 then
@@ -77,7 +85,17 @@ function Teachers:sendFor(subject: string)
 	end
 end
 
--- Everyone leaves the building (the explosion): walk to the entrance, then gone.
+-- After the time slip: everyone gathers in the Aula around `at`, ill (the possessed one is not).
+function Teachers:gather(at: Vector3)
+	local i = 0
+	for _, model in self.models do
+		i += 1
+		local angle = i / 8 * math.pi * 2
+		Npc.goTo(model, at + Vector3.new(math.cos(angle) * 9, 0, math.sin(angle) * 6), 2.2)
+	end
+end
+
+-- Everyone leaves the building (sent home): walk to the entrance, then gone.
 function Teachers:dismiss(exit: Vector3)
 	for _, model in self.models do
 		Npc.goTo(model, exit, 2.2, function()

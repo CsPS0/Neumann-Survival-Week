@@ -10,8 +10,10 @@ Achievements.ORDER = {
 	"first_lesson", "straight_a", "hello_world", "net_admin", "key_collector", "detective", "right_suspect",
 	"good_boy", "dog_walker", "explorer", "ping_pong", "hoops", "free_spirit",
 	"ending_1", "ending_2", "ending_3", "ending_4", "ending_5", "ending_6", "ending_7", "ending_8", "ending_9",
-	"completionist",
+	"ending_10", "completionist",
 }
+
+Achievements.ENDINGS = 10 -- story endings (CampaignData.ENDINGS)
 
 Achievements.LIST = {
 	first_lesson = { name = "First Day", about = "Sit a test in a lesson." },
@@ -33,9 +35,10 @@ Achievements.LIST = {
 	ending_4 = { name = "Top Student", about = "Reach ending 4." },
 	ending_5 = { name = "Ran Away", about = "Reach ending 5." },
 	ending_6 = { name = "Pact", about = "Reach ending 6." },
-	ending_7 = { name = "Overtime", about = "Reach ending 7." },
+	ending_7 = { name = "Expelled at Dawn", about = "Reach ending 7." },
 	ending_8 = { name = "Wrong Person", about = "Reach ending 8." },
 	ending_9 = { name = "Destroyed", about = "Reach ending 9." },
+	ending_10 = { name = "Safe at Home", about = "Reach ending 10." },
 	completionist = { name = "Completionist", about = "See all 9 endings." },
 } :: { [string]: Info }
 
@@ -48,14 +51,14 @@ function Achievements.isKnown(id: string): boolean
 end
 
 -- Adds `id` to a saved list (a set of ids). Returns true when it is new. Ending achievements also bring
--- "completionist" once all nine are there (returned as a second new id).
+-- "completionist" once all ten are there (returned as a second new id).
 function Achievements.add(have: { [string]: boolean }, id: string): (boolean, string?)
 	if not Achievements.isKnown(id) or have[id] then
 		return false, nil
 	end
 	have[id] = true
 	if string.sub(id, 1, 7) == "ending_" and not have.completionist then
-		for i = 1, 9 do
+		for i = 1, Achievements.ENDINGS do
 			if not have[`ending_{i}`] then
 				return true, nil
 			end

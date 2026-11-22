@@ -15,6 +15,7 @@ Sounds.IDS = {
 	door = "rbxassetid://96136915248428", -- a door opening
 	bell = "rbxassetid://2783281207", -- school bell
 	scream = "rbxassetid://9125652432", -- a student taken by the entity (heard across the school)
+	cough = "rbxassetid://85758067160676", -- a sick teacher coughs (after the time slip)
 	bump = "rbxassetid://9113135029", -- distant knocks and creaks in the empty school at night
 	bark = "rbxassetid://135016436724006", -- Csoki barks (the entity or the caretaker is near)
 	pong = "rbxassetid://9117374562", -- a ping pong ball on the table

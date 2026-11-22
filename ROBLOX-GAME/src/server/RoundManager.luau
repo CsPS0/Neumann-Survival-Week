@@ -159,7 +159,8 @@ startRound = function(opts: Options): (boolean, string?)
 	setAttr("Phase", "starting")
 	options = opts
 	setAttr("Mode", opts.mode)
-	setAttr("Cycle", opts.mode ~= "campaign") -- A story run ends in the lobby; the short modes repeat.
+	-- A story run and free roam end in the lobby; the short modes (Hide and Seek, Social Deduction) repeat.
+	setAttr("Cycle", opts.mode ~= "campaign" and opts.mode ~= "freeroam")
 	local spawned = {}
 	for i, p in Players:GetPlayers() do
 		table.insert(spawned, p)
@@ -262,6 +263,7 @@ function RoundManager.init(schoolData, remoteFolder: Folder, modeTable: { [strin
 	local backRemote = remotes:WaitForChild("BackToLobby") :: RemoteEvent
 	backRemote.OnServerEvent:Connect(function(player)
 		if active and options and options.mode == "freeroam" then
+			setAttr("Cycle", false)
 			finish(`{player.DisplayName} ended free roam.`)
 			return
 		end

@@ -60,11 +60,17 @@ settings in Studio need Game Settings > Security > "Enable Studio Access to API 
   hears the scream); in Social Deduction the entity can take one with E instead of a player, and the body can be
   reported.
 - **Story** (solo or co-op, everyone on the server plays together and gets one shared ending): one school day from
-  06:30 to 05:00. Go to your lessons (be in the room when the bell rings, then answer the quiz), find clues about
-  the possessed teacher and talk to the teachers (E) in the breaks. Lab 14 explodes after the last lesson and the
-  school empties; at 18:00 the team votes who the entity is. Right: the night hunt and the exorcism quest (the
-  porter's storage key, the red room, the fuse box, the Lab 14 cabinet, the notes with the safe code, the safe in
-  room 229, the altar in the Aula and the ritual). Nine endings. Teacher names are invented.
+  06:30 to 06:00 the next morning. Go to your lessons (be in the room when the bell rings, then answer the quiz), find
+  clues about the possessed teacher and talk to the teachers (E) in the breaks. Lab 14 explodes after the last
+  lesson and twenty minutes vanish: you wake on the Aula floor, the school is darker, webs grow in the corners and
+  everyone coughs except the possessed teacher. Everyone is sent home: leave by the front door (your room at home:
+  go back in through a broken window, or go to sleep and you are out), or hide from the security guard until dark.
+  At 18:00 the lights die, webs seal the doors and a scream comes from the Aula: the entity eats the guard, then
+  comes for you. A catch is a grab: mash the defend key (X) to throw it off, or a friend pulls you free; too slow
+  and it eats you. Then the night quest (the porter's storage key, the red room, the fuse box, the Lab 14 cabinet,
+  the notes with the safe code, the safe in room 229, the altar in the Aula); with everything on the altar the team
+  names the entity, and the right name starts the ritual. 06:00 without it: expelled. Ten endings. Teacher names
+  are invented.
 
   **Hands, pockets and bag.** You carry one thing in your hand, one small thing in each pocket (key, holy water,
   papers, power bank) and up to 8 things in your bag; big things (salt, fuse, bell) only fit your hand or the bag. The
@@ -75,9 +81,9 @@ settings in Studio need Game Settings > Security > "Enable Studio Access to API 
 
   | Difficulty | Run | Lessons | Quiz | Help | Night |
   |---|---|---|---|---|---|
-  | Easy | up to ~45 min | 3 | 2 questions, multiple choice | objective names the room, a marker shows where | slow entity, caught = a teammate revives you (solo: you wake at the entrance) |
-  | Normal | ~45-60 min | 4 | 3 typed questions | objective names the task | 3 skipped lessons expel you; caught = out |
-  | Hard | 1-2 hours | 7 | 4 typed questions | one vague line | 2 skips expel; faster entity; the caretaker also patrols at night |
+  | Easy | up to ~45 min | 3 | 2 questions, multiple choice | objective names the room, a marker shows where | slow entity and guard; eaten alone = you wake at the entrance |
+  | Normal | ~45-60 min | 4 | 3 typed questions | objective names the task | 3 skipped lessons expel you; eaten = out |
+  | Hard | 1-2 hours | 7 | 4 typed questions | one vague line | 2 skips expel; faster entity; eaten = out |
 
 ## Set up
 
@@ -157,11 +163,17 @@ settings in Studio need Game Settings > Security > "Enable Studio Access to API 
 - [ ] Standing in the lesson's room when the bell rings opens the quiz (Easy: buttons; Normal/Hard: type and
   Enter); a missed lesson counts as a skip on the phone.
 - [ ] Clue tables lie in empty rooms; reading one adds it to everyone's phone. A teacher talks when you press E.
-- [ ] After the last lesson Lab 14 explodes, the teachers leave, the caretaker patrols (Normal, Hard).
-- [ ] At 18:00 the vote opens for everyone; a wrong name ends the story (Wrong person).
+- [ ] After the last lesson Lab 14 explodes: a white flash, "20 minutes later...", you wake blurred on the Aula floor;
+  darker fog, webs, coughing teachers (the possessed one says he has never felt better); "Everyone home, now!".
+- [ ] The front door says "Go home"; at home the door takes you back in through a window, the bed ends your run.
+  The guard (a torch) catches you and walks you home.
+- [ ] At 18:00 the doors are webbed ("Tear the web" fails), a scream from the Aula; walking in plays the guard's
+  scene, then the entity attacks: X mashing throws it off, a friend can pull you free, too slow and you are out.
+- [ ] With salt, holy water and bell on the altar the name vote opens; a wrong name ends the story (Wrong person).
+- [ ] 06:00 without the ritual: Expelled at dawn. Everyone going to sleep at home: Safe at home.
 - [ ] The night quest works with two players splitting the work: one drops a bag, the other opens it and takes
   the fuse; two players with the same bag open never duplicate or lose an item. The ritual needs someone at the
-  altar; the cure/destroy vote ends it. On Easy a caught player can be revived.
+  altar; the cure/destroy vote ends it.
 - [ ] A player who goes out or leaves drops a bag holding everything they carried; the others can open it.
 - [ ] In the afternoon the entity appears for a moment wearing the possessed teacher's colours and item.
 - [ ] The front door (hold E) takes you out of the story; the last one out ends it.
@@ -198,6 +210,12 @@ whole school, the entity and the other players present (lamp flicker, lockers, h
 
 ## Publish (for a private test with friends)
 
+Published 2026-11-22 as "The Empty School": https://www.roblox.com/games/95062738452308 (experience 10778521164),
+Team Create off, Data Sharing off. To publish an update: sync the scripts into Studio, then File > Publish (Alt+P).
+Released publicly the same day (rating answers: no 16+ and no 18+ content), so the link works for anyone aged 16+.
+Players under 16 and some regions need the full content questionnaire: Creator Hub > the experience > Audience
+("Expand your audience"). Who can join is managed in File > Manage Audience.
+
 1. In Studio: File > Publish to Roblox, create a new experience.
 2. Game Settings: set the maximum players to 10; under Avatar keep R15.
 3. Fill in the content maturity questionnaire (it is a horror game) in the Creator Hub.
@@ -205,3 +223,24 @@ whole school, the entity and the other players present (lamp flicker, lockers, h
    who is who in Social Deduction.
 5. Give friends access: either keep the experience public and share the link, or use private servers (check the
    current private server options in the Creator Hub) and send the private server link.
+
+## Alpha preview 0.1 (2026-11-22)
+
+The menu shows the version (`Config.VERSION`). What friends can play: Hide and Seek (computer or player entity),
+Social Deduction (3+ players), the story day (Easy, Normal, Hard; solo or co-op) and free roam.
+
+**Playing together.** Everyone on one server plays together. To keep it to your group: the menu's "Friends and
+lobbies" page makes a private lobby with a 5-letter code (friends type the code, or join through your invite).
+
+**Checked before release:** the unit tests, the school build and reach checks, every mode solo in Studio, and a
+server with 3 clients (lobby, Social Deduction meeting and vote, Hide and Seek with a player entity and the grab,
+the story in co-op with the guard scene and a friend pulling you free, joining at night as a spectator, leaving
+mid-run).
+
+**Known issues / not yet tested live:**
+- Private lobby codes, invites and saved settings/achievements only work in the published game; they were not
+  tried there yet.
+- The altar name vote and the "Safe at home" ending were not played through end to end.
+- On some servers other players' heads do not tilt with where they look (Roblox locks their neck joints).
+- A Hide and Seek or Social Deduction round repeats until someone presses "Back to lobby"; a running round cannot be
+  cut short.

@@ -10,7 +10,7 @@ local player = Players.LocalPlayer
 local NECK_SHARE = 0.6 -- of the pitch on the neck, the rest on the waist
 local EASE = 10
 
-type Joints = { neck: Motor6D?, waist: Motor6D?, neckC0: CFrame, waistC0: CFrame, current: number }
+type Joints = { neck: Motor6D?, waist: Motor6D?, neckC0: CFrame, waistC0: CFrame, current: number, locked: boolean? }
 
 local LookSync = {}
 
@@ -70,10 +70,16 @@ function LookSync.init(remotes: Folder)
 		for other, target in targets do
 			local character = other.Character
 			local j = character and jointsOf(character)
-			if j and j.neck and j.waist then
+			if j and j.neck and j.waist and not j.locked then
 				j.current += (target - j.current) * alpha
-				j.neck.C0 = j.neckC0 * CFrame.Angles(j.current * NECK_SHARE, 0, 0)
-				j.waist.C0 = j.waistC0 * CFrame.Angles(j.current * (1 - NECK_SHARE), 0, 0)
+				-- Roblox can lock another player's joints (C0 read only): then this character keeps its own pose.
+				local ok = pcall(function()
+					(j.neck :: Motor6D).C0 = j.neckC0 * CFrame.Angles(j.current * NECK_SHARE, 0, 0);
+					(j.waist :: Motor6D).C0 = j.waistC0 * CFrame.Angles(j.current * (1 - NECK_SHARE), 0, 0)
+				end)
+				if not ok then
+					j.locked = true
+				end
 			end
 		end
 	end)

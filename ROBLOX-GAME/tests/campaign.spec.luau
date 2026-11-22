@@ -54,7 +54,7 @@ return function(t)
 		t.eq(subjects, 7)
 		t.eq(#CampaignData.TIMETABLES, 3)
 		t.eq(#CampaignData.TIMETABLES[1], 7)
-		t.eq(#CampaignData.ENDINGS, 9)
+		t.eq(#CampaignData.ENDINGS, 10)
 		t.eq(CampaignData.teacherOf("Maths", 1), "karpati")
 		t.eq(CampaignData.teacherOf("Maths", 2), "szentgyorgyi")
 	end)
@@ -63,19 +63,21 @@ return function(t)
 		t.eq(Schedule.lessonStart(0), 450)
 		t.eq(Schedule.lessonEnd(0), 495)
 		t.eq(Schedule.lessonStart(1), 505)
-		t.eq(Schedule.phaseAt(400, 4, false, false), "arrive")
-		t.eq(Schedule.phaseAt(451, 4, false, false), "grace")
-		t.eq(Schedule.phaseAt(460, 4, false, false), "lesson")
-		t.eq(Schedule.phaseAt(498, 4, false, false), "break")
-		t.eq(Schedule.phaseAt(800, 4, true, false), "afternoon")
-		t.eq(Schedule.phaseAt(1080, 4, true, false), "accusation")
-		t.eq(Schedule.phaseAt(1200, 4, true, true), "night")
-		t.eq(Schedule.phaseAt(1740, 4, true, true), "over")
+		t.eq(Schedule.phaseAt(400, 4, false), "arrive")
+		t.eq(Schedule.phaseAt(451, 4, false), "grace")
+		t.eq(Schedule.phaseAt(460, 4, false), "lesson")
+		t.eq(Schedule.phaseAt(498, 4, false), "break")
+		t.eq(Schedule.phaseAt(800, 4, true), "afternoon")
+		t.eq(Schedule.phaseAt(1079, 4, true), "afternoon")
+		t.eq(Schedule.phaseAt(1080, 4, true), "night") -- nightfall comes on its own: no dusk vote
+		t.eq(Schedule.phaseAt(1740, 4, true), "night") -- 05:00 is still night
+		t.eq(Schedule.phaseAt(1800, 4, true), "over") -- 06:00
+		t.eq(Schedule.AFTERNOON + Schedule.SLIP, 800) -- waking in the Aula at 13:20
 		t.eq(Schedule.explosionAt(4), Schedule.lessonEnd(3))
 		local picked = Schedule.pickLessons(CampaignData.TIMETABLES[2], 3)
 		t.eq(#picked, 3)
 		t.eq(picked[1], "Programming")
-		t.eq(Schedule.pace("accusation", 1), 0)
+		t.eq(Schedule.pace("over", 1), 0)
 		t.near(Schedule.pace("lesson", 0.5), 0.4, 1e-9)
 	end)
 
@@ -106,6 +108,9 @@ return function(t)
 		t.eq(CampaignRules.allOutEnding("caught"), 1)
 		t.eq(CampaignRules.allOutEnding("expelled"), 3)
 		t.eq(CampaignRules.allOutEnding("ranaway"), 5)
+		t.eq(CampaignRules.allOutEnding("home"), 10)
+		t.eq(CampaignData.ENDINGS[7].title, "Expelled at dawn")
+		t.eq(CampaignData.ENDINGS[10].title, "Safe at home")
 	end)
 
 	t.test("votes always end", function()
@@ -139,13 +144,23 @@ return function(t)
 	end)
 
 	t.test("objective guidance levels", function()
-		local s = { phase = "break", nextLesson = { subject = "Physics", room = "28" }, cluesFound = 2, cluesNeeded = 9,
-			accused = false }
+		local s = { phase = "break", nextLesson = { subject = "Physics", room = "28" }, cluesFound = 2, cluesNeeded = 9 }
 		t.truthy(string.find(CampaignRules.objective(s, "exact"), "28", 1, true) ~= nil)
 		t.truthy(string.find(CampaignRules.objective(s, "task"), "Physics", 1, true) ~= nil)
 		t.truthy(string.find(CampaignRules.objective(s, "task"), "28", 1, true) == nil)
-		local night = { phase = "night", accused = true, questStep = "fuse", questRoom = "24", cluesFound = 9, cluesNeeded = 9 }
+		local night = { phase = "night", questStep = "fuse", questRoom = "24", cluesFound = 9, cluesNeeded = 9 }
 		t.truthy(string.find(CampaignRules.objective(night, "exact"), "24", 1, true) ~= nil)
 		t.truthy(string.find(CampaignRules.objective(night, "vague"), "24", 1, true) == nil)
+	end)
+
+	t.test("the new story's objectives", function()
+		local after = { phase = "afternoon", cluesFound = 3, cluesNeeded = 9 }
+		t.truthy(string.find(CampaignRules.objective(after, "task"), "guard", 1, true) ~= nil)
+		local scream = { phase = "night", scene = "scream", questStep = "redkey", cluesFound = 3, cluesNeeded = 9 }
+		t.truthy(string.find(CampaignRules.objective(scream, "exact"), "Aula", 1, true) ~= nil)
+		local home = { phase = "afternoon", home = true, cluesFound = 3, cluesNeeded = 9 }
+		t.truthy(string.find(CampaignRules.objective(home, "exact"), "home", 1, true) ~= nil)
+		local altar = { phase = "night", questStep = "ritual", cluesFound = 9, cluesNeeded = 9 }
+		t.truthy(string.find(CampaignRules.objective(altar, "task"), "Name the entity", 1, true) ~= nil)
 	end)
 end

@@ -198,6 +198,18 @@ CampaignData.STRANGE = {
 	"... You are looking at me. Everyone is. Why is everyone looking?",
 }
 
+-- After the time slip half the school is ill. Every teacher but the possessed one says one of these (outbreak.gd):
+-- the one who is never sick is a clue.
+CampaignData.SICK = {
+	"*coughs* My hands are ice cold. I keep dreaming about the chemistry lab.",
+	"I was by room 14 when it blew. Since then I cannot get warm.",
+	"Half the school is coughing. Only one of us still looks perfectly well. Odd, is it not?",
+	"Go home. Whatever is in this building feeds on the sick.",
+}
+
+-- What the possessed teacher says after the slip: perfectly well, and a little too cheerful.
+CampaignData.WELL = "Ill? Me? I have never felt better. Go home now, there is a good student."
+
 export type Ending = { title: string, color: { number }, text: string }
 
 CampaignData.ENDINGS = {
@@ -213,12 +225,14 @@ CampaignData.ENDINGS = {
 		text = "You walk out and keep walking. You will never know who it was.\nThe school stays open." },
 	{ title = "Pact", color = { 0.75, 0.3, 0.9 },
 		text = "The deal is simple: it leaves you alone, you leave it the school.\nYou graduate on time." },
-	{ title = "Overtime", color = { 0.6, 0.6, 0.5 },
-		text = "The night ends without an answer. Morning comes.\nThe corridors are still listening." },
+	{ title = "Expelled at dawn", color = { 0.6, 0.6, 0.5 },
+		text = "06:00. The morning staff find you in a school full of webs, and nobody believes a word.\nYou are expelled. The corridors are still listening." },
 	{ title = "Wrong person", color = { 1.0, 0.4, 0.5 },
 		text = "You point at the wrong teacher and the whole school sees it.\nThe real one smiles from the back of the room." },
 	{ title = "Destroyed", color = { 1.0, 0.55, 0.2 },
 		text = "The demon dies with the body it wore. The whispers stop for good.\nOne chair in the staff room stays empty. Nobody asks why." },
+	{ title = "Safe at home", color = { 0.55, 0.7, 0.9 },
+		text = "You sleep in your own bed. In the morning the school is closed for repairs.\nThe guard is never found." },
 } :: { Ending }
 
 -- What each teacher wears (jacket and trousers, 0-255 RGB): the NPCs by day, and the shreds the entity wears.

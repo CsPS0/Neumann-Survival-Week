@@ -1,5 +1,6 @@
 -- The caretaker (caretaker.gd): patrols the empty school after the explosion. Seeing a student, he walks to them;
--- catching one expels them. Off on Easy.
+-- catching one calls onCatch. The story uses him as the security guard (a name, a uniform, a torch and a sight in
+-- metres in the options), who walks the students he catches out of the school.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
@@ -19,12 +20,52 @@ export type Run = {
 	alive: () -> { Player },
 	onCatch: (Player) -> (),
 	speed: number,
+	name: string?, -- "Caretaker" when not given
+	jacket: Color3?,
+	trousers: Color3?,
+	sight: number?, -- metres (12 when not given)
+	torch: boolean?, -- carries a torch (a spotlight from the hand)
 }
+
+-- A torch in the NPC's right hand, shining ahead (the guard). Returns the torch part.
+function Caretaker.giveTorch(model: Model): BasePart?
+	local hand = model:FindFirstChild("RightHand") :: BasePart?
+	if not hand then
+		return nil
+	end
+	local torch = Instance.new("Part")
+	torch.Name = "Torch"
+	torch.Size = Vector3.new(0.35, 0.35, 1.3)
+	torch.Color = Color3.fromRGB(30, 30, 34)
+	torch.Material = Enum.Material.Metal
+	torch.CanCollide = false
+	torch.Massless = true
+	torch.CFrame = hand.CFrame * CFrame.new(0, -0.3, -0.5)
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = hand
+	weld.Part1 = torch
+	weld.Parent = torch
+	local beam = Instance.new("SpotLight")
+	beam.Face = Enum.NormalId.Front
+	beam.Angle = 50
+	beam.Range = S(14)
+	beam.Brightness = 3
+	beam.Color = Color3.fromRGB(255, 240, 210)
+	beam.Shadows = true
+	beam.Parent = torch
+	torch.Parent = model
+	return torch
+end
 
 function Caretaker.new(run: Run, at: Vector3)
 	local self = setmetatable({}, Caretaker)
 	self.run = run
-	self.model = Npc.build("Caretaker", Color3.fromRGB(70, 84, 60), Color3.fromRGB(60, 60, 56), CFrame.new(at), run.folder)
+	self.model = Npc.build(run.name or "Caretaker", run.jacket or Color3.fromRGB(70, 84, 60),
+		run.trousers or Color3.fromRGB(60, 60, 56), CFrame.new(at), run.folder)
+	self.sight = run.sight or SIGHT
+	if run.torch then
+		Caretaker.giveTorch(self.model)
+	end
 	self.running = true
 	self.paused = false -- during a team vote
 	self.chasing = nil :: Player?
@@ -70,7 +111,7 @@ function Caretaker:look()
 		local target = Characters.root(player)
 		if target and not player:GetAttribute("Hidden") then
 			local to = target.Position - root.Position
-			if to.Magnitude < S(SIGHT) and math.abs(to.Y) < S(2) then
+			if to.Magnitude < S(self.sight) and math.abs(to.Y) < S(2) then
 				local hit = workspace:Raycast(root.Position, to, self.rayParams)
 				if hit and hit.Instance:IsDescendantOf(player.Character :: Model) and to.Magnitude < bestDist then
 					best, bestDist = player, to.Magnitude

@@ -45,6 +45,9 @@ Remotes.NAMES = {
 	"PingPongState", -- server -> clients: ({active, a, b, t0, dur, score, names, top}) the ball's flight and the score
 	"BallThrow", -- client -> server: (look direction) throw the basketball you hold
 	"AdminAction", -- client -> server: (op, args) free roam admin panel
+	"Grab", -- server -> the held player: (kind, data) the entity holds you (Grab.luau)
+	"StoryScene", -- server -> clients: (kind, data) story cards: "intro", "slip", "home", "back" (StoryScenes.luau)
+	"Struggle", -- client -> server: one press of the defend key while held
 }
 
 -- UnreliableRemoteEvents: frequent updates where a lost packet does not matter (the next one replaces it).

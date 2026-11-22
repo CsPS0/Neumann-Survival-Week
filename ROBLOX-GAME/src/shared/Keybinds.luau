@@ -18,6 +18,7 @@ Keybinds.ACTIONS = {
 	{ id = "dropBag", label = "Drop the bag", default = "B" },
 	{ id = "useItem", label = "Use (power bank)", default = "V" },
 	{ id = "meeting", label = "Call a meeting", default = "G" },
+	{ id = "defend", label = "Fight back (mash when grabbed)", default = "X" },
 	{ id = "menu", label = "Menu", default = "Backquote" },
 	{ id = "admin", label = "Admin panel (free roam)", default = "Five" },
 } :: { Action }

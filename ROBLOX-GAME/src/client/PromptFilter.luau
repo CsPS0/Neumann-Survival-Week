@@ -5,7 +5,10 @@
 --   survivor  alive Hide and Seek survivors (revive)
 --   entity    an alive entity (catch, takedown)
 -- Prompts are kept in a set (added/removed events), so a state change touches only the prompts, not the whole map.
+-- Rescues come first: while you are in reach of a held teammate's "Pull free" or the entity's "Hit it from behind",
+-- every other prompt (a door, a locker) steps aside, so E never closes a door instead of saving someone.
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
 local State = require(script.Parent.State)
 
@@ -13,6 +16,9 @@ local player = Players.LocalPlayer
 local PromptFilter = {}
 
 local prompts: { [ProximityPrompt]: boolean } = {}
+local RESCUE = { Revive = true, HitEntity = true }
+local rescuing = false -- a rescue prompt is in reach: the others are off
+local someoneHeld = false -- the entity holds a player (attribute Grabbed): only then can you hit it from behind
 
 local function allowed(prompt: ProximityPrompt): boolean
 	if prompt:GetAttribute("Owner") == player.UserId then
@@ -45,7 +51,26 @@ local function allowed(prompt: ProximityPrompt): boolean
 end
 
 local function apply(prompt: ProximityPrompt)
-	prompt.Enabled = allowed(prompt)
+	prompt.Enabled = allowed(prompt) and (not rescuing or RESCUE[prompt.Name] == true)
+		and (prompt.Name ~= "HitEntity" or someoneHeld)
+end
+
+-- Is a rescue prompt you may use within its reach of you?
+local function rescueInReach(): boolean
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not root then
+		return false
+	end
+	for prompt in prompts do
+		local part = prompt.Parent
+		if RESCUE[prompt.Name] and part and part:IsA("BasePart") and allowed(prompt)
+			and (prompt.Name ~= "HitEntity" or someoneHeld)
+			and (part.Position - root.Position).Magnitude <= prompt.MaxActivationDistance then
+			return true
+		end
+	end
+	return false
 end
 
 local function track(d: Instance)
@@ -65,9 +90,33 @@ function PromptFilter.init()
 			prompts[d] = nil
 		end
 	end)
-	State.changed:Connect(function()
+	local function applyAll()
 		for prompt in prompts do
 			apply(prompt)
+		end
+	end
+	State.changed:Connect(applyAll)
+	local nextCheck = 0
+	local heldShown = false
+	RunService.Heartbeat:Connect(function()
+		local now = os.clock()
+		if now < nextCheck then
+			return
+		end
+		nextCheck = now + 0.2
+		local held = false
+		for _, p in Players:GetPlayers() do
+			if p:GetAttribute("Grabbed") then
+				held = true
+				break
+			end
+		end
+		someoneHeld = held
+		local near = rescueInReach()
+		if near ~= rescuing or held ~= heldShown then
+			rescuing = near
+			heldShown = held
+			applyAll()
 		end
 	end)
 end

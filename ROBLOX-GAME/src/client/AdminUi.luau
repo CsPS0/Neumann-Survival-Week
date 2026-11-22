@@ -79,6 +79,14 @@ render = function()
 	small(school, "People on/off", 3, function()
 		action:FireServer("people", {})
 	end)
+	small(school, "Attack me", 5, function()
+		action:FireServer("attackMe", {})
+		panel.Visible = false
+	end)
+	small(school, "Attack demo", 4, function()
+		action:FireServer("demo", {})
+		panel.Visible = false
+	end)
 	StoryUi.text(panel, `Teleport: {FloorData.FLOOR_NAMES[floor + 1]}`, 15, 10, StoryUi.MUTED)
 	local floors = row(11)
 	for f = 0, #FloorData.FLOORS - 1 do

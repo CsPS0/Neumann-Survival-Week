@@ -75,6 +75,8 @@ require(script.Parent.AchievementService).init(remotes)
 require(script.Parent.Csoki).init(school, remotes, workspace)
 require(script.Parent.SchoolGames).init(school, remotes, folder)
 require(script.Parent.NpcReactions).init()
+require(script.Parent.TestBots).init(remotes)
+require(script.Parent.Grab).init(remotes)
 require(script.Parent.LookRelay).init(remotes)
 require(script.Parent.Campaign.Votes).init(remotes)
 require(script.Parent.Campaign.Inventories).init(remotes)
@@ -95,4 +97,24 @@ startHook.OnInvoke = function(opts, testOptions)
 	return RoundManager.start(opts, testOptions)
 end
 startHook.Parent = hooks
+-- The four test players and the entity's attack (TestBots), in front of the first player.
+local demoHook = Instance.new("BindableFunction")
+demoHook.Name = "AttackDemo"
+demoHook.OnInvoke = function()
+	local p = game:GetService("Players"):GetPlayers()[1]
+	local r = p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not r then
+		return false
+	end
+	return require(script.Parent.TestBots).run(r.CFrame, workspace)
+end
+demoHook.Parent = hooks
+-- The entity attacks you, in your own view (TestBots.attackMe).
+local attackHook = Instance.new("BindableFunction")
+attackHook.Name = "AttackMe"
+attackHook.OnInvoke = function()
+	local p = game:GetService("Players"):GetPlayers()[1]
+	return p ~= nil and require(script.Parent.TestBots).attackMe(p, workspace)
+end
+attackHook.Parent = hooks
 hooks.Parent = game:GetService("ServerStorage")

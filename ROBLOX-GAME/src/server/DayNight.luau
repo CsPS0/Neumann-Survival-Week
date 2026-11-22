@@ -48,6 +48,15 @@ local DAY = {
 	Specular = 1,
 }
 local DUSK_TINT = Color3.new(1, 0.62, 0.38)
+-- What the dread (CampaignDread = 1) adds: the school after the time slip.
+local DREAD = {
+	Ambient = Color3.new(0.06, 0.07, 0.06),
+	Fog = Color3.new(0.34, 0.37, 0.32),
+	Density = 0.22,
+	Haze = 1.5,
+	Saturation = 0.3,
+	Tint = Color3.new(0.86, 0.95, 0.84),
+}
 
 local daylight = Daylight.at
 
@@ -111,6 +120,23 @@ function DayNight.init()
 			rays.Intensity = lerp(NIGHT.SunRays, DAY.SunRays, t)
 		end
 		Lighting.EnvironmentSpecularScale = lerp(NIGHT.Specular, DAY.Specular, t)
+		-- After the story's time slip (CampaignDread 0..1): darker, foggier, a sick green-grey.
+		local dread = ReplicatedStorage:GetAttribute("CampaignDread")
+		if type(dread) == "number" and dread > 0 then
+			Lighting.Brightness *= 1 - 0.45 * dread
+			Lighting.Ambient = Lighting.Ambient:Lerp(DREAD.Ambient, dread * 0.6)
+			Lighting.OutdoorAmbient = Lighting.OutdoorAmbient:Lerp(DREAD.Ambient, dread * 0.6)
+			if atmosphere then
+				atmosphere.Density += DREAD.Density * dread
+				atmosphere.Color = atmosphere.Color:Lerp(DREAD.Fog, dread * 0.6)
+				atmosphere.Decay = atmosphere.Decay:Lerp(DREAD.Fog, dread * 0.5)
+				atmosphere.Haze += DREAD.Haze * dread
+			end
+			if grade then
+				grade.Saturation -= DREAD.Saturation * dread
+				grade.TintColor = grade.TintColor:Lerp(DREAD.Tint, dread * 0.6)
+			end
+		end
 		-- Classroom lights: on while the school is open (from dawn to dusk), off at night.
 		local on = t > 0.2 and not ReplicatedStorage:GetAttribute("RoomLightsOff")
 		if on ~= roomLightsOn then

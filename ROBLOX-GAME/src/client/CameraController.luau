@@ -96,6 +96,7 @@ function CameraController.init()
 			return
 		end
 		local active = camera.CameraSubject == humanoid and camera.CameraType == Enum.CameraType.Custom
+			and not player:GetAttribute("Grabbed")
 			and player.CameraMode == Enum.CameraMode.LockFirstPerson
 			and not player:GetAttribute("Hidden") and not root.Anchored
 

@@ -12,6 +12,8 @@ local Characters = require(script.Parent.Characters)
 local EntityAI = require(script.Parent.EntityAI)
 local EntityModel = require(script.Parent.EntityModel)
 local Lockers = require(script.Parent.Lockers)
+local Maim = require(script.Parent.Maim)
+local Grab = require(script.Parent.Grab)
 local People = require(script.Parent.People)
 local Torch = require(script.Parent.Torch)
 
@@ -29,6 +31,7 @@ local downCount: { [Player]: number } = {}
 local prompts: { Instance } = {}
 local seekerFrozenUntil = 0
 local round = 0
+local grabs: { [Player]: any } = {} -- the entity holding a survivor (Grab.luau)
 
 local function remote(name: string): RemoteEvent
 	return ctx.remotes:FindFirstChild(name) :: RemoteEvent
@@ -92,6 +95,11 @@ local function out(player: Player)
 	if survivors[player] == nil or survivors[player] == "out" then
 		return
 	end
+	local grab = grabs[player]
+	grabs[player] = nil
+	if grab then
+		grab:stop()
+	end
 	removePromptsOf(player)
 	Lockers.release(player)
 	setSurvivor(player, "out")
@@ -115,6 +123,11 @@ local function revive(player: Player, by: Player, pulled: boolean)
 	if survivors[player] ~= "downed" or survivors[by] ~= "alive" then
 		return
 	end
+	local grab = grabs[player]
+	grabs[player] = nil
+	if grab then
+		grab:free(by)
+	end
 	removePromptsOf(player)
 	if pulled and not hurt(player, 25) then
 		out(player)
@@ -133,33 +146,9 @@ local function maim(player: Player, part: string)
 		return
 	end
 	player:SetAttribute(part, true)
-	if part == "LostArm" then
-		for _, name in { "LeftUpperArm", "LeftLowerArm", "LeftHand" } do
-			local p = character:FindFirstChild(name) :: BasePart?
-			if p then
-				p.Transparency = 1
-			end
-		end
-		ctx.banner("The entity tears at you. Your left arm is gone. Someone help!", 4, player)
-	else
-		local head = character:FindFirstChild("Head") :: BasePart?
-		if head then
-			local patch = Instance.new("Part")
-			patch.Name = "EyePatch"
-			patch.Size = Vector3.new(0.32, 0.26, 0.05)
-			patch.Color = Color3.fromRGB(20, 16, 16)
-			patch.Material = Enum.Material.Fabric
-			patch.CanCollide = false
-			patch.Massless = true
-			patch.CFrame = head.CFrame * CFrame.new(-0.22, 0.12, -head.Size.Z / 2 - 0.02)
-			local weld = Instance.new("WeldConstraint")
-			weld.Part0 = head
-			weld.Part1 = patch
-			weld.Parent = patch
-			patch.Parent = character
-		end
-		ctx.banner("You lose an eye. It is starting to eat you!", 4, player)
-	end
+	Maim.apply(character, part)
+	ctx.banner(if part == "LostArm" then "The entity tears at you. Your left arm is gone. Someone help!"
+		else "You lose an eye. It is starting to eat you!", 4, player)
 	remote("Sound"):FireAllClients("scream", (Characters.root(player) :: BasePart).Position)
 end
 
@@ -178,31 +167,64 @@ local function down(player: Player)
 			revive(player, by, true)
 		end
 	end)
-	-- Each down gets its own 25 s: a revived and re-caught survivor starts a fresh count.
+	-- The entity holds them (Grab.luau): they mash the defend key to fight it off; each hold gets its own 25 s.
 	downCount[player] = (downCount[player] or 0) + 1
-	local myDown = downCount[player]
 	local myRound = round
-	local function still(): boolean
-		return myRound == round and downCount[player] == myDown and survivors[player] == "downed"
+	local body = entityModel or (seeker and seeker.Character)
+	local hold = HS.downed * ctx.timeScale
+	if ai then
+		ai:stun(hold + 1) -- it stays and eats
+	elseif seeker then
+		Characters.setSpeed(seeker, 0)
 	end
-	task.delay(HS.downed / 3 * ctx.timeScale, function()
-		if still() then
-			maim(player, "LostArm")
+	local function release(stunFor: number)
+		if ai then
+			ai:stun(stunFor)
+		elseif seeker then
+			seekerFrozenUntil = os.clock() + stunFor
+			task.delay(stunFor, function()
+				if myRound == round and seeker and os.clock() >= seekerFrozenUntil then
+					Characters.setSpeed(seeker, Config.Player.seeker)
+				end
+			end)
 		end
-	end)
-	task.delay(HS.downed * 2 / 3 * ctx.timeScale, function()
-		if still() then
-			maim(player, "LostEye")
-		end
-	end)
-	task.delay(HS.downed * ctx.timeScale, function()
-		if still() then
-			if player.Parent then
-				ctx.banner("Nobody came. The entity ate you.", 4, player)
-			end
-			out(player)
-		end
-	end)
+	end
+	if body then
+		grabs[player] = Grab.start({
+			victim = player,
+			entity = body,
+			hold = hold,
+			remotes = ctx.remotes,
+			onMaim = function(part)
+				maim(player, part)
+			end,
+			onEaten = function()
+				grabs[player] = nil
+				release(0.1)
+				if myRound == round and survivors[player] == "downed" then
+					if player.Parent then
+						ctx.banner("Too slow. The entity ate you.", 4, player)
+					end
+					out(player)
+				end
+			end,
+			onFree = function(by)
+				grabs[player] = nil
+				if by ~= nil then
+					-- A teammate got them out: the entity stops eating and comes back after 3 s, time to run (a hit
+					-- from behind stuns it longer, set after this in hitFromBehind).
+					release(3)
+				elseif myRound == round and survivors[player] == "downed" then
+					-- Fought it off: free, and it reels for a moment.
+					removePromptsOf(player)
+					Characters.setSpeed(player, nil)
+					setSurvivor(player, "alive")
+					release(3)
+					ctx.banner(`{player.DisplayName} fought the entity off!`, 4)
+				end
+			end,
+		})
+	end
 	check(false)
 end
 
@@ -239,6 +261,10 @@ local function hitFromBehind(by: Player)
 	if not victim or best > S(12) then
 		return
 	end
+	if not hurt(by, 15) then
+		out(by)
+	end
+	revive(victim, by, false)
 	if ai then
 		ai:stun(4)
 	elseif seeker then
@@ -252,10 +278,6 @@ local function hitFromBehind(by: Player)
 			end
 		end)
 	end
-	if not hurt(by, 15) then
-		out(by)
-	end
-	revive(victim, by, false)
 	ctx.banner(`{by.DisplayName} hit the entity from behind and freed {victim.DisplayName}!`, 4)
 end
 
@@ -459,6 +481,10 @@ end
 
 function HideAndSeek.stop()
 	round += 1
+	for p, grab in grabs do
+		grab:stop()
+		grabs[p] = nil
+	end
 	People.stopVictims()
 	if ai then
 		ai:stop()
